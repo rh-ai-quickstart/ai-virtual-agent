@@ -160,22 +160,6 @@ export const FormBasic: React.FunctionComponent = () => {
     }
   };
 
-  // const handleEdit = (kb: KnowledgeBase) => {
-  //   setForm({ ...kb, source_configuration: JSON.stringify(kb.source_configuration, null, 2) });
-  //   try {
-  //     const parsed = JSON.parse(kb.source_configuration || '{}');
-  //     if (kb.source === 'URL' && Array.isArray(parsed)) {
-  //       setUrlInputs(parsed);
-  //     } else if (kb.source === 'S3' && typeof parsed === 'object') {
-  //       setS3Inputs(parsed);
-  //     } else if (kb.source === 'GITHUB' && typeof parsed === 'object') {
-  //       setGithubInputs(parsed);
-  //     }
-  //   } catch (e) {
-  //     console.error('Failed to parse source configuration', e);
-  //   }
-  // };
-
   const options = [
     { value: '', label: 'Select a source', disabled: true, isPlaceholder: true },
     { value: 'S3', label: 'S3', disabled: false, isPlaceholder: false },
