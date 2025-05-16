@@ -24,7 +24,6 @@ export interface NewKnowledgeBase {
   id: string;
   name: string;
   provider_id: string;
-  type: string;
   embedding_model: string;
   version: string;
   vector_db_name: string;
