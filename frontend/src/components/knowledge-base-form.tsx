@@ -386,7 +386,7 @@ export function KnowledgeBaseForm({
               onBlur={field.handleBlur}
               onChange={(_event, value) => field.handleChange(value)}
               rows={4}
-              placeholder='{}'
+              placeholder="{}"
               // disabled={
               //   field.is_external ||
               //   field.source === 'S3' ||

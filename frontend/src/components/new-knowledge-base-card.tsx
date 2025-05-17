@@ -78,7 +78,6 @@ export function NewKnowledgeBaseCard() {
     <Card isExpanded={isOpen} isClickable={!isOpen}>
       <CardHeader
         selectableActions={{
-          // eslint-disable-next-line no-console
           onClickAction: () => setIsOpen(!isOpen),
           selectableActionAriaLabelledby: 'clickable-card-example-title-1',
         }}

@@ -173,7 +173,9 @@ export function KnowledgeBaseCard({ knowledgebase }: KnowledgeBaseCardProps) {
                     undone.
                   </ModalBody>
                   <ModalFooter>
-                    <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                    <Button variant="danger" onClick={handleDelete}>
+                      Delete
+                    </Button>
                     <Button variant="link" onClick={toggleModal}>
                       Cancel
                     </Button>
