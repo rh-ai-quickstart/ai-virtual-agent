@@ -1,8 +1,3 @@
-import {
-  AGENTS_API_ENDPOINT,
-  //   KNOWLEDGE_BASES_API_ENDPOINT,
-  //   TOOLS_API_ENDPOINT,
-} from '@/config/api';
 import { KnowledgeBase, NewKnowledgeBase } from '@/routes/config/knowledge-bases';
 // import { fetchModels } from '@/services/models';
 // import { Model, Tool } from '@/types';
@@ -21,30 +16,25 @@ import { PlusIcon } from '@patternfly/react-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { KnowledgeBaseForm } from './knowledge-base-form';
+import baseUrl from '@/config/api';
 
-// const fetchKnowledgeBases = async (): Promise<KnowledgeBase[]> => {
-//   const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT);
-//   if (!response.ok) {
-//     throw new Error('Network response was not ok');
-//   }
-//   return response.json();
-// };
-// const fetchTools = async (): Promise<Tool[]> => {
-//   const response = await fetch(TOOLS_API_ENDPOINT);
-//   if (!response.ok) {
-//     throw new Error('Network response was not ok');
-//   }
-//   return response.json();
-// };
+const fetchKnowledgeBases = async (): Promise<KnowledgeBase[]> => {
+  const response = await fetch(`${baseUrl}/knowledge_bases/`);
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+  return response.json();
+};
 
 const createKnowledgeBase = async (newKnowledgeBase: NewKnowledgeBase): Promise<KnowledgeBase> => {
-  const response = await fetch(AGENTS_API_ENDPOINT, {
+  const response = await fetch(`${baseUrl}/knowledge_bases/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(newKnowledgeBase),
   });
+  console.log(JSON.stringify(newKnowledgeBase));
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
@@ -56,33 +46,15 @@ export function NewKnowledgeBaseCard() {
   // Or whatever name fits your routing setup e.g. ConfigKnowledgeBases
   const queryClient = useQueryClient();
 
-  //   // Query for AI Models
-  //   const {
-  //     data: models,
-  //     isLoading: isLoadingModels,
-  //     error: modelsError,
-  //   } = useQuery<Model[], Error>({
-  //     queryKey: ['models'],
-  //     queryFn: fetchModels,
-  //   });
-  //   // Query for Knowledge bases
-  //   const {
-  //     data: knowledgeBases,
-  //     isLoading: isLoadingKnowledgeBases,
-  //     error: knowledgeBasesError,
-  //   } = useQuery<KnowledgeBase[], Error>({
-  //     queryKey: ['knowledgeBases'],
-  //     queryFn: fetchKnowledgeBases,
-  //   });
-  //   // Query for tools
-  //   const {
-  //     data: tools,
-  //     isLoading: isLoadingTools,
-  //     error: toolsError,
-  //   } = useQuery<Tool[], Error>({
-  //     queryKey: ['tools'],
-  //     queryFn: fetchTools,
-  //   });
+  // Query for Knowledge bases
+  const {
+    data: knowledgeBases,
+    isLoading: isLoadingKnowledgeBases,
+    error: knowledgeBasesError,
+  } = useQuery<KnowledgeBase[], Error>({
+    queryKey: ['knowledgeBases'],
+    queryFn: fetchKnowledgeBases,
+  });
 
   // Mutation for creating an Knowledge Base
   const knowledgebaseMutation = useMutation<KnowledgeBase, Error, NewKnowledgeBase>({
@@ -99,6 +71,7 @@ export function NewKnowledgeBaseCard() {
 
   const handleCreateKnowledgeBase = (values: NewKnowledgeBase) => {
     knowledgebaseMutation.mutate(values);
+    console.log(values);
   };
 
   return (
@@ -128,6 +101,11 @@ export function NewKnowledgeBaseCard() {
       <CardExpandableContent className="pf-v5-u-mb-lg">
         <CardBody>
           <KnowledgeBaseForm
+            knowledgeBasesProps={{
+              knowledgeBases: knowledgeBases || [],
+              isLoadingKnowledgeBases,
+              knowledgeBasesError,
+            }}
             onSubmit={handleCreateKnowledgeBase}
             isSubmitting={knowledgebaseMutation.isPending}
             onCancel={() => setIsOpen(false)}

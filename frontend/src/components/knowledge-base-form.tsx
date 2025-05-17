@@ -9,31 +9,38 @@ import {
   FormGroup,
   FormSelect,
   FormSelectOption,
-  Grid,
+  // Grid,
   TextArea,
   TextInput,
 } from '@patternfly/react-core';
 import { useForm } from '@tanstack/react-form';
-import { Fragment, useMemo } from 'react';
-import { CustomSelectOptionProps, MultiSelect } from './multi-select';
-import { GitHub, S3 } from '@/types';
+// import { Fragment, useMemo } from 'react';
+// import { CustomSelectOptionProps, MultiSelect } from './multi-select';
+// import { GitHub, S3 } from '@/types';
 
-interface S3Props {
-  s3: S3[];
-  isLoadingS3: boolean;
-  s3Error: Error | null;
-}
+// interface S3Props {
+//   s3: S3[];
+//   isLoadingS3: boolean;
+//   s3Error: Error | null;
+// }
 
-interface GitHubProps {
-  github: GitHub[];
-  isLoadingGitHub: boolean;
-  githubError: Error | null;
+// interface GitHubProps {
+//   github: GitHub[];
+//   isLoadingGitHub: boolean;
+//   githubError: Error | null;
+// }
+
+interface KnowledgeBasesFieldProps {
+  knowledgeBases: KnowledgeBase[];
+  isLoadingKnowledgeBases: boolean;
+  knowledgeBasesError: Error | null;
 }
 
 interface KnowledgeBaseFormProps {
   defaultKnowledgeBaseProps?: KnowledgeBase | undefined;
-  githubProps: GitHubProps;
-  s3Props: S3Props;
+  // githubProps: GitHubProps;
+  // s3Props: S3Props;
+  knowledgeBasesProps: KnowledgeBasesFieldProps;
   onSubmit: (values: NewKnowledgeBase | KnowledgeBase) => void;
   isSubmitting: boolean;
   onCancel: () => void;
@@ -200,7 +207,6 @@ export function KnowledgeBaseForm({
               onBlur={field.handleBlur}
               onChange={(_event, value) => field.handleChange(value)}
               aria-label="Source"
-              // isDisabled={isLoadingGitHub || !!githubError}
             >
               {options.map((option, index) => (
                 <FormSelectOption
@@ -213,7 +219,7 @@ export function KnowledgeBaseForm({
               ))}
             </FormSelect>
 
-            {form.source === 'S3' && !form.is_external && (
+            {/* {form.source === 'S3' && !form.is_external && (
               <Grid hasGutter md={6}>
                 <FormGroup
                   label="ACCESS_KEY_ID"
@@ -362,7 +368,7 @@ export function KnowledgeBaseForm({
                   </FormGroup>
                 ))}
               </Grid>
-            )}
+            )} */}
           </FormGroup>
         )}
       />

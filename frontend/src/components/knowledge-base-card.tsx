@@ -1,3 +1,4 @@
+import baseUrl from '@/config/api';
 import { KnowledgeBase } from '@/routes/config/knowledge-bases';
 import {
   Button,
@@ -33,6 +34,20 @@ export function KnowledgeBaseCard({ knowledgebase }: KnowledgeBaseCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(false);
 
+  const handleDelete = async (): Promise<KnowledgeBase[]> => {
+    const response = await fetch(`${baseUrl}/knowledge_bases/${knowledgebase.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    setModalOpen(false);
+    return alert('Knowledge Base deleted.');
+  };
+
   // const queryClient = useQueryClient();
 
   // const editKnowledgeBase = async (knowledgebaseProps: KnowledgeBase): Promise<KnowledgeBase> => {
@@ -41,18 +56,18 @@ export function KnowledgeBaseCard({ knowledgebase }: KnowledgeBaseCardProps) {
   //   await new Promise((resolve) => setTimeout(resolve, 700)); // Simulate network delay
   //   // This is a mock response, in a real scenario, the backend would probably return the created knowledgebase with an id
   //   const editedKnowledgeBase: KnowledgeBase = { ...knowledgebaseProps };
-  //   return editedKnowledgeBase;
-  //   // const response = await fetch(AGENTS_API_ENDPOINT, {
-  //   //   method: 'POST',
-  //   //   headers: {
-  //   //     'Content-Type': 'application/json',
-  //   //   },
-  //   //   body: JSON.stringify(newAgent),
-  //   // });
-  //   // if (!response.ok) {
-  //   //   throw new Error('Network response was not ok');
-  //   // }
-  //   // return response.json();
+  //   const response = await fetch(`${baseUrl}/knowledge_bases/${knowledgebase.id}`, {
+  //     method: 'PUT',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify(editedKnowledgeBase),
+  //   });
+  //   console.log(JSON.stringify(editKnowledgeBase));
+  //   if (!response.ok) {
+  //     throw new Error('Network response was not ok');
+  //   }
+  //   return response.json();
   // };
 
   // // Mutation for editing an Agent
@@ -158,7 +173,7 @@ export function KnowledgeBaseCard({ knowledgebase }: KnowledgeBaseCardProps) {
                     undone.
                   </ModalBody>
                   <ModalFooter>
-                    <Button variant="danger">Delete</Button>
+                    <Button variant="danger" onClick={handleDelete}>Delete</Button>
                     <Button variant="link" onClick={toggleModal}>
                       Cancel
                     </Button>
