@@ -7,6 +7,8 @@ from typing import List, Dict, Any
 from .. import models, schemas
 from ..database import get_db
 from ..api.llamastack import client
+#TODO: fix name conflict models (list) and models (module)
+from ..models import ModelServer
 
 router = APIRouter(prefix="/model_servers", tags=["Model Servers"])
 
@@ -75,7 +77,7 @@ async def sync_model_servers(db: AsyncSession):
             raise Exception(f"Failed to fetch models from LlamaStack: {str(e)}")
     
         print("Fetching existing model servers from database...")
-        result = await db.execute(select(models.ModelServer))
+        result = await db.execute(select(ModelServer))
         existing_servers = {server.name: server for server in result.scalars().all()}
         print(f"Found {len(existing_servers)} existing model servers: {list(existing_servers.keys())}")
         

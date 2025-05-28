@@ -3,9 +3,7 @@ from .database import engine, Base, AsyncSessionLocal
 from .routes import users, mcp_servers, knowledge_bases, virtual_assistants, chat_history, guardrails, model_servers, llama_stack
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
 from dotenv import load_dotenv
-import os
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -13,7 +11,6 @@ import httpx
 import sys
 
 load_dotenv()
-
 
 # Configure logging
 logging.basicConfig(

@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 
 from .. import models, schemas
 from ..database import get_db
-from ..api import llamastack
+from ..api.llamastack import client
 
 router = APIRouter(prefix="/mcp_servers", tags=["mcp_servers"])
 
