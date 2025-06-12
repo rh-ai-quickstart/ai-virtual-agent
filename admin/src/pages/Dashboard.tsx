@@ -62,7 +62,7 @@ export default function Dashboard() {
               <h3 className="font-semibold text-lg mb-1">{agent.name}</h3>
               <p className="text-sm text-gray-600">Model: {agent.model_name}</p>
               <p className="text-sm italic text-gray-500 truncate">Prompt: {agent.prompt.slice(0, 100)}...</p>
-              
+
             </li>
           ))}
           <Link to={`/virtual_assistants`} className="text-blue-600 hover:underline text-sm mt-2 inline-block">Manage</Link>

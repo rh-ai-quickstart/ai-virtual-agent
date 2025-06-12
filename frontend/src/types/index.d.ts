@@ -55,3 +55,11 @@ export type KnowledgeBaseStatus = 'ready' | 'pending' | 'orphaned';
 export interface KnowledgeBaseWithStatus extends KnowledgeBase {
   status: KnowledgeBaseStatus;
 }
+
+export interface LSKnowledgeBase {
+  kb_name: string;
+  provider_resource_id: string;
+  provider_id: string;
+  type: string;
+  embedding_model: string;
+}

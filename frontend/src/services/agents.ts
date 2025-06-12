@@ -25,26 +25,6 @@ export const createAgent = async (newAgent: NewAgent): Promise<Agent> => {
   return data as Agent;
 };
 
-export interface UpdateAgentProps {
-  agent_id?: string;
-  agentProps: NewAgent;
-}
-
-export const editAgent = async ({ agent_id, agentProps }: UpdateAgentProps): Promise<Agent> => {
-  const response = await fetch(AGENTS_API_ENDPOINT + agent_id, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(agentProps),
-  });
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  const data: unknown = await response.json();
-  return data as Agent;
-};
-
 export const deleteAgent = async (agent_id: string): Promise<void> => {
   const response = await fetch(AGENTS_API_ENDPOINT + agent_id, {
     method: 'DELETE',

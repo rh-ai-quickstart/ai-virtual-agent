@@ -1,8 +1,8 @@
-import { TOOLS_API_ENDPOINT } from '@/config/api';
+import { LLAMA_STACK_TOOLS_API_ENDPOINT } from '@/config/api';
 import { ToolGroup } from '@/types';
 
 export const fetchTools = async (): Promise<ToolGroup[]> => {
-  const response = await fetch(TOOLS_API_ENDPOINT);
+  const response = await fetch(LLAMA_STACK_TOOLS_API_ENDPOINT);
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }

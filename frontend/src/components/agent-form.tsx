@@ -1,6 +1,5 @@
 import { Agent, NewAgent } from '@/routes/config/agents';
-import { UpdateAgentProps } from '@/services/agents';
-import { KnowledgeBase, Model, ToolGroup, ToolAssociationInfo } from '@/types';
+import { Model, ToolGroup, ToolAssociationInfo, LSKnowledgeBase } from '@/types';
 import {
   ActionGroup,
   Button,
@@ -24,7 +23,7 @@ interface ModelsFieldProps {
 }
 
 interface KnowledgeBasesFieldProps {
-  knowledgeBases: KnowledgeBase[];
+  knowledgeBases: LSKnowledgeBase[];
   isLoadingKnowledgeBases: boolean;
   knowledgeBasesError: Error | null;
 }
@@ -40,7 +39,7 @@ interface AgentFormProps {
   modelsProps: ModelsFieldProps;
   knowledgeBasesProps: KnowledgeBasesFieldProps;
   toolsProps: ToolsFieldProps;
-  onSubmit: (values: UpdateAgentProps) => void;
+  onSubmit: (values: NewAgent) => void;
   isSubmitting: boolean;
   onCancel: () => void;
 }
@@ -90,11 +89,15 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
     };
   });
 
+  // Only include knowledge bases if RAG tool is selected
+  const hasRAGTool = formData.tool_ids.includes('builtin::rag');
+  const knowledge_base_ids = hasRAGTool ? formData.knowledge_base_ids : [];
+
   return {
     name: formData.name,
     model_name: formData.model_name,
     prompt: formData.prompt,
-    knowledge_base_ids: formData.knowledge_base_ids,
+    knowledge_base_ids,
     tools: toolAssociations,
   };
 };
@@ -112,8 +115,6 @@ export function AgentForm({
   const { knowledgeBases, isLoadingKnowledgeBases, knowledgeBasesError } = knowledgeBasesProps;
   const { tools, isLoadingTools, toolsError } = toolsProps;
 
-  const agent_id = defaultAgentProps?.id ?? undefined;
-
   const initialAgentData: AgentFormData = convertAgentToFormData(defaultAgentProps);
 
   const form = useForm({
@@ -121,7 +122,7 @@ export function AgentForm({
     onSubmit: ({ value }) => {
       console.log('Test');
       const convertedAgent = convertFormDataToAgent(value, tools);
-      onSubmit({ agent_id, agentProps: convertedAgent });
+      onSubmit(convertedAgent);
     },
   });
 
@@ -162,9 +163,9 @@ export function AgentForm({
       ];
     }
     return knowledgeBases.map((kb) => ({
-      value: kb.vector_db_name, // Use vector_db_name as the primary key
-      children: kb.name, // The name will be displayed
-      id: `kb-option-${kb.vector_db_name}`, // Unique ID for React key and ARIA
+      value: kb.kb_name, // Use vector_db_name as the primary key
+      children: kb.kb_name, // The name will be displayed
+      id: `kb-option-${kb.kb_name}`, // Unique ID for React key and ARIA
     }));
   }, [knowledgeBases, isLoadingKnowledgeBases, knowledgeBasesError]);
 
@@ -329,32 +330,6 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
-      <form.Field name="knowledge_base_ids">
-        {(field) => (
-          <FormGroup
-            label="Select Knowledge Bases"
-            fieldId="knowledge-bases-multiselect" // Unique ID for the FormGroup
-          >
-            <MultiSelect
-              id="knowledge-bases-multiselect-component" // Unique ID for the MultiSelect component itself
-              value={field.state.value} // Pass the array of IDs
-              options={knowledgeBaseOptions} // Pass the prepared options
-              onBlur={field.handleBlur}
-              onChange={(selectedIds) => field.handleChange(selectedIds)} // Pass the new array directly
-              ariaLabel="Select Knowledge Bases"
-              isDisabled={
-                isLoadingKnowledgeBases ||
-                knowledgeBasesError != null ||
-                (knowledgeBases &&
-                  knowledgeBases.length === 0 &&
-                  !isLoadingKnowledgeBases &&
-                  !knowledgeBasesError)
-              }
-              placeholder="Type or select knowledge bases..."
-            />
-          </FormGroup>
-        )}
-      </form.Field>
       <form.Field name="tool_ids">
         {(field) => (
           <FormGroup
@@ -378,6 +353,45 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
+      <form.Subscribe selector={(state) => state.values.tool_ids}>
+        {(toolIds) => {
+          const hasRAGTool = toolIds?.includes('builtin::rag');
+
+          // Clear knowledge bases if RAG tool is removed
+          if (!hasRAGTool && form.state.values.knowledge_base_ids?.length > 0) {
+            form.setFieldValue('knowledge_base_ids', []);
+          }
+
+          return hasRAGTool ? (
+            <form.Field name="knowledge_base_ids">
+              {(field) => (
+                <FormGroup
+                  label="Select Knowledge Bases"
+                  fieldId="knowledge-bases-multiselect" // Unique ID for the FormGroup
+                >
+                  <MultiSelect
+                    id="knowledge-bases-multiselect-component" // Unique ID for the MultiSelect component itself
+                    value={field.state.value} // Pass the array of IDs
+                    options={knowledgeBaseOptions} // Pass the prepared options
+                    onBlur={field.handleBlur}
+                    onChange={(selectedIds) => field.handleChange(selectedIds)} // Pass the new array directly
+                    ariaLabel="Select Knowledge Bases"
+                    isDisabled={
+                      isLoadingKnowledgeBases ||
+                      knowledgeBasesError != null ||
+                      (knowledgeBases &&
+                        knowledgeBases.length === 0 &&
+                        !isLoadingKnowledgeBases &&
+                        !knowledgeBasesError)
+                    }
+                    placeholder="Type or select knowledge bases..."
+                  />
+                </FormGroup>
+              )}
+            </form.Field>
+          ) : null;
+        }}
+      </form.Subscribe>
       <ActionGroup>
         <form.Subscribe
           selector={(state) => [state.canSubmit, state.isSubmitting, state.isPristine]}

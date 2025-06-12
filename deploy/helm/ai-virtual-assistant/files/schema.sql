@@ -154,4 +154,4 @@ CREATE DATABASE ai_virtual_assistant;
 -- CREATE TRIGGER update_guardrails_updated_at
 --     BEFORE UPDATE ON guardrails
 --     FOR EACH ROW
---     EXECUTE FUNCTION update_updated_at_column(); 
+--     EXECUTE FUNCTION update_updated_at_column();

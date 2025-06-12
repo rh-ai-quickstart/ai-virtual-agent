@@ -1,4 +1,4 @@
-sdapiVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.monitor.name }}
@@ -14,8 +14,6 @@ spec:
       labels:
         app: {{ .Values.monitor.name }}
     spec:
-      securityContext:
-        runAsUser: {{ .Values.securityContext.runAsUser }}
       serviceAccountName: {{ .Values.monitor.serviceAccount.name }}
       containers:
       - name: monitor
@@ -52,7 +50,7 @@ spec:
                       # Update status to failed
                       update_status(kb_name, 'failed', "Job did not start within 30 seconds")
                       return
-                  
+
                   # Wait for job completion
                   log("Waiting for job completion...")
                   while True:
@@ -80,40 +78,40 @@ spec:
           def create_ingestion_job(kb_name, s3_config):
               try:
                   log(f"Creating ingestion job for knowledge base: {kb_name}")
-                  
+
                   # Parse S3 config
                   s3_config_dict = json.loads(s3_config)
-                  
+
                   # Create secret for S3 config
                   secret_yaml = f"""
                   apiVersion: v1
                   kind: Secret
                   metadata:
                     name: s3-config-{kb_name}
-                    namespace: rag-llama-demo
+                    namespace: {{ .Release.Namespace }}
                   type: Opaque
                   stringData:
                     SOURCE: "S3"
                     EMBEDDING_MODEL: "all-MiniLM-L6-v2"
                     NAME: "{kb_name}"
                     VERSION: "1"
-                    ACCESS_KEY_ID: "{s3_config_dict.get('access_key_id', '')}"
-                    SECRET_ACCESS_KEY: "{s3_config_dict.get('secret_access_key', '')}"
-                    ENDPOINT_URL: "http://minio:9000"
-                    BUCKET_NAME: "{s3_config_dict.get('bucket_name', '')}"
-                    REGION: "{s3_config_dict.get('region', 'us-east-1')}"
+                    ACCESS_KEY_ID: "{s3_config_dict.get('ACCESS_KEY_ID', '')}"
+                    SECRET_ACCESS_KEY: "{s3_config_dict.get('SECRET_ACCESS_KEY', '')}"
+                    ENDPOINT_URL: "{s3_config_dict.get('ENDPOINT_URL', '')}"
+                    BUCKET_NAME: "{s3_config_dict.get('BUCKET_NAME', '')}"
+                    REGION: "{s3_config_dict.get('REGION', 'us-east-1')}"
                   """
-                  
+
                   # Add debug logging
                   log(f"S3 Config Dictionary: {s3_config_dict}")
-                  log(f"Access Key ID: {s3_config_dict.get('access_key_id', '')}")
-                  log(f"Secret Access Key: {s3_config_dict.get('secret_access_key', '')}")
-                  log(f"Bucket Name: {s3_config_dict.get('bucket_name', '')}")
-                  
+                  log(f"Access Key ID: {s3_config_dict.get('ACCESS_KEY_ID', '')}")
+                  log(f"Secret Access Key: {s3_config_dict.get('SECRET_ACCESS_KEY', '')}")
+                  log(f"Bucket Name: {s3_config_dict.get('BUCKET_NAME', '')}")
+
                   # Write secret YAML to file
                   with open('/tmp/secret.yaml', 'w') as f:
                       f.write(secret_yaml)
-                  
+
                   # Create secret
                   result = subprocess.run('oc apply -f /tmp/secret.yaml', shell=True, capture_output=True, text=True)
                   if result.returncode != 0:
@@ -122,14 +120,14 @@ spec:
                       update_status(kb_name, 'failed', f"Failed to create secret: {result.stderr}")
                       return
                   log("Secret created successfully")
-                  
+
                   # Create job YAML
                   job_yaml = f"""
                   kind: Job
                   apiVersion: batch/v1
                   metadata:
                     name: ingestion-pipeline-{kb_name}
-                    namespace: rag-llama-demo
+                    namespace: {{ .Release.Namespace }}
                     labels:
                       pipelines.kubeflow.org/v2_component: 'true'
                   spec:
@@ -175,9 +173,9 @@ spec:
                               - /bin/bash
                             env:
                               - name: LLAMASTACK_BASE_URL
-                                value: 'http://llamastack.rag-llama-demo.svc.cluster.local:8321'
+                                value: 'http://llamastack.{{ .Release.Namespace }}.svc.cluster.local:8321'
                               - name: DS_PIPELINE_URL
-                                value: 'https://ds-pipeline-dspa.rag-llama-demo.svc.cluster.local:8888'
+                                value: 'https://ds-pipeline-dspa.{{ .Release.Namespace }}.svc.cluster.local:8888'
                             envFrom:
                               - secretRef:
                                   name: s3-config-{kb_name}
@@ -203,11 +201,11 @@ spec:
                     podReplacementPolicy: TerminatingOrFailed
                     completionMode: NonIndexed
                   """
-                  
+
                   # Write job YAML to file
                   with open('/tmp/job.yaml', 'w') as f:
                       f.write(job_yaml)
-                  
+
                   # Create job
                   result = subprocess.run('oc apply -f /tmp/job.yaml', shell=True, capture_output=True, text=True)
                   if result.returncode != 0:
@@ -216,13 +214,13 @@ spec:
                       update_status(kb_name, 'failed', f"Failed to create job: {result.stderr}")
                       return
                   log("Job created successfully")
-                  
+
                   # Start job monitoring in a separate thread
                   import threading
                   monitor_thread = threading.Thread(target=monitor_job, args=(kb_name,))
                   monitor_thread.daemon = True
                   monitor_thread.start()
-                  
+
               except Exception as e:
                   log(f"Error in create_ingestion_job: {str(e)}")
                   # Update status to failed
@@ -232,7 +230,7 @@ spec:
               try:
                   # Keep track of processed knowledge bases
                   processed_kbs = set()
-                  
+
                   while True:
                       # Read results from shared volume
                       try:
@@ -242,39 +240,40 @@ spec:
                           log("No results file found, waiting...")
                           time.sleep(10)
                           continue
-                      
+
                       if not results:
                           log("No new knowledge bases found")
                           time.sleep(10)
                           continue
-                      
+
                       # Process each line
                       for line in results.splitlines():
                           if line.strip():
                               log(f"Processing line: {line}")
                               kb_name, s3_config = line.split('|')
                               kb_name = kb_name.strip()
-                              
+                              kb_name = kb_name.strip().lower().replace("_", "-").replace(" ", "-")
+
                               # Skip if already processed
                               if kb_name in processed_kbs:
                                   log(f"Skipping already processed knowledge base: {kb_name}")
                                   continue
-                              
+
                               # Create ingestion job
                               create_ingestion_job(kb_name, s3_config.strip())
-                              
+
                               # Add to processed set
                               processed_kbs.add(kb_name)
-                              
+
                               # Clear the results file after processing
                               with open('/shared/db_results.txt', 'w') as f:
                                   f.write('')
-                              
+
                               log(f"Processed knowledge base: {kb_name}")
-                      
+
                       # Wait before checking again
                       time.sleep(10)
-                  
+
               except Exception as e:
                   log(f"Error processing database results: {str(e)}")
                   time.sleep(10)  # Wait before retrying
@@ -304,10 +303,10 @@ spec:
           mkdir -p /tmp/pip
           export PIP_TARGET=/tmp/pip
           export PYTHONPATH=/tmp/pip:$PYTHONPATH
-          
+
           # Install psycopg2
           pip install --no-cache-dir psycopg2-binary
-          
+
           # Create Python script
           cat > /tmp/query.py << 'EOF'
           import os
@@ -321,7 +320,7 @@ spec:
           def check_database():
               try:
                   log("Checking database for new knowledge bases...")
-                  
+
                   # Connect to database
                   conn = psycopg2.connect(
                       host=os.environ["DB_HOST"],
@@ -329,33 +328,33 @@ spec:
                       user=os.environ["DB_USER"],
                       password=os.environ["DB_PASSWORD"]
                   )
-                  
+
                   # Query to execute - only get pending knowledge bases
                   query = """
-                      SELECT name, source_configuration::text 
-                      FROM knowledge_bases 
-                      WHERE is_external = true
+                      SELECT name, source_configuration::text
+                      FROM knowledge_bases
+                      WHERE is_external = false
                       AND source_configuration IS NOT NULL
                       AND status = 'pending';
                   """
                   log(f"Executing query: {query}")
-                  
+
                   with conn.cursor() as cur:
                       cur.execute(query)
                       results = cur.fetchall()
-                  
+
                   log(f"Found {len(results)} pending knowledge bases")
-                  
+
                   # Write results to shared volume
                   with open('/shared/db_results.txt', 'w') as f:
                       for row in results:
                           f.write(f"{row[0]}|{row[1]}\n")
-                  
+
                   # Update status to 'processing' for the found knowledge bases
                   if results:
                       update_query = """
-                          UPDATE knowledge_bases 
-                          SET status = 'processing' 
+                          UPDATE knowledge_bases
+                          SET status = 'processing'
                           WHERE name = ANY(%s);
                       """
                       kb_names = [row[0] for row in results]
@@ -363,9 +362,9 @@ spec:
                           cur.execute(update_query, (kb_names,))
                           conn.commit()
                       log(f"Updated status to 'processing' for {len(kb_names)} knowledge bases")
-                  
+
                   conn.close()
-                  
+
               except Exception as e:
                   log(f"Error in check_database: {str(e)}")
 
@@ -409,4 +408,4 @@ spec:
           mountPath: /shared
       volumes:
       - name: shared-volume
-        emptyDir: {} 
+        emptyDir: {}

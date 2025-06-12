@@ -1,80 +1,54 @@
-# AI Virtual Assistant Backend
+# Backend Technical Reference
 
-This is the backend for the AI Virtual Assistant project, built with FastAPI, SQLAlchemy (async), and PostgreSQL.
+FastAPI backend for the AI Virtual Assistant project. For complete setup instructions, see the [Contributing Guide](../CONTRIBUTING.md).
 
-## Features
-- Modular CRUD REST API for users, servers, knowledge bases, virtual assistants, chat history, and guardrails
-- Async database access with SQLAlchemy and asyncpg
-- Environment variable support via `.env` file
-- Auto-generated interactive API docs (Swagger UI)
+## Quick API Access
 
-## Requirements
-- Python 3.9+
-- PostgreSQL database
-
-## Setup
-
-1. **Clone the repository and enter the backend directory:**
-   ```bash
-   cd backend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure the database connection:**
-   - Copy or edit the provided `.env` file:
-     ```env
-     DATABASE_URL=postgresql+asyncpg://myuser:mypassword@localhost:5432/ai_virtual_assistant
-     ```
-   - Make sure the PostgreSQL user and database exist and have the correct privileges.
-
-4. **Run the FastAPI server:**
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-   - Run this command from the project root (not from inside `backend/`).
-
-5. **Access the API docs:**
-   - Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser for the interactive Swagger UI.
+- **Interactive API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Alternative Docs**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
 ## Project Structure
+
 ```
 backend/
 ├── main.py               # FastAPI app entrypoint, includes routers
 ├── database.py           # Database connection and session
 ├── models.py             # SQLAlchemy models
 ├── schemas.py            # Pydantic schemas
-├── routes/               # API route modules (users, servers, etc)
+├── routes/               # API route modules
+│   ├── users.py          # User management endpoints
+│   ├── mcp_servers.py    # MCP server management
+│   ├── knowledge_bases.py # Knowledge base operations
+│   ├── virtual_assistants.py # Agent CRUD operations
+│   ├── chat_sessions.py  # Chat session management
+│   ├── tools.py          # Tool configuration endpoints
+│   └── guardrails.py     # Guardrail management
+├── utils/                # Utility modules
+│   └── logging_config.py # Centralized logging setup
 ├── requirements.txt      # Python dependencies
-├── .env                  # Environment variables (not committed)
-└── README.md             
+└── .env                  # Environment variables (not committed)
 ```
 
-## Useful Commands
-- **Create a user (psql):**
-  ```sql
-  CREATE ROLE myuser WITH LOGIN PASSWORD 'mypassword';
-  GRANT ALL PRIVILEGES ON DATABASE ai_virtual_assistant TO myuser;
-  GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
-  GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
-  ```
-- **Hash a password (Python):**
-  ```python
-  import bcrypt
-  password = b"mypassword"
-  hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-  print(hashed.decode())
-  ```
+## Developer Utilities
 
-## Testing
-- Use the Swagger UI or tools like `curl`, Postman, or httpie to interact with the API.
+### Database User Creation (PostgreSQL CLI)
+```sql
+CREATE ROLE myuser WITH LOGIN PASSWORD 'mypassword';
+GRANT ALL PRIVILEGES ON DATABASE ai_virtual_assistant TO myuser;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
+```
+
+### Password Hashing (Python)
+```python
+import bcrypt
+password = b"mypassword"
+hashed = bcrypt.hashpw(password, bcrypt.gensalt())
+print(hashed.decode())
+```
 
 ## Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string, loaded from `.env` automatically at startup.
 
----
-
-For questions or issues, please contact the maintainer.
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://user:pass@localhost:5432/dbname` |

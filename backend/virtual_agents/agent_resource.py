@@ -2,28 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Dict, Type, Union, Iterable, cast
-from typing_extensions import Literal
+from typing import Type, cast
 
 import httpx
-
-from .agent_model import VirtualAgent, VirtualAgentListResponse
-from llama_stack_client._wrappers import DataWrapper
-
-from llama_stack_client._types import NOT_GIVEN, Body, Query, Headers, NoneType, NotGiven
 from llama_stack_client._base_client import make_request_options
+from llama_stack_client._types import NOT_GIVEN, Body, Headers, NotGiven, Query
+from llama_stack_client._wrappers import DataWrapper
 from llama_stack_client.resources.agents import AgentsResource
 
-__all__ = ["VirtualAgentsResource"]
+from .agent_model import VirtualAgent, VirtualAgentListResponse
+from .session_resource import EnhancedSessionResource
 
-class VirtualAgentsResource(AgentsResource):
+__all__ = ["EnhancedAgentResource"]
 
+
+class EnhancedAgentResource(AgentsResource):
     def retrieve(
         self,
         agent_id: str,
         *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        # Use the following arguments if you need to pass additional
+        # parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined
+        # on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -37,14 +38,20 @@ class VirtualAgentsResource(AgentsResource):
 
           extra_body: Add additional JSON properties to the request
 
-          timeout: Override the client-level default timeout for this request, in seconds
+          timeout: Override the client-level default timeout for this request,
+                  in seconds
         """
         if not agent_id:
-            raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+            raise ValueError(
+                f"Expected a non-empty value for `agent_id` but received {agent_id!r}"
+            )
         return self._get(
             f"/v1/agents/{agent_id}",
             options=make_request_options(
-                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
             ),
             cast_to=VirtualAgent,
         )
@@ -52,8 +59,10 @@ class VirtualAgentsResource(AgentsResource):
     def list(
         self,
         *,
-        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
-        # The extra values given here take precedence over values defined on the client or passed to this method.
+        # Use the following arguments if you need to pass additional
+        # parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined
+        # on the client or passed to this method.
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -68,5 +77,11 @@ class VirtualAgentsResource(AgentsResource):
                 timeout=timeout,
                 post_parser=DataWrapper[VirtualAgentListResponse]._unwrapper,
             ),
-            cast_to=cast(Type[VirtualAgentListResponse], DataWrapper[VirtualAgentListResponse]),
+            cast_to=cast(
+                Type[VirtualAgentListResponse], DataWrapper[VirtualAgentListResponse]
+            ),
         )
+
+    @property
+    def session(self) -> EnhancedSessionResource:
+        return EnhancedSessionResource(self._client)

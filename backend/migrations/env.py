@@ -1,10 +1,11 @@
 import os
 from logging.config import fileConfig
-from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
+from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
+
+from models import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -17,29 +18,32 @@ if config.config_file_name is not None:
 
 # Get the DATABASE_URL from environment variable
 load_dotenv()
-db_url_from_env = os.getenv('DATABASE_URL')
+db_url_from_env = os.getenv("DATABASE_URL")
 
 if not db_url_from_env:
     raise ValueError(
         "DATABASE_URL environment variable is not set or is empty. "
         "Alembic requires this to connect to the database. "
-        "Please ensure it is defined in your environment (e.g., .env file, shell export)."
+        "Please ensure it is defined in your environment "
+        "(e.g., .env file, shell export)."
     )
 
 # If your DATABASE_URL is an async one (e.g., postgresql+asyncpg://)
 # Alembic typically uses a synchronous connection for migrations.
 # So, you might need to convert it.
 if db_url_from_env and db_url_from_env.startswith("postgresql+asyncpg://"):
-    db_url_from_env = db_url_from_env.replace("postgresql+asyncpg://", "postgresql://", 1)
+    db_url_from_env = db_url_from_env.replace(
+        "postgresql+asyncpg://", "postgresql://", 1
+    )
 
 
-config.set_main_option('sqlalchemy.url', db_url_from_env)
+config.set_main_option("sqlalchemy.url", db_url_from_env)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from models import Base
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -86,9 +90,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

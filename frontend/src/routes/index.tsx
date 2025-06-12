@@ -1,19 +1,19 @@
-import { AssistantChat } from '@/components/assistant-chat';
+import { Chat } from '@/components/chat';
 import { Page, PageSection } from '@patternfly/react-core';
 import { createFileRoute } from '@tanstack/react-router';
 import { Masthead } from '../components/masthead';
 
 export const Route = createFileRoute('/')({
-  component: Chat,
+  component: ChatPage,
 });
 
 const pageId = 'primary-app-container';
 
-function Chat() {
+function ChatPage() {
   return (
     <Page mainContainerId={pageId} masthead={<Masthead />}>
       <PageSection hasBodyWrapper={false}>
-        <AssistantChat />
+        <Chat />
       </PageSection>
     </Page>
   );

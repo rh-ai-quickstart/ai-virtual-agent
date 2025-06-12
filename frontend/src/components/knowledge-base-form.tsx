@@ -88,13 +88,9 @@ export function KnowledgeBaseForm({
     switch (fieldName) {
       case 'ACCESS_KEY_ID':
         if (!value.trim()) return 'Access Key ID is required';
-        if (value.length < 16) return 'Access Key ID must be at least 16 characters';
-        if (!/^[A-Z0-9]+$/.test(value))
-          return 'Access Key ID should contain only uppercase letters and numbers';
         return undefined;
       case 'SECRET_ACCESS_KEY':
         if (!value.trim()) return 'Secret Access Key is required';
-        if (value.length < 40) return 'Secret Access Key must be at least 40 characters';
         return undefined;
       case 'ENDPOINT_URL':
         if (!value.trim()) return 'Endpoint URL is required';
@@ -107,17 +103,6 @@ export function KnowledgeBaseForm({
         return undefined;
       case 'BUCKET_NAME':
         if (!value.trim()) return 'Bucket name is required';
-        if (value.length < 3 || value.length > 63) return 'Bucket name must be 3-63 characters';
-        if (!/^[a-z0-9.-]+$/.test(value))
-          return 'Bucket name can only contain lowercase letters, numbers, dots, and hyphens';
-        if (
-          value.startsWith('.') ||
-          value.endsWith('.') ||
-          value.startsWith('-') ||
-          value.endsWith('-')
-        ) {
-          return 'Bucket name cannot start or end with dots or hyphens';
-        }
         return undefined;
       case 'REGION':
         if (!value.trim()) return 'Region is required';

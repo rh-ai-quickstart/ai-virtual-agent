@@ -159,14 +159,14 @@ export default function VirtualAssistantChatPage(): JSX.Element {
         </select>
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
       </div>
-      
+
       <div className="flex-1 overflow-y-auto mb-4 space-y-4">
         {messages.map((message, index) => (
           <div
             key={index}
             className={`p-4 rounded-lg ${
-              message.role === 'user' 
-                ? 'bg-blue-100 ml-auto' 
+              message.role === 'user'
+                ? 'bg-blue-100 ml-auto'
                 : 'bg-gray-100'
             } max-w-[80%]`}
           >

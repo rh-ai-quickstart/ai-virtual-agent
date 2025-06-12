@@ -9,3 +9,8 @@ python-dotenv
 bcrypt
 pydantic[email]
 llama_stack_client==0.2.6
+vulture
+black
+isort
+pre-commit
+flake8

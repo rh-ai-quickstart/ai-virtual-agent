@@ -19,10 +19,10 @@ monitor:
       name: ingestion-pipeline-monitor
 
 llamastack:
-  baseUrl: "http://llamastack.rag-llama-demo.svc.cluster.local:8321"
+  baseUrl: "http://llamastack:8321"
 
 dsPipeline:
-  url: "https://ds-pipeline-dspa.rag-llama-demo.svc.cluster.local:8888"
+  url: "https://ds-pipeline-dspa:8888"
 
 securityContext:
-  runAsUser: 1000840000 
+  runAsUser: 1000840000

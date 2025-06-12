@@ -1,7 +1,9 @@
-from llama_stack_client import LlamaStackClient
 import os
+
 from dotenv import load_dotenv
-from ..virtual_agents.agent_resource import VirtualAgentsResource
+from llama_stack_client import LlamaStackClient
+
+from ..virtual_agents.agent_resource import EnhancedAgentResource
 
 load_dotenv()
 
@@ -11,4 +13,4 @@ client = LlamaStackClient(
     base_url=LLAMASTACK_URL,
 )
 
-client.agents = VirtualAgentsResource(client)
+client.agents = EnhancedAgentResource(client)

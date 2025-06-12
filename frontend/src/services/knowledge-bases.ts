@@ -2,7 +2,7 @@ import {
   KNOWLEDGE_BASES_API_ENDPOINT,
   LLAMA_STACK_KNOWLEDGE_BASES_API_ENDPOINT,
 } from '@/config/api';
-import { KnowledgeBase, KnowledgeBaseWithStatus } from '@/types';
+import { KnowledgeBase, KnowledgeBaseWithStatus, LSKnowledgeBase } from '@/types';
 import { mergeKnowledgeBasesWithStatus } from '@/utils/knowledge-base-status';
 
 export const fetchKnowledgeBases = async (): Promise<KnowledgeBase[]> => {
@@ -23,29 +23,6 @@ export const createKnowledgeBase = async (
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(newKnowledgeBase),
-  });
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
-  const data: unknown = await response.json();
-  return data as KnowledgeBase;
-};
-
-export interface UpdateKnowledgeBaseProps {
-  vectorDbName: string; // Changed to vector_db_name
-  knowledgeBaseProps: Omit<KnowledgeBase, 'created_at' | 'updated_at'>;
-}
-
-export const editKnowledgeBase = async ({
-  vectorDbName,
-  knowledgeBaseProps,
-}: UpdateKnowledgeBaseProps): Promise<KnowledgeBase> => {
-  const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT + vectorDbName, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(knowledgeBaseProps),
   });
   if (!response.ok) {
     throw new Error('Network response was not ok');
@@ -75,17 +52,11 @@ export const fetchKnowledgeBasesWithStatus = async (): Promise<KnowledgeBaseWith
   return mergeKnowledgeBasesWithStatus(dbKnowledgeBases, llamaStackKnowledgeBases);
 };
 
-async function fetchLlamaStackKnowledgeBases() {
+export async function fetchLlamaStackKnowledgeBases() {
   const response = await fetch(LLAMA_STACK_KNOWLEDGE_BASES_API_ENDPOINT);
   if (!response.ok) {
     throw new Error('Failed to fetch LlamaStack knowledge bases');
   }
   const data: unknown = await response.json();
-  return data as Array<{
-    kb_name: string;
-    provider_resource_id: string;
-    provider_id: string;
-    type: string;
-    embedding_model: string;
-  }>;
+  return data as Array<LSKnowledgeBase>;
 }

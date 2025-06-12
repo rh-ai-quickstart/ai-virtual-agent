@@ -1,17 +1,18 @@
+from typing import Any, Callable, List, Optional, Tuple, Union
+
 from llama_stack_client import Agent
-from llama_stack_client.lib.agents.react.agent import ReActAgent
-from typing import Optional, List, Union, Any, Tuple, Callable
 from llama_stack_client.lib.agents.agent import AgentConfig
-from llama_stack_client.lib.agents.tool_parser import ToolParser
 from llama_stack_client.lib.agents.client_tool import ClientTool
+from llama_stack_client.lib.agents.react.agent import ReActAgent
+from llama_stack_client.lib.agents.tool_parser import ToolParser
+from llama_stack_client.types import SamplingParams
 from llama_stack_client.types.agents.turn_create_params import Toolgroup
 from llama_stack_client.types.shared_params.agent_config import ToolConfig
-from llama_stack_client.types import SamplingParams
 
 
 class ExistingAgent(Agent):
-    """An extension of the Agent class that can be initialized with an existing agent_id."""
-    
+    """An extension of the Agent class with an existing agent_id."""
+
     def __init__(
         self,
         client,
@@ -39,14 +40,14 @@ class ExistingAgent(Agent):
         self.tool_parser = tool_parser
         self.sessions = []
         self.builtin_tools = {}
-        
+
         # Set the agent_id directly instead of calling initialize()
         self.agent_id = agent_id
 
 
 class ExistingReActAgent(ReActAgent):
-    """An extension of the ReActAgent class that can be initialized with an existing agent_id."""
-    
+    """An extension of the ReActAgent class with an existing agent_id."""
+
     def __init__(
         self,
         client,
@@ -74,6 +75,6 @@ class ExistingReActAgent(ReActAgent):
         self.tool_parser = tool_parser
         self.sessions = []
         self.builtin_tools = {}
-        
+
         # Set the agent_id directly instead of calling initialize()
         self.agent_id = agent_id

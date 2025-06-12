@@ -6,4 +6,4 @@ metadata:
     {{- include "ai-virtual-assistant.labels" . | nindent 4 }}
 data:
   schema.sql: |
-    {{ .Files.Get "files/schema.sql" | nindent 4 }} 
+    {{ .Files.Get "files/schema.sql" | nindent 4 }}

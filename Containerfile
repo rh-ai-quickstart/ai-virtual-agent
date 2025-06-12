@@ -18,7 +18,7 @@ ENV NODE_OPTIONS=--max-old-space-size=512
 
 RUN npm run build
 
-    
+
 # ---------- Backend Build ----------
 FROM registry.redhat.io/ubi9/python-311@sha256:fc669a67a0ef9016c3376b2851050580b3519affd5ec645d629fd52d2a8b8e4a
 
@@ -30,6 +30,7 @@ RUN dnf install -y nmap-ncat && dnf clean all
 
 # Copy backend and install dependencies
 COPY backend/ ./backend/
+COPY frontend/src/assets/ ./backend/public/assets
 COPY entrypoint.sh .
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

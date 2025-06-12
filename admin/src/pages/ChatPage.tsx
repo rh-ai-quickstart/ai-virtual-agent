@@ -203,8 +203,8 @@ export default function ChatPage(): JSX.Element {
           <div
             key={index}
             className={`p-4 rounded-lg ${
-              message.role === 'user' 
-                ? 'bg-blue-100 ml-auto' 
+              message.role === 'user'
+                ? 'bg-blue-100 ml-auto'
                 : 'bg-gray-100'
             } max-w-[80%]`}
           >

@@ -1,0 +1,50 @@
+# Pre-commit hooks for AI Virtual Assistant backend
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '^(backend/migrations/|migrations/)'
+      - id: end-of-file-fixer
+        exclude: '^(backend/migrations/|migrations/)'
+      - id: check-yaml
+        exclude: '^(backend/migrations/|migrations/|deploy/|../deploy/|../ingestion/|ingestion/)'
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3.10
+        exclude: '^(backend/migrations/|migrations/)'
+
+  - repo: https://github.com/pycqa/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+        exclude: '^(backend/migrations/|migrations/)'
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.2.0
+    hooks:
+      - id: flake8
+        exclude: '^(backend/migrations/|migrations/|deploy/)'
+        args:
+          - --max-line-length=88
+          - --extend-ignore=E203,W503
+
+  - repo: local
+    hooks:
+      - id: vulture
+        name: vulture
+        entry: vulture
+        language: system
+        types: [python]
+        exclude: '^(backend/migrations/|migrations/|deploy/)'
+        args: [--min-confidence=80]

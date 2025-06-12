@@ -16,6 +16,7 @@ MINIO_USER ?= minio_rag_user
 MINIO_PASSWORD ?= minio_rag_password
 HF_TOKEN ?= $(shell bash -c 'read -r -p "Enter Hugging Face Token: " HF_TOKEN; echo $$HF_TOKEN')
 AI_VIRTUAL_ASSISTANT_CHART := ai-virtual-assistant
+VECTORDB_INGESTION_MONIFTOR_CHART := vectordb-ingestion-monitor
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
 
 #ingestion pipeline configuration
@@ -115,11 +116,17 @@ install: namespace depend
 	@oc rollout status deploy/llamastack
 	@echo "$(AI_VIRTUAL_ASSISTANT_CHART) installed successfully"
 
+	@echo "Installing $(VECTORDB_INGESTION_MONIFTOR_CHART) helm chart"
+	@helm upgrade --install vectordb-ingestion-monitor vectordb-ingestion-monitor -n $(NAMESPACE)
+	@echo "$(VECTORDB_INGESTION_MONIFTOR_CHART) installed successfully"
+
 # Uninstall the deployment and clean up
 .PHONY: uninstall
 uninstall:
 	@echo "Uninstalling $(AI_VIRTUAL_ASSISTANT_CHART) helm chart"
 	@helm uninstall $(AI_VIRTUAL_ASSISTANT_CHART)
+	@echo "Uninstalling $(VECTORDB_INGESTION_MONIFTOR_CHART) helm chart"
+	@helm uninstall $(VECTORDB_INGESTION_MONIFTOR_CHART)
 	@echo "Removing pgvector and minio PVCs from $(NAMESPACE)"
 	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|minio)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
 	@echo "Deleting remaining pods in namespace $(NAMESPACE)"
