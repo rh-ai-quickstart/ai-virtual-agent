@@ -192,9 +192,21 @@ llama-stack:
 #       enabled: true
 #       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
 
+# MCP DBStore configuration
+mcp-dbstore:
+  enabled: true
+  mcpServer:
+    enabled: true
+  postgresql:
+    enabled: true
+  route:
+    enabled: true
+
 # llama-stack:
 #   secrets:
 #     TAVILY_SEARCH_API_KEY: "api-key"
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
+#     mcp-dbstore:
+#       uri: http://mcp-dbstore-mcp-server:8002/sse

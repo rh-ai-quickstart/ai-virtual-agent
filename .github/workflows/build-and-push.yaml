@@ -16,6 +16,9 @@ jobs:
           - name: ai-virtual-assistant
             context: .
             chart: deploy/helm/ai-virtual-assistant/Chart.yaml
+          - name: mcp_dbstore
+            context: mcpservers/mcp_dbstore
+            chart: deploy/helm/mcp-dbstore/Chart.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,5 +44,6 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.context }}/Containerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: quay.io/ecosystem-appeng/${{ matrix.name }}:${{ steps.version.outputs.tag }}
