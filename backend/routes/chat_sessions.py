@@ -20,11 +20,11 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from llama_stack_client.types.agents.session import Session
 from pydantic import BaseModel
 
-from ..api.llamastack import client
+from ..api.llamastack import get_client_from_request
 from ..virtual_agents.agent_resource import EnhancedAgentResource
 from ..virtual_agents.session_resource import EnhancedSessionResource
 
@@ -47,7 +47,9 @@ class CreateSessionRequest(BaseModel):
 
 
 @router.get("/")
-async def get_chat_sessions(agent_id: str, limit: int = 50) -> List[dict]:
+async def get_chat_sessions(
+    agent_id: str, request: Request, limit: int = 50
+) -> List[dict]:
     """
     Get a list of chat sessions for a specific agent from LlamaStack.
 
@@ -74,11 +76,12 @@ async def get_chat_sessions(agent_id: str, limit: int = 50) -> List[dict]:
         log.info(f"Attempting to list sessions for agent {agent_id}")
 
         # Get the enhanced session resource
+        client = get_client_from_request(request)
         session_resource: EnhancedSessionResource = client.agents.session
 
         # Call the enhanced list method - this now returns List[dict]
         # instead of List[Session]
-        sessions_data: List[dict] = session_resource.list(agent_id=agent_id)
+        sessions_data: List[dict] = await session_resource.list(agent_id=agent_id)
 
         log.info(f"Successfully retrieved {len(sessions_data)} sessions")
 
@@ -86,7 +89,7 @@ async def get_chat_sessions(agent_id: str, limit: int = 50) -> List[dict]:
         agent_name = "Unknown Agent"
         try:
             agentResource: EnhancedAgentResource = client.agents
-            agent = agentResource.retrieve(agent_id=agent_id)
+            agent = await agentResource.retrieve(agent_id=agent_id)
             agent_name = get_agent_display_name(agent)
         except Exception as e:
             log.warning(f"Could not get agent info: {e}")
@@ -146,7 +149,7 @@ def get_agent_display_name(agent) -> str:
 
 
 @router.get("/{session_id}")
-async def get_chat_session(session_id: str, agent_id: str) -> dict:
+async def get_chat_session(session_id: str, agent_id: str, request: Request) -> dict:
     """
     Get detailed information for a specific chat session including message history.
 
@@ -175,9 +178,10 @@ async def get_chat_session(session_id: str, agent_id: str) -> dict:
         log.info(f"Fetching session {session_id} for agent {agent_id}")
 
         # Verify agent exists
+        client = get_client_from_request(request)
         try:
             agentResource: EnhancedAgentResource = client.agents
-            agent = agentResource.retrieve(agent_id=agent_id)
+            agent = await agentResource.retrieve(agent_id=agent_id)
         except Exception as e:
             log.error(f"Agent {agent_id} not found: {str(e)}")
             raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
@@ -185,7 +189,7 @@ async def get_chat_session(session_id: str, agent_id: str) -> dict:
         # Get session history from LlamaStack
         try:
             session_resource: EnhancedSessionResource = client.agents.session
-            session: Session = session_resource.retrieve(
+            session: Session = await session_resource.retrieve(
                 agent_id=agent_id, session_id=session_id
             )
             log.info(f"Successfully retrieved session: {session_id}")
@@ -262,7 +266,7 @@ async def get_chat_session(session_id: str, agent_id: str) -> dict:
 
 
 @router.delete("/{session_id}")
-async def delete_chat_session(session_id: str, agent_id: str) -> dict:
+async def delete_chat_session(session_id: str, agent_id: str, request: Request) -> dict:
     """
     Delete a chat session from LlamaStack.
 
@@ -281,8 +285,9 @@ async def delete_chat_session(session_id: str, agent_id: str) -> dict:
     """
     try:
         # Verify agent exists
+        client = get_client_from_request(request)
         try:
-            agent = client.agents.retrieve(agent_id=agent_id)
+            agent = await client.agents.retrieve(agent_id=agent_id)
             log.info(f"Found agent: {agent.agent_id}")
         except Exception as e:
             log.error(f"Agent {agent_id} not found: {str(e)}")
@@ -291,7 +296,9 @@ async def delete_chat_session(session_id: str, agent_id: str) -> dict:
         # Delete session from LlamaStack using enhanced session resource
         try:
             session_resource: EnhancedSessionResource = client.agents.session
-            result = session_resource.delete(session_id=session_id, agent_id=agent_id)
+            result = await session_resource.delete(
+                session_id=session_id, agent_id=agent_id
+            )
             log.info(f"Successfully deleted session {session_id} for agent {agent_id}")
             return result
         except HTTPException:
@@ -314,7 +321,9 @@ async def delete_chat_session(session_id: str, agent_id: str) -> dict:
 
 
 @router.post("/")
-async def create_chat_session(request: CreateSessionRequest) -> dict:
+async def create_chat_session(
+    sessionRequest: CreateSessionRequest, request: Request
+) -> dict:
     """
     Create a new chat session for an agent using LlamaStack.
 
@@ -342,18 +351,21 @@ async def create_chat_session(request: CreateSessionRequest) -> dict:
     """
     try:
         # Verify agent exists in LlamaStack
+        client = get_client_from_request(request)
         try:
-            agent = client.agents.retrieve(agent_id=request.agent_id)
+            agent = await client.agents.retrieve(agent_id=sessionRequest.agent_id)
             log.info(f"Found agent: {agent.agent_id}")
         except Exception as e:
-            log.error(f"Agent {request.agent_id} not found in LlamaStack: {str(e)}")
+            log.error(
+                f"Agent {sessionRequest.agent_id} not found in LlamaStack: {str(e)}"
+            )
             raise HTTPException(
-                status_code=404, detail=f"Agent {request.agent_id} not found"
+                status_code=404, detail=f"Agent {sessionRequest.agent_id} not found"
             )
 
         # Generate unique session name
-        if request.session_name:
-            session_name = request.session_name
+        if sessionRequest.session_name:
+            session_name = sessionRequest.session_name
         else:
             # Generate unique name with timestamp and random component
             import random
@@ -365,8 +377,8 @@ async def create_chat_session(request: CreateSessionRequest) -> dict:
             )
             session_name = f"Chat-{timestamp}-{random_suffix}"
         try:
-            session = client.agents.session.create(
-                agent_id=request.agent_id, session_name=session_name
+            session = await client.agents.session.create(
+                agent_id=sessionRequest.agent_id, session_name=session_name
             )
             session_id = session.session_id
             log.info(f"Created LlamaStack session: {session_id}")
@@ -399,7 +411,7 @@ async def create_chat_session(request: CreateSessionRequest) -> dict:
             "id": session_id,
             "title": session_name,
             "agent_name": agent_name,
-            "agent_id": request.agent_id,
+            "agent_id": sessionRequest.agent_id,
             "messages": [],
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
@@ -415,7 +427,7 @@ async def create_chat_session(request: CreateSessionRequest) -> dict:
 
 
 @router.get("/debug/{agent_id}")
-async def debug_session_listing(agent_id: str):
+async def debug_session_listing(agent_id: str, request: Request):
     """
     Debug endpoint for troubleshooting session listing functionality.
 
@@ -443,8 +455,9 @@ async def debug_session_listing(agent_id: str):
         log.info(f"=== DEBUG SESSION LISTING FOR AGENT {agent_id} ===")
 
         # Test 1: Check if agent exists
+        client = get_client_from_request(request)
         try:
-            agent = client.agents.retrieve(agent_id=agent_id)
+            agent = await client.agents.retrieve(agent_id=agent_id)
             log.info(f"✅ Agent exists: {agent.agent_id}")
         except Exception as e:
             log.error(f"❌ Agent not found: {e}")
@@ -460,7 +473,7 @@ async def debug_session_listing(agent_id: str):
 
         # Test 3: Try to call list method
         try:
-            sessions_response = client.agents.session.list(agent_id=agent_id)
+            sessions_response = await client.agents.session.list(agent_id=agent_id)
             log.info("✅ List method called successfully")
             log.info(f"Response type: {type(sessions_response)}")
             log.info(f"Response value: {sessions_response}")

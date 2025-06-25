@@ -53,25 +53,29 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def seed_admin_user():
+def seed_user(username: str, email: str, role: RoleEnum):
+    session = Session(bind=context.get_bind())
+    if session.query(User).filter(User.username == username).count() > 0:
+        print("'" + username + "' user already exists")
+    elif session.query(User).filter(User.email == email).count() > 0:
+        print("user with '" + email + "' email address already exists")
+    else:
+        user = User(
+            username=username,
+            email=email,
+            role=role,
+        )
+        session.add(user)
+        session.commit()
+        print("'" + username + "' user successfully seeded as a " + str(role))
+
+
+def seed_admin_users():
+    seed_user("ingestion-pipeline", "ingestion-pipeline@change.me", RoleEnum.admin)
     admin_username = os.getenv("ADMIN_USERNAME")
     if admin_username is not None:
         admin_email = os.getenv("ADMIN_EMAIL", "admin@change.me")
-
-        session = Session(bind=context.get_bind())
-        if session.query(User).filter(User.username == admin_username).count() > 0:
-            print("'" + admin_username + "' user already exists")
-        elif session.query(User).filter(User.email == admin_email).count() > 0:
-            print("user with '" + admin_email + "' email address already exists")
-        else:
-            admin_user = User(
-                username=admin_username,
-                email=admin_email,
-                role=RoleEnum.admin,
-            )
-            session.add(admin_user)
-            session.commit()
-            print("admin user '" + admin_username + "' successfully seeded")
+        seed_user(admin_username, admin_email, RoleEnum.admin)
 
 
 def run_migrations_offline() -> None:
@@ -96,7 +100,7 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
-        seed_admin_user()
+        seed_admin_users()
 
 
 def run_migrations_online() -> None:
@@ -117,7 +121,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
-            seed_admin_user()
+            seed_admin_users()
 
 
 if context.is_offline_mode():

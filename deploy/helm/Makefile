@@ -31,6 +31,7 @@ REGION ?= us-east-1
 # PDF file path variable for upload-pdf target
 PDF_DIR = ../../notebooks
 S3_TEMPLATE={"access_key_id":"$(1)","secret_access_key":"$(2)","bucket_name":"$(3)","endpoint_url":"$(4)","region":"$(5)"}
+AUTH_INGESTION_PIPELINE_USER ?= ingestion-pipeline
 
 helm_pgvector_args = \
     --set pgvector.secret.user=$(POSTGRES_USER) \
@@ -59,7 +60,8 @@ helm_llama_stack_args = \
 
 helm_ingestion_args = \
 	--set configure-pipeline.notebook.create=false \
-	--set ingestion-pipeline.defaultPipeline.enabled=false
+	--set ingestion-pipeline.defaultPipeline.enabled=false \
+	--set ingestion-pipeline.authUser=$(AUTH_INGESTION_PIPELINE_USER)
 
 helm_seed_admin_user_args = \
     $(if $(ADMIN_USERNAME),--set seed.admin_user.username='$(ADMIN_USERNAME)',) \

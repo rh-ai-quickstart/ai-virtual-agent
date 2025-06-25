@@ -20,7 +20,7 @@ RUN npm run build
 
 
 # ---------- Backend Build ----------
-FROM registry.access.redhat.com/ubi9/python-311:latest
+FROM registry.access.redhat.com/ubi9/python-312:latest
 
 USER root
 # Set working directory

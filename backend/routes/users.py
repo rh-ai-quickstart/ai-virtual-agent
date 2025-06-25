@@ -28,6 +28,24 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
+    username = headers.get("X-Forwarded-User")
+    email = headers.get("X-Forwarded-Email")
+    if not username and not email:
+        username = headers.get("x-forwarded-user")
+        email = headers.get("x-forwarded-email")
+        if not username and not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+    result = await db.execute(
+        select(models.User).where(
+            (models.User.username == username) | (models.User.email == email)
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 # profile endpoint must be declared first in order to function within
 # the /api/users context
 @router.get("/profile", response_model=schemas.UserRead)
@@ -49,18 +67,7 @@ async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
         HTTPException: 401 if the user is not authorized
         HTTPException: 403 if the user is not found
     """
-    username = request.headers.get("X-Forwarded-User")
-    email = request.headers.get("X-Forwarded-Email")
-    if not username and not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
-    result = await db.execute(
-        select(models.User).where(
-            (models.User.username == username) | (models.User.email == email)
-        )
-    )
-    user = result.scalar_one_or_none()
+    user = await get_user_from_headers(request.headers, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="User not found"

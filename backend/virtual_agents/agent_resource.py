@@ -8,7 +8,7 @@ import httpx
 from llama_stack_client._base_client import make_request_options
 from llama_stack_client._types import NOT_GIVEN, Body, Headers, NotGiven, Query
 from llama_stack_client._wrappers import DataWrapper
-from llama_stack_client.resources.agents import AgentsResource
+from llama_stack_client.resources.agents import AsyncAgentsResource
 
 from .agent_model import VirtualAgent, VirtualAgentListResponse
 from .session_resource import EnhancedSessionResource
@@ -16,8 +16,8 @@ from .session_resource import EnhancedSessionResource
 __all__ = ["EnhancedAgentResource"]
 
 
-class EnhancedAgentResource(AgentsResource):
-    def retrieve(
+class EnhancedAgentResource(AsyncAgentsResource):
+    async def retrieve(
         self,
         agent_id: str,
         *,
@@ -45,7 +45,7 @@ class EnhancedAgentResource(AgentsResource):
             raise ValueError(
                 f"Expected a non-empty value for `agent_id` but received {agent_id!r}"
             )
-        return self._get(
+        return await self._get(
             f"/v1/agents/{agent_id}",
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -56,7 +56,7 @@ class EnhancedAgentResource(AgentsResource):
             cast_to=VirtualAgent,
         )
 
-    def list(
+    async def list(
         self,
         *,
         # Use the following arguments if you need to pass additional
@@ -68,7 +68,7 @@ class EnhancedAgentResource(AgentsResource):
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
     ) -> VirtualAgentListResponse:
-        return self._get(
+        return await self._get(
             "/v1/agents",
             options=make_request_options(
                 extra_headers=extra_headers,

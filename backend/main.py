@@ -7,7 +7,10 @@ The app provides a complete REST API for managing virtual assistants,
 knowledge bases, tools, and chat interactions.
 """
 
+import asyncio
 import sys
+import time
+from contextlib import asynccontextmanager
 
 import httpx
 from dotenv import load_dotenv
@@ -15,6 +18,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from kubernetes import client, config
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import AsyncSessionLocal
@@ -27,6 +31,7 @@ from .routes import (
     model_servers,
     tools,
     users,
+    validate,
     virtual_assistants,
 )
 from .utils.logging_config import get_logger, setup_logging
@@ -37,7 +42,122 @@ load_dotenv()
 setup_logging(level="INFO")
 logger = get_logger(__name__)
 
-app = FastAPI()
+
+def get_incluster_namespace() -> str:
+    """Get the current Kubernetes namespace."""
+    try:
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace") as file:
+            return file.read().strip()
+    except Exception:
+        return "default"
+
+
+def wait_for_service_ready(
+    service_name: str,
+    namespace: str,
+    timeout_seconds: int = 300,
+    interval_seconds: int = 5,
+) -> bool:
+    """Wait for a Kubernetes service to be ready."""
+    start_time = time.time()
+
+    while time.time() - start_time < timeout_seconds:
+        try:
+            config.load_incluster_config()
+            core_v1 = client.CoreV1Api()
+            endpoints = core_v1.read_namespaced_endpoints(
+                name=service_name, namespace=namespace
+            )
+
+            if endpoints.subsets:
+                for subset in endpoints.subsets:
+                    if subset.addresses:
+                        logger.info(
+                            f"Service '{service_name}' in namespace \
+                                '{namespace}' is ready."
+                        )
+                        return True
+
+        except client.ApiException as e:
+            if e.status != 404:  # Ignore 404 if service not yet created
+                logger.error(f"Error checking endpoints: {e}")
+
+        logger.info(
+            f"Waiting for service '{service_name}' in namespace \
+                '{namespace}' to be ready..."
+        )
+        time.sleep(interval_seconds)
+
+    logger.warning(
+        f"Timeout waiting for service '{service_name}' in namespace '{namespace}'."
+    )
+    return False
+
+
+async def sync_all_services():
+    """Sync all external services (MCP servers, model servers, knowledge bases)."""
+    sync_operations = [
+        ("MCP servers", mcp_servers.sync_mcp_servers),
+        ("Model servers", model_servers.sync_model_servers),
+        ("Knowledge bases", knowledge_bases.sync_knowledge_bases),
+    ]
+
+    for service_name, sync_func in sync_operations:
+        try:
+            async with AsyncSessionLocal() as session:
+                await sync_func(session)
+            logger.info(f"Successfully synced {service_name}")
+        except Exception as e:
+            logger.error(f"Failed to sync {service_name}: {str(e)}")
+
+
+async def startup_tasks():
+    """Run all startup tasks after the server is ready."""
+    logger.info("Starting post-startup tasks...")
+
+    service_name = "ai-virtual-assistant"
+    namespace = get_incluster_namespace()
+
+    if wait_for_service_ready(service_name, namespace):
+        logger.info("Service is ready, proceeding with sync operations.")
+        await sync_all_services()
+        logger.info("All startup tasks completed successfully!")
+    else:
+        logger.error("Service did not become ready within the timeout.")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("FastAPI app is starting up...")
+
+    # Schedule startup tasks to run after server is ready
+    async def run_startup_tasks():
+        # Wait a bit for the server to finish starting up
+        await asyncio.sleep(3)
+        logger.info("Running post-startup tasks...")
+        try:
+            await startup_tasks()
+        except Exception as e:
+            logger.error(f"Error running post-startup tasks: {e}")
+
+    # Create background task for startup
+    task = asyncio.create_task(run_startup_tasks())
+    logger.info("Startup event completed, server will start accepting connections")
+
+    yield
+
+    # Shutdown
+    logger.info("FastAPI app is shutting down...")
+    # Cancel the background task if it's still running
+    if not task.done():
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
 
 origins = ["*"]  # Update this with the frontend domain in production
 
@@ -49,34 +169,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-async def on_startup():
-    """
-    Initialize application on startup by syncing external resources.
-
-    Synchronizes MCP servers, model servers, and knowledge bases with
-    their external sources (LlamaStack, etc.) to ensure consistency.
-    """
-    try:
-        async with AsyncSessionLocal() as session:
-            await mcp_servers.sync_mcp_servers(session)
-    except Exception as e:
-        logger.error(f"Failed to sync MCP servers on startup: {str(e)}")
-
-    async with AsyncSessionLocal() as session:
-        try:
-            await model_servers.sync_model_servers(session)
-        except Exception as e:
-            logger.error(f"Failed to sync model servers on startup: {str(e)}")
-
-    async with AsyncSessionLocal() as session:
-        try:
-            await knowledge_bases.sync_knowledge_bases(session)
-        except Exception as e:
-            logger.error(f"Failed to sync knowledge bases on startup: {str(e)}")
-
-
+app.include_router(validate.router)
 app.include_router(users.router, prefix="/api")
 app.include_router(mcp_servers.router, prefix="/api")
 app.include_router(tools.router, prefix="/api")
@@ -88,7 +181,6 @@ app.include_router(llama_stack.router, prefix="/api")
 app.include_router(chat_sessions.router, prefix="/api")
 
 
-# Serve React App (frontend)
 class SPAStaticFiles(StaticFiles):
     """
     Custom static file handler for Single Page Application routing.

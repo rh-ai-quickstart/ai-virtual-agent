@@ -1,11 +1,15 @@
+import asyncio
 import enum
 import json
 import os
+from typing import List
 
+from fastapi import Request
 from llama_stack_client.lib.agents.react.tool_parser import ReActOutput
+from llama_stack_client.types.shared_params.agent_config import AgentConfig, Toolgroup
 
-from ..agents import ExistingAgent, ExistingReActAgent
-from ..api.llamastack import client
+from ..agents import ExistingAsyncAgent, ExistingReActAgent
+from ..api.llamastack import get_client_from_request
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -31,14 +35,15 @@ class Chat:
                 session_id, and prompt.
     """
 
-    def __init__(self, logger):
+    def __init__(self, logger, request: Request):
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
         self.log = logger
+        self.request = request
 
     def _get_client(self):
-        return client
+        return get_client_from_request(self.request)
 
-    def _get_agent_config(self, agent_id: str):
+    async def _get_agent_config(self, agent_id: str) -> AgentConfig | None:
         """
         Retrieve agent configuration from LlamaStack.
 
@@ -49,13 +54,13 @@ class Chat:
             Agent configuration object or None if not found
         """
         try:
-            agent_config = self._get_client().agents.retrieve(agent_id=agent_id)
-            return agent_config
+            agent = await self._get_client().agents.retrieve(agent_id=agent_id)
+            return agent.agent_config
         except Exception as e:
             self.log.error(f"Error retrieving agent config for {agent_id}: {e}")
             return None
 
-    def _get_tools_for_agent(self, agent_id: str):
+    async def _get_toolgroups_for_agent(self, agent_id: str) -> List[Toolgroup]:
         """
         Retrieve tools configuration for an agent from LlamaStack.
 
@@ -66,19 +71,15 @@ class Chat:
             List of tools available to the agent
         """
         try:
-            agent_config = self._get_agent_config(agent_id)
-            if (
-                agent_config
-                and hasattr(agent_config, "tool_config")
-                and agent_config.tool_config
-            ):
-                return agent_config.tool_config.tools
+            agent_config = await self._get_agent_config(agent_id)
+            if agent_config and agent_config["toolgroups"]:
+                return agent_config["toolgroups"]
             return []
         except Exception as e:
             self.log.error(f"Error retrieving tools for agent {agent_id}: {e}")
             return []
 
-    def _get_model_for_agent(self, agent_id: str):
+    async def _get_model_for_agent(self, agent_id: str) -> str:
         """
         Retrieve model configuration for an agent from LlamaStack.
 
@@ -89,11 +90,11 @@ class Chat:
             Model identifier string, defaults to llama-3.1-8b-instruct if not found
         """
         try:
-            agent_config = self._get_agent_config(agent_id)
+            agent_config = await self._get_agent_config(agent_id)
             if agent_config and hasattr(agent_config, "model"):
                 return agent_config.model
             # Fallback to default model if not found
-            models = self._get_client().models.list()
+            models = await self._get_client().models.list()
             model_list = [
                 model.identifier for model in models if model.api_model_type == "llm"
             ]
@@ -102,15 +103,15 @@ class Chat:
             self.log.error(f"Error retrieving model for agent {agent_id}: {e}")
             return "llama-3.1-8b-instruct"
 
-    def _create_agent_with_existing_id(self, agent_id: str, session_id: str):
+    async def _create_agent_with_existing_id(self, agent_id: str):
         """Create an agent instance using an existing agent_id from LlamaStack."""
         try:
-            agent_config = self._get_agent_config(agent_id)
+            agent_config = await self._get_agent_config(agent_id)
             if not agent_config:
                 raise Exception(f"Agent {agent_id} not found")
 
-            model = self._get_model_for_agent(agent_id)
-            tools = self._get_tools_for_agent(agent_id)
+            model = await self._get_model_for_agent(agent_id)
+            toolgroups = await self._get_toolgroups_for_agent(agent_id)
 
             # Determine agent type from config (default to REGULAR)
             agent_type = AgentType.REGULAR
@@ -121,7 +122,7 @@ class Chat:
                     self._get_client(),
                     agent_id=agent_id,
                     model=model,
-                    tools=tools,
+                    tools=toolgroups,
                     response_format={
                         "type": "json_schema",
                         "json_schema": ReActOutput.model_json_schema(),
@@ -129,7 +130,7 @@ class Chat:
                     sampling_params={"strategy": {"type": "greedy"}, "max_tokens": 512},
                 )
             else:
-                return ExistingAgent(
+                return ExistingAsyncAgent(
                     self._get_client(),
                     agent_id=agent_id,
                     model=model,
@@ -137,7 +138,7 @@ class Chat:
                         "You are a helpful assistant. When you use a tool "
                         "always respond with a summary of the result."
                     ),
-                    tools=tools,
+                    tools=toolgroups,
                     sampling_params={
                         "strategy": {"type": "greedy"},
                         "max_tokens": 512,
@@ -488,7 +489,8 @@ class Chat:
                             yield json.dumps(
                                 {
                                     "type": "text",
-                                    "content": "No tool_calls present in step_details",
+                                    "content": "No tool_calls present in \
+                                        step_details",
                                 }
                             )
             else:
@@ -512,7 +514,8 @@ class Chat:
         """
         try:
             # Create agent instance using existing agent_id
-            agent = self._create_agent_with_existing_id(agent_id, session_id)
+            agent = asyncio.run(self._create_agent_with_existing_id(agent_id))
+
             self.log.info(f"Using agent: {agent_id} with session: {session_id}")
 
             # Get existing messages from the session
@@ -520,12 +523,19 @@ class Chat:
             # maintain local state
             messages = [{"role": "user", "content": prompt}]
 
-            # Create turn with LlamaStack
-            turn_response = agent.create_turn(
-                session_id=session_id,
-                messages=messages,
-                stream=True,
-            )
+            async def async_iterator_to_iterator():
+                # Create turn with LlamaStack
+                response = await agent.create_turn(
+                    session_id=session_id,
+                    messages=messages,
+                    stream=True,
+                )
+                result_list = []
+                async for item in response:
+                    result_list.append(item)
+                return result_list
+
+            turn_response = asyncio.run(async_iterator_to_iterator())
 
             # Determine agent type (defaulting to REGULAR for now)
             agent_type = AgentType.REGULAR

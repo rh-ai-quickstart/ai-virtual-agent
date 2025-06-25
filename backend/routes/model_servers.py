@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from .. import models, schemas
-from ..api.llamastack import client
+from ..api.llamastack import sync_client
 from ..database import get_db
 from ..utils.logging_config import get_logger
 
@@ -217,7 +217,7 @@ async def sync_model_servers(db: AsyncSession):
         logger.info("Starting model server sync")
         logger.debug("Fetching models from LlamaStack")
         try:
-            response = client.models.list()
+            response = await sync_client.models.list()
 
             if isinstance(response, list):
                 models = [item.__dict__ for item in response]

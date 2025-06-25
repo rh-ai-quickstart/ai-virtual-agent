@@ -21,7 +21,7 @@ import json
 import logging
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert
@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 
 from .. import models
-from ..api.llamastack import client
+from ..api.llamastack import get_client_from_request
 from .chat import Chat
 from .virtual_assistants import read_virtual_assistant
 
@@ -75,7 +75,7 @@ router = APIRouter(prefix="/llama_stack", tags=["llama_stack"])
 
 # Initialize LlamaStack client
 @router.get("/llms", response_model=List[Dict[str, Any]])
-async def get_llms():
+async def get_llms(request: Request):
     """
     Retrieve all available Large Language Models from LlamaStack.
 
@@ -92,10 +92,11 @@ async def get_llms():
     Raises:
         HTTPException: 502 if LlamaStack is unreachable, 500 for other errors
     """
+    client = get_client_from_request(request)
     try:
         log.info(f"Attempting to fetch models from LlamaStack at {client.base_url}")
         try:
-            models = client.models.list()
+            models = await client.models.list()
             log.info(f"Received response from LlamaStack: {models}")
         except Exception as client_error:
             log.error(f"Error calling LlamaStack API: {str(client_error)}")
@@ -136,7 +137,7 @@ async def get_llms():
 
 
 @router.get("/knowledge_bases", response_model=List[Dict[str, Any]])
-async def get_knowledge_bases():
+async def get_knowledge_bases(request: Request):
     """
     Retrieve all available knowledge bases from LlamaStack vector databases.
 
@@ -152,8 +153,9 @@ async def get_knowledge_bases():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        kbs = client.vector_dbs.list()
+        kbs = await client.vector_dbs.list()
         return [
             {
                 "kb_name": str(kb.identifier),
@@ -169,7 +171,7 @@ async def get_knowledge_bases():
 
 
 @router.get("/tools", response_model=List[Dict[str, Any]])
-async def get_tools():
+async def get_tools(request: Request):
     """
     Retrieve all available MCP (Model Context Protocol) servers from LlamaStack.
 
@@ -186,8 +188,9 @@ async def get_tools():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        servers = client.toolgroups.list()
+        servers = await client.toolgroups.list()
         return [
             {
                 "id": str(server.identifier),
@@ -202,7 +205,7 @@ async def get_tools():
 
 
 @router.get("/safety_models", response_model=List[Dict[str, Any]])
-async def get_safety_models():
+async def get_safety_models(request: Request):
     """
     Retrieve all available safety models from LlamaStack.
 
@@ -219,8 +222,9 @@ async def get_safety_models():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        models = client.models.list()
+        models = await client.models.list()
         safety_models = []
         for model in models:
             if model.model_type == "safety":
@@ -236,7 +240,7 @@ async def get_safety_models():
 
 
 @router.get("/embedding_models", response_model=List[Dict[str, Any]])
-async def get_embedding_models():
+async def get_embedding_models(request: Request):
     """
     Retrieve all available embedding models from LlamaStack.
 
@@ -253,8 +257,9 @@ async def get_embedding_models():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        models = client.models.list()
+        models = await client.models.list()
         embedding_models = []
         for model in models:
             if model.model_type == "embedding":
@@ -270,7 +275,7 @@ async def get_embedding_models():
 
 
 @router.get("/shields", response_model=List[Dict[str, Any]])
-async def get_shields():
+async def get_shields(request: Request):
     """
     Retrieve all available safety shields from LlamaStack.
 
@@ -287,8 +292,9 @@ async def get_shields():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        shields = client.shields.list()
+        shields = await client.shields.list()
         shields_list = []
         for shield in shields:
             shield = {
@@ -303,7 +309,7 @@ async def get_shields():
 
 
 @router.get("/providers", response_model=List[Dict[str, Any]])
-async def get_providers():
+async def get_providers(request: Request):
     """
     Retrieve all available providers from LlamaStack.
 
@@ -321,8 +327,9 @@ async def get_providers():
     Raises:
         HTTPException: If LlamaStack communication fails
     """
+    client = get_client_from_request(request)
     try:
-        providers = client.providers.list()
+        providers = await client.providers.list()
         return [
             {
                 "provider_id": str(provider.provider_id),
@@ -359,8 +366,9 @@ class ChatRequest(BaseModel):
 
 @router.post("/chat")
 async def chat(
-    request: ChatRequest,
+    chatRequest: ChatRequest,
     background_task: BackgroundTasks,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -375,7 +383,7 @@ async def chat(
     saved asynchronously to avoid blocking the chat response.
 
     Args:
-        request: ChatRequest containing assistant ID, messages, and session info
+        chatRequest: ChatRequest containing assistant ID, messages, and session info
         background_task: FastAPI background tasks for async metadata saving
         db: Database session for metadata operations
 
@@ -388,27 +396,31 @@ async def chat(
             - 400 if session ID is missing
             - 500 for internal server errors during chat processing
     """
+    client = get_client_from_request(request)
     try:
-        log.info(f"Received request: {request.model_dump()}")
+        log.info(f"Received chatRequest: {chatRequest.model_dump()}")
 
         # Get the agent directly from LlamaStack
         try:
-            agent = client.agents.retrieve(agent_id=request.virtualAssistantId)
+            agent = await client.agents.retrieve(
+                agent_id=chatRequest.virtualAssistantId
+            )
             log.info(f"Found agent: {agent.agent_id}")
         except Exception as e:
             log.error(
-                f"Agent {request.virtualAssistantId} not found in LlamaStack: {str(e)}"
+                f"Agent {chatRequest.virtualAssistantId} not found \
+                    in LlamaStack: {str(e)}"
             )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Virtual assistant {request.virtualAssistantId} not found",
+                detail=f"Virtual assistant {chatRequest.virtualAssistantId} not found",
             )
 
         # Use the agent_id directly from LlamaStack
-        agent_id = request.virtualAssistantId
+        agent_id = chatRequest.virtualAssistantId
 
         # Session ID is required - no session creation in chat endpoint
-        session_id = request.sessionId
+        session_id = chatRequest.sessionId
         if not session_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -421,29 +433,31 @@ async def chat(
         log.info(f"Using agent: {agent_id} with session: {session_id}")
 
         # Create stateless Chat instance (no longer needs assistant or session_state)
-        chat = Chat(log)
+        chat = Chat(log, request)
 
         def generate_response():
             try:
-                # Get the last user message
-                if len(request.messages) > 0:
-                    last_message = request.messages[
-                        -1
-                    ]  # Get last message instead of popping
-                    # Stream response using new stateless interface
-                    for chunk in chat.stream(
-                        agent_id, session_id, last_message.content
-                    ):
-                        # Send the chunk directly since it's already
-                        # properly formatted JSON
-                        yield f"data: {chunk}\n\n"
+                if len(chatRequest.messages) > 0:
+                    # Get the last user message
+                    last_message = chatRequest.messages[-1]
 
-                # End of stream
-                yield "data: [DONE]\n\n"
+                    def chat_stream():
+                        for chunk in chat.stream(
+                            agent_id, session_id, last_message.content
+                        ):
+                            yield f"data: {chunk}\n\n"
+                        yield "data: [DONE]\n\n"
+
+                yield from chat_stream()
 
                 # Save session metadata to database
                 background_task.add_task(
-                    save_session_metadata, db, session_id, agent_id, request.messages
+                    save_session_metadata,
+                    db,
+                    session_id,
+                    agent_id,
+                    chatRequest.messages,
+                    request,
                 )
 
             except Exception as e:
@@ -460,7 +474,7 @@ async def chat(
 
 
 async def save_session_metadata(
-    db: AsyncSession, session_id: str, agent_id: str, messages: list
+    db: AsyncSession, session_id: str, agent_id: str, messages: list, request: Request
 ):
     """
     Save session metadata to database for UI sidebar display.
@@ -497,7 +511,7 @@ async def save_session_metadata(
         agent_name = "Unknown Agent"
         try:
             # Fetch agent details from LlamaStack
-            agent_details = await read_virtual_assistant(agent_id)
+            agent_details = await read_virtual_assistant(agent_id, request)
             agent_name = (
                 agent_details.name if agent_details.name else f"Agent {agent_id[:8]}..."
             )

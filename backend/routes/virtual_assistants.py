@@ -8,11 +8,11 @@ different models, tools, knowledge bases, and safety shields.
 
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from llama_stack_client.lib.agents.agent import AgentUtils
 
 from .. import schemas
-from ..api.llamastack import client
+from ..api.llamastack import get_client_from_request
 from ..utils.logging_config import get_logger
 from ..virtual_agents.agent_model import VirtualAgent
 
@@ -44,7 +44,9 @@ def get_strategy(temperature, top_p):
     response_model=schemas.VirtualAssistantRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_virtual_assistant(va: schemas.VirtualAssistantCreate):
+async def create_virtual_assistant(
+    va: schemas.VirtualAssistantCreate, request: Request
+):
     """
     Create a new virtual assistant agent in LlamaStack.
 
@@ -57,6 +59,7 @@ async def create_virtual_assistant(va: schemas.VirtualAssistantCreate):
     Raises:
         HTTPException: If creation fails
     """
+    client = get_client_from_request(request)
     try:
         sampling_params = {
             "strategy": get_strategy(va.temperature, va.top_p),
@@ -89,7 +92,7 @@ async def create_virtual_assistant(va: schemas.VirtualAssistantCreate):
         )
         agent_config["name"] = va.name
 
-        agentic_system_create_response = client.agents.create(
+        agentic_system_create_response = await client.agents.create(
             agent_config=agent_config,
         )
 
@@ -155,7 +158,7 @@ def to_va_response(agent: VirtualAgent):
 
 
 @router.get("/", response_model=List[schemas.VirtualAssistantRead])
-async def get_virtual_assistants():
+async def get_virtual_assistants(request: Request):
     """
     Retrieve all virtual assistants from LlamaStack.
 
@@ -163,7 +166,8 @@ async def get_virtual_assistants():
         List of all virtual assistants configured in the system
     """
     # get all virtual assitants or agents from llama stack
-    agents = client.agents.list()
+    client = get_client_from_request(request)
+    agents = await client.agents.list()
     response_list = []
     for agent in agents:
         response_list.append(to_va_response(agent))
@@ -171,7 +175,7 @@ async def get_virtual_assistants():
 
 
 @router.get("/{va_id}", response_model=schemas.VirtualAssistantRead)
-async def read_virtual_assistant(va_id: str):
+async def read_virtual_assistant(va_id: str, request: Request):
     """
     Retrieve a specific virtual assistant by ID.
 
@@ -184,7 +188,8 @@ async def read_virtual_assistant(va_id: str):
     Raises:
         HTTPException: If virtual assistant not found
     """
-    agent = client.agents.retrieve(agent_id=va_id)
+    client = get_client_from_request(request)
+    agent = await client.agents.retrieve(agent_id=va_id)
     return to_va_response(agent)
 
 
@@ -194,7 +199,7 @@ async def read_virtual_assistant(va_id: str):
 
 
 @router.delete("/{va_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_virtual_assistant(va_id: str):
+async def delete_virtual_assistant(va_id: str, request: Request):
     """
     Delete a virtual assistant from LlamaStack.
 
@@ -204,5 +209,6 @@ async def delete_virtual_assistant(va_id: str):
     Returns:
         None (204 No Content status)
     """
-    client.agents.delete(agent_id=va_id)
+    client = get_client_from_request(request)
+    await client.agents.delete(agent_id=va_id)
     return None

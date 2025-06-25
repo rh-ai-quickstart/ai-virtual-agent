@@ -12,16 +12,17 @@ Key Features:
 - Vector database name as primary identifier for LlamaStack integration
 - Read-only operations after creation (knowledge bases cannot be modified)
 """
+
 import os
 from typing import List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models, schemas
-from ..api.llamastack import client
+from ..api.llamastack import get_client_from_request, sync_client
 from ..database import get_db
 from ..utils.logging_config import get_logger
 
@@ -123,7 +124,7 @@ async def read_knowledge_base(vector_db_name: str, db: AsyncSession = Depends(ge
 
 @router.delete("/{vector_db_name}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_knowledge_base(
-    vector_db_name: str, db: AsyncSession = Depends(get_db)
+    vector_db_name: str, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
     Delete a knowledge base from both the database and LlamaStack.
@@ -156,9 +157,10 @@ async def delete_knowledge_base(
     kb_name = db_kb.name  # Store name before deletion
 
     # First, try to delete from LlamaStack
+    client = get_client_from_request(request)
     try:
         logger.info(f"Deleting knowledge base from LlamaStack: {vector_db_name}")
-        client.vector_dbs.unregister(vector_db_name)
+        await client.vector_dbs.unregister(vector_db_name)
         logger.info(f"Successfully deleted from LlamaStack: {vector_db_name}")
     except Exception as e:
         logger.warning(f"Failed to delete from LlamaStack (may not exist): {str(e)}")
@@ -310,7 +312,7 @@ async def sync_knowledge_bases(db: AsyncSession):
         logger.info("Starting knowledge base sync")
         logger.debug("Fetching vector databases from LlamaStack")
         try:
-            response = client.vector_dbs.list()
+            response = await sync_client.vector_dbs.list()
 
             if isinstance(response, list):
                 vector_dbs = [item.__dict__ for item in response]

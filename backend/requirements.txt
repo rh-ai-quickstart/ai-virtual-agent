@@ -8,10 +8,14 @@ pydantic
 python-dotenv
 bcrypt
 pydantic[email]
-llama_stack_client==0.2.6
+llama-stack==0.2.14
+llama_stack_client==0.2.14
+fire
+httpx
 vulture
 black
 isort
 pre-commit
 flake8
 httpx
+kubernetes

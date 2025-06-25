@@ -40,7 +40,7 @@ Thank you for your interest in contributing to the AI Virtual Agent platform! Th
 
 Before you begin, ensure you have the following installed:
 
-- **Python 3.10+** - Backend development
+- **Python 3.12+** - Backend development
 - **Node.js 18+** - Frontend development
 - **PostgreSQL 14+** - Database
 - **Podman or Docker** - Containerization
@@ -83,7 +83,7 @@ Before you begin, ensure you have the following installed:
 1. Create and activate a Python virtual environment:
 
    ```bash
-   python3.10 -m venv venv
+   python3.12 -m venv venv
    source venv/bin/activate
    ```
 
@@ -393,7 +393,7 @@ Before making significant changes, familiarize yourself with the system architec
 ### Common Issues
 
 **Backend won't start:**
-- Check Python version (requires 3.10+)
+- Check Python version (requires 3.12+)
 - Verify PostgreSQL is running and accessible
    use:
    ```bash
