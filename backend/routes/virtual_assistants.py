@@ -11,6 +11,8 @@ from typing import List
 from fastapi import APIRouter, HTTPException, status
 from llama_stack_client.lib.agents.agent import AgentUtils
 
+from backend.virtual_agents.agent_resource import EnhancedAgentResource
+
 from .. import schemas
 from ..api.llamastack import client
 from ..utils.logging_config import get_logger
@@ -163,7 +165,8 @@ async def get_virtual_assistants():
         List of all virtual assistants configured in the system
     """
     # get all virtual assitants or agents from llama stack
-    agents = client.agents.list()
+    agentResource = EnhancedAgentResource(client)
+    agents = agentResource.list()
     response_list = []
     for agent in agents:
         response_list.append(to_va_response(agent))
