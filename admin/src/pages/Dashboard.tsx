@@ -55,7 +55,7 @@ export default function Dashboard() {
       <h1 className="text-3xl font-bold text-center">🧠 Virtual Agent Dashboard</h1>
 
       <section className="bg-white rounded-xl shadow p-5">
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2">Virtual Assistants</h2>
+        <h2 className="text-xl font-semibold mb-4 border-b pb-2">Agent Builders</h2>
         <ul className="grid md:grid-cols-2 gap-4">
           {assistants.map(agent => (
             <li key={agent.id} className="border rounded-lg p-4 shadow-sm bg-gray-50 hover:shadow-md transition">

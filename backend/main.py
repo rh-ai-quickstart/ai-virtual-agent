@@ -1,9 +1,9 @@
 """
-FastAPI main application module for AI Virtual Assistant.
+FastAPI main application module for AI Agent Builder.
 
 This module initializes the FastAPI application, configures middleware,
 registers API routes, and handles static file serving for the frontend.
-The app provides a complete REST API for managing virtual assistants,
+The app provides a complete REST API for managing Agent Builders,
 knowledge bases, tools, and chat interactions.
 """
 

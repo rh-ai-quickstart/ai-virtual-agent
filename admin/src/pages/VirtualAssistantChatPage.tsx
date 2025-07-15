@@ -31,8 +31,8 @@ export default function VirtualAssistantChatPage(): JSX.Element {
           setSelectedAssistant(response.data[0].id);
         }
       } catch (err) {
-        console.error('Error fetching virtual assistants:', err);
-        setError('Failed to load virtual assistants');
+        console.error('Error fetching Agent Builders:', err);
+        setError('Failed to load Agent Builders');
       }
     };
     fetchVirtualAssistants();
@@ -140,7 +140,7 @@ export default function VirtualAssistantChatPage(): JSX.Element {
   return (
     <div className="max-w-4xl mx-auto p-4 flex flex-col min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4 text-center">Virtual Assistant Chat</h1>
+        <h1 className="text-3xl font-bold mb-4 text-center">Agent Builder Chat</h1>
         <select
           value={selectedAssistant}
           onChange={(e) => {
@@ -150,7 +150,7 @@ export default function VirtualAssistantChatPage(): JSX.Element {
           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 mb-4"
           disabled={isLoading}
         >
-          <option value="">Select a virtual assistant</option>
+          <option value="">Select a Agent Builder</option>
           {virtualAssistants.map((assistant) => (
             <option key={assistant.id} value={assistant.id}>
               {assistant.name} ({assistant.id})

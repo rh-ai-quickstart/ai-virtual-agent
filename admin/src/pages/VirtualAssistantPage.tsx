@@ -63,7 +63,7 @@ export default function VirtualAssistantPage() {
       });
       fetchAssistants();
     } catch (err) {
-      alert('Failed to save virtual assistant');
+      alert('Failed to save Agent Builder');
     }
   };
 
@@ -92,7 +92,7 @@ export default function VirtualAssistantPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Virtual Assistants</h1>
+      <h1 className="text-2xl font-bold mb-4">Agent Builders</h1>
 
       <div className="space-y-4 mb-8">
         <input

@@ -1,11 +1,11 @@
 """
-SQLAlchemy database models for the AI Virtual Assistant application.
+SQLAlchemy database models for the AI Agent Builder application.
 
 This module defines the database schema and relationships for:
 - Users and role-based access control
 - MCP servers and tool configurations
 - Knowledge bases for RAG functionality
-- Virtual assistants and chat sessions
+- Agent Builders and chat sessions
 - Guardrails for AI safety
 - Model servers for LLM providers
 """

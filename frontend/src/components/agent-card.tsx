@@ -1,5 +1,6 @@
 import { Agent } from '@/routes/config/agents';
 import { deleteAgent } from '@/services/agents';
+import { personaStorage } from '@/services/persona-storage';
 import {
   Button,
   Card,
@@ -22,11 +23,75 @@ import {
   ModalHeader,
   Title,
 } from '@patternfly/react-core';
-import { EllipsisVIcon, TrashIcon } from '@patternfly/react-icons';
+import { 
+  EllipsisVIcon, 
+  TrashIcon,
+  ShieldAltIcon,
+  DollarSignIcon,
+  UserIcon,
+  EyeIcon,
+  BookIcon,
+  CogIcon
+} from '@patternfly/react-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
 import { fetchTools } from '@/services/tools';
 import { ToolGroup } from '@/types';
+
+// Banking persona labels mapping
+const BANKING_PERSONA_LABELS: Record<string, string> = {
+  'compliance_officer': 'Compliance Officer',
+  'relationship_manager': 'Relationship Manager / Loan Officer',
+  'branch_teller': 'Branch Teller / Customer Service Rep',
+  'fraud_analyst': 'Fraud Analyst / AML Specialist',
+  'training_lead': 'Training Lead / Market Analyst',
+  'it_support': 'IT Support / Operations',
+};
+
+// NEW: Persona-specific visual styling
+const PERSONA_STYLES: Record<string, { 
+  color: 'red' | 'green' | 'blue' | 'orange' | 'purple' | 'grey';
+  icon: React.ComponentType;
+  bgColor: string;
+  borderColor: string;
+}> = {
+  'compliance_officer': { 
+    color: 'red', 
+    icon: ShieldAltIcon,
+    bgColor: 'var(--pf-v6-global--palette--red-50)',
+    borderColor: 'var(--pf-v6-global--palette--red-200)'
+  },
+  'relationship_manager': { 
+    color: 'green', 
+    icon: DollarSignIcon,
+    bgColor: 'var(--pf-v6-global--palette--green-50)', 
+    borderColor: 'var(--pf-v6-global--palette--green-200)'
+  },
+  'branch_teller': { 
+    color: 'blue', 
+    icon: UserIcon,
+    bgColor: 'var(--pf-v6-global--palette--blue-50)',
+    borderColor: 'var(--pf-v6-global--palette--blue-200)'
+  },
+  'fraud_analyst': { 
+    color: 'orange', 
+    icon: EyeIcon,
+    bgColor: 'var(--pf-v6-global--palette--orange-50)',
+    borderColor: 'var(--pf-v6-global--palette--orange-200)'
+  },
+  'training_lead': { 
+    color: 'purple', 
+    icon: BookIcon,
+    bgColor: 'var(--pf-v6-global--palette--purple-50)',
+    borderColor: 'var(--pf-v6-global--palette--purple-200)'
+  },
+  'it_support': { 
+    color: 'grey', 
+    icon: CogIcon,
+    bgColor: 'var(--pf-v6-global--palette--black-150)',
+    borderColor: 'var(--pf-v6-global--palette--black-300)'
+  }
+};
 
 interface AgentCardProps {
   agent: Agent;
@@ -45,18 +110,28 @@ export function AgentCard({ agent }: AgentCardProps) {
     queryFn: fetchTools,
   });
 
+  // Get persona from localStorage
+  const agentPersona = personaStorage.getPersona(agent.id);
+  const personaLabel = agentPersona ? BANKING_PERSONA_LABELS[agentPersona] || agentPersona : null;
+  
+  // NEW: Get persona styling
+  const personaStyle = agentPersona ? PERSONA_STYLES[agentPersona] : null;
+  const PersonaIcon = personaStyle?.icon || CogIcon;
+
   // Mutation for deleting an Agent
   const deleteAgentMutation = useMutation<void, Error, string>({
     mutationFn: deleteAgent,
     onSuccess: () => {
-      // Invalidate and refetch the agents list to show the new agent
+      // Clean up persona storage when agent is deleted
+      personaStorage.removePersona(agent.id);
+      
+      // Invalidate and refetch the agents list
       void queryClient.invalidateQueries({ queryKey: ['agents'] });
       setModalOpen(false);
       console.log('Agent deleted successfully');
     },
     onError: (error) => {
       console.error('Error deleting agent:', error);
-      // Optionally show an error message
     },
   });
 
@@ -67,6 +142,7 @@ export function AgentCard({ agent }: AgentCardProps) {
   const toggleModal = () => {
     setModalOpen(!modalOpen);
   };
+  
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
@@ -141,8 +217,19 @@ export function AgentCard({ agent }: AgentCardProps) {
       </Modal>
     </Fragment>
   );
+
   return (
-    <Card id={`expandable-agent-card-${agent.id}`} isExpanded={expanded} className="pf-v6-u-mb-md">
+    <Card 
+      id={`expandable-agent-card-${agent.id}`} 
+      isExpanded={expanded} 
+      className="pf-v6-u-mb-md"
+      // NEW: Apply persona-specific styling
+      style={{
+        backgroundColor: personaStyle?.bgColor || 'var(--pf-v6-global--BackgroundColor--100)',
+        borderLeft: personaStyle ? `4px solid ${personaStyle.borderColor}` : undefined,
+        transition: 'all 0.2s ease'
+      }}
+    >
       <Fragment>
         <CardHeader
           actions={{ actions: headerActions }}
@@ -156,6 +243,26 @@ export function AgentCard({ agent }: AgentCardProps) {
         >
           <CardTitle id={`expandable-agent-title-${agent.id}`}>
             <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+              {/* NEW: Persona icon */}
+              {personaStyle && (
+                <FlexItem>
+                  <div 
+                    style={{
+                      padding: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: personaStyle.borderColor,
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '32px',
+                      height: '32px'
+                    }}
+                  >
+                    <PersonaIcon size="sm" />
+                  </div>
+                </FlexItem>
+              )}
               <FlexItem>
                 <Title className="pf-v6-u-mb-0" headingLevel="h2">
                   {agent.name}
@@ -166,12 +273,44 @@ export function AgentCard({ agent }: AgentCardProps) {
                   {agent.model_name}
                 </Title>
               </FlexItem>
+              {/* Enhanced persona badge with icon */}
+              {personaLabel && personaStyle && (
+                <FlexItem>
+                  <Label 
+                    color={personaStyle.color}
+                    icon={<PersonaIcon />}
+                  >
+                    {personaLabel}
+                  </Label>
+                </FlexItem>
+              )}
             </Flex>
           </CardTitle>
         </CardHeader>
         <CardExpandableContent>
           <CardBody>
             <Flex direction={{ default: 'column' }}>
+              {/* Enhanced persona display */}
+              <FlexItem>
+                <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+                  <FlexItem>
+                    <span className="pf-v6-u-text-color-subtle">Persona: </span>
+                  </FlexItem>
+                  {personaLabel && personaStyle ? (
+                    <FlexItem>
+                      <Label 
+                        color={personaStyle.color}
+                        icon={<PersonaIcon />}
+                        variant="outline"
+                      >
+                        {personaLabel}
+                      </Label>
+                    </FlexItem>
+                  ) : (
+                    <FlexItem>None</FlexItem>
+                  )}
+                </Flex>
+              </FlexItem>
               <FlexItem>
                 <span className="pf-v6-u-text-color-subtle">Prompt: </span>
                 {agent.prompt}

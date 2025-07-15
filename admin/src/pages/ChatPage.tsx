@@ -49,7 +49,7 @@ export default function ChatPage(): JSX.Element {
     fetchModels();
   }, []);
 
-  // Fetch available virtual assistants on component mount
+  // Fetch available Agent Builders on component mount
   useEffect(() => {
     const fetchVirtualAssistants = async () => {
       try {

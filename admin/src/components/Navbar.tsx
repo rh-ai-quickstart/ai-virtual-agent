@@ -13,7 +13,7 @@ export default function Navbar() {
               <Link to="/" className="hover:text-blue-600 transition">Dashboard</Link>
             </li>
             <li>
-              <Link to="/virtual_assistants" className="hover:text-blue-600 transition">Virtual Assistants</Link>
+              <Link to="/virtual_assistants" className="hover:text-blue-600 transition">Agent Builders</Link>
             </li>
             <li>
               <Link to="/mcp_servers" className="hover:text-blue-600 transition">MCP Servers</Link>
@@ -28,7 +28,7 @@ export default function Navbar() {
               <Link to="/chat" className="hover:text-blue-600 transition">Chat</Link>
             </li>
             <li>
-              <Link to="/virtual_assistant_chat" className="hover:text-blue-600 transition">Virtual Assistant Chat</Link>
+              <Link to="/virtual_assistant_chat" className="hover:text-blue-600 transition">Agent Builder Chat</Link>
             </li>
           </ul>
         </div>

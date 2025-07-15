@@ -1,8 +1,8 @@
 """
-Virtual Assistants API endpoints for managing AI agents through LlamaStack.
+Agent Builders API endpoints for managing AI agents through LlamaStack.
 
-This module provides CRUD operations for virtual assistants (AI agents) that are
-managed through the LlamaStack platform. Virtual assistants can be configured with
+This module provides CRUD operations for Agent Builders (AI agents) that are
+managed through the LlamaStack platform. Agent Builders can be configured with
 different models, tools, knowledge bases, and safety shields.
 """
 
@@ -46,13 +46,13 @@ def get_strategy(temperature, top_p):
 )
 async def create_virtual_assistant(va: schemas.VirtualAssistantCreate):
     """
-    Create a new virtual assistant agent in LlamaStack.
+    Create a new Agent Builder agent in LlamaStack.
 
     Args:
-        va: Virtual assistant configuration including model, tools, and settings
+        va: Agent Builder configuration including model, tools, and settings
 
     Returns:
-        The created virtual assistant with generated ID
+        The created Agent Builder with generated ID
 
     Raises:
         HTTPException: If creation fails
@@ -157,10 +157,10 @@ def to_va_response(agent: VirtualAgent):
 @router.get("/", response_model=List[schemas.VirtualAssistantRead])
 async def get_virtual_assistants():
     """
-    Retrieve all virtual assistants from LlamaStack.
+    Retrieve all Agent Builders from LlamaStack.
 
     Returns:
-        List of all virtual assistants configured in the system
+        List of all Agent Builders configured in the system
     """
     # get all virtual assitants or agents from llama stack
     agents = client.agents.list()
@@ -173,16 +173,16 @@ async def get_virtual_assistants():
 @router.get("/{va_id}", response_model=schemas.VirtualAssistantRead)
 async def read_virtual_assistant(va_id: str):
     """
-    Retrieve a specific virtual assistant by ID.
+    Retrieve a specific Agent Builder by ID.
 
     Args:
-        va_id: The unique identifier of the virtual assistant
+        va_id: The unique identifier of the Agent Builder
 
     Returns:
-        The virtual assistant configuration and metadata
+        The Agent Builder configuration and metadata
 
     Raises:
-        HTTPException: If virtual assistant not found
+        HTTPException: If Agent Builder not found
     """
     agent = client.agents.retrieve(agent_id=va_id)
     return to_va_response(agent)
@@ -196,10 +196,10 @@ async def read_virtual_assistant(va_id: str):
 @router.delete("/{va_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_virtual_assistant(va_id: str):
     """
-    Delete a virtual assistant from LlamaStack.
+    Delete a Agent Builder from LlamaStack.
 
     Args:
-        va_id: The unique identifier of the virtual assistant to delete
+        va_id: The unique identifier of the Agent Builder to delete
 
     Returns:
         None (204 No Content status)

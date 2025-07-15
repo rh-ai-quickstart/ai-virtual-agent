@@ -1,5 +1,5 @@
 """
-Centralized logging configuration for the AI Virtual Assistant backend.
+Centralized logging configuration for the AI Agent Builder backend.
 
 This module provides a consistent logging setup across all backend components,
 with proper formatting, levels, and optional file output configuration.

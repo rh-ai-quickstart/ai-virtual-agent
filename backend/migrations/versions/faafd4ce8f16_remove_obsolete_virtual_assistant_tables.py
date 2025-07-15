@@ -1,4 +1,4 @@
-"""Remove obsolete virtual assistant tables
+"""Remove obsolete Agent Builder tables
 
 Revision ID: faafd4ce8f16
 Revises: 7fc140ef6ec7

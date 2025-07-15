@@ -3,7 +3,7 @@ User management API endpoints for authentication and user administration.
 
 This module provides CRUD operations for user accounts, including user creation,
 authentication, role management, and profile updates. It handles role-based access
-control for the AI Virtual Assistant application.
+control for the AI Agent Builder application.
 
 Key Features:
 - User registration and profile management

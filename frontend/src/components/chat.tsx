@@ -27,9 +27,21 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Flex,
+  FlexItem,
+  Label,
 } from '@patternfly/react-core';
+import { 
+  ShieldAltIcon,
+  DollarSignIcon,
+  UserIcon,
+  EyeIcon,
+  BookIcon,
+  CogIcon
+} from '@patternfly/react-icons';
 import { Agent } from '@/routes/config/agents';
 import { fetchAgents } from '@/services/agents';
+import { personaStorage } from '@/services/persona-storage';
 import { useChat } from '@/hooks/useChat';
 import {
   fetchChatSessions,
@@ -40,6 +52,94 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import botAvatar from "../assets/img/bot-avatar.svg";
 import userAvatar from "../assets/img/user-avatar.svg";
+
+// Banking persona labels mapping
+const BANKING_PERSONA_LABELS: Record<string, string> = {
+  'compliance_officer': 'Compliance Officer',
+  'relationship_manager': 'Relationship Manager / Loan Officer',
+  'branch_teller': 'Branch Teller / Customer Service Rep',
+  'fraud_analyst': 'Fraud Analyst / AML Specialist',
+  'training_lead': 'Training Lead / Market Analyst',
+  'it_support': 'IT Support / Operations',
+};
+
+// NEW: Persona icons mapping
+const PERSONA_ICONS: Record<string, React.ComponentType> = {
+  'compliance_officer': ShieldAltIcon,
+  'relationship_manager': DollarSignIcon,
+  'branch_teller': UserIcon,
+  'fraud_analyst': EyeIcon,
+  'training_lead': BookIcon,
+  'it_support': CogIcon,
+};
+
+// NEW: Persona colors mapping
+const PERSONA_COLORS: Record<string, 'red' | 'green' | 'blue' | 'orange' | 'purple' | 'grey'> = {
+  'compliance_officer': 'red',
+  'relationship_manager': 'green',
+  'branch_teller': 'blue',
+  'fraud_analyst': 'orange',
+  'training_lead': 'purple',
+  'it_support': 'grey',
+};
+
+// Sample questions for each banking persona - ORGANIZED AS CARDS
+const BANKING_SAMPLE_QUESTIONS: Record<string, { title: string; questions: string[] }> = {
+  'compliance_officer': {
+    title: 'Compliance & Regulations',
+    questions: [
+      "What is the CTR threshold according to the BSA?",
+      "What steps do we follow for a potential OFAC match?",
+      "Has the CFPB issued new fair lending guidance this year?",
+      "What are the key requirements for BSA/AML compliance?"
+    ]
+  },
+  'relationship_manager': {
+    title: 'Lending & Credit',
+    questions: [
+      "What's our minimum FICO score for FHA mortgages?",
+      "Which documents are needed for small business loans?",
+      "What's the maximum DTI ratio for conventional loans?",
+      "How do we calculate loan-to-value ratios?"
+    ]
+  },
+  'branch_teller': {
+    title: 'Customer Service & Operations',
+    questions: [
+      "What is the wire transfer fee for consumer checking accounts?",
+      "What's the daily ATM withdrawal limit for our Platinum debit card?",
+      "How many business days for check deposit holds?",
+      "What are our required timelines for Reg E disputes?"
+    ]
+  },
+  'fraud_analyst': {
+    title: 'Fraud Detection & AML',
+    questions: [
+      "Is frequent cash structuring under $10,000 reportable?",
+      "How do I escalate a suspected synthetic identity case?",
+      "What's our procedure for filing a SAR?",
+      "What are the red flags for money laundering?"
+    ]
+  },
+  'training_lead': {
+    title: 'Training & Market Intelligence',
+    questions: [
+      "What are the major updates in the 2024 FFIEC cybersecurity handbook?",
+      "List top US banking certifications for AML professionals",
+      "Summarize the OCC's latest bulletin on overdraft practices",
+      "What training is required for new compliance staff?"
+    ]
+  },
+  'it_support': {
+    title: 'IT Support & Systems',
+    questions: [
+      "How do I reset my password for the core banking platform?",
+      "What's the process for requesting access to customer information systems?",
+      "How do we handle system outages during business hours?",
+      "What are our cybersecurity protocols for remote access?"
+    ]
+  }
+};
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -74,10 +174,10 @@ export function Chat() {
   const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [showSampleQuestions, setShowSampleQuestions] = useState<boolean>(true);
   const scrollToBottomRef = React.useRef<HTMLDivElement>(null);
   const historyRef = React.useRef<HTMLButtonElement>(null);
 
-  // Use our custom hook for chat functionality - only when we have a valid agent
   const {
     messages: chatMessages,
     input,
@@ -99,7 +199,12 @@ export function Chat() {
     },
   });
 
-  // Convert our chat messages to PatternFly format
+  const selectedAgentData = availableAgents.find((agent) => agent.id === selectedAgent);
+  const selectedAgentPersona = selectedAgent ? personaStorage.getPersona(selectedAgent) : null;
+  const selectedPersonaLabel = selectedAgentPersona ? BANKING_PERSONA_LABELS[selectedAgentPersona] || selectedAgentPersona : null;
+
+  const currentSampleQuestions = selectedAgentPersona ? BANKING_SAMPLE_QUESTIONS[selectedAgentPersona] : null;
+
   const messages = React.useMemo(
     () =>
       chatMessages.map(
@@ -107,7 +212,7 @@ export function Chat() {
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'bot',
           content: msg.content,
-          name: msg.role === 'user' ? 'You' : 'Assistant',
+          name: msg.role === 'user' ? 'You' : selectedPersonaLabel || selectedAgentData?.name || 'Assistant',
           timestamp: msg.timestamp.toLocaleString(),
           avatar: msg.role === 'user' ? userAvatar : botAvatar,
           avatarProps: { isBordered: true },
@@ -117,7 +222,7 @@ export function Chat() {
             msg.id === chatMessages[chatMessages.length - 1]?.id,
         })
       ),
-    [chatMessages, isLoading]
+    [chatMessages, isLoading, selectedPersonaLabel, selectedAgentData]
   );
 
   const displayMode = ChatbotDisplayMode.embedded;
@@ -130,6 +235,7 @@ export function Chat() {
       const agentId = value.toString();
       console.log('Agent selected:', agentId);
       setSelectedAgent(agentId);
+      setShowSampleQuestions(true);
     }
   };
 
@@ -142,7 +248,7 @@ export function Chat() {
     void (async () => {
       try {
         await loadSession(selectedItem);
-        setIsDrawerOpen(false); // Close sidebar after selection
+        setIsDrawerOpen(false);
       } catch (error) {
         console.error('Error loading session:', error);
         setAnnouncement('Failed to load chat session');
@@ -155,7 +261,6 @@ export function Chat() {
 
     void (async () => {
       try {
-        // Generate unique session name with timestamp
         const timestamp = new Date()
           .toISOString()
           .slice(0, 19)
@@ -164,21 +269,30 @@ export function Chat() {
         const randomSuffix = Math.random().toString(36).substring(2, 6);
         const uniqueSessionName = `Chat-${timestamp}-${randomSuffix}`;
 
-        // Create a new session for the current agent with unique name
         const newSession = await createChatSession(selectedAgent, uniqueSessionName);
-
-        // Load the new session
         await loadSession(newSession.id);
-
-        // Refresh sessions list to include the new session
         await fetchSessionsData(selectedAgent);
 
         setIsDrawerOpen(false);
+        setShowSampleQuestions(true);
       } catch (error) {
         console.error('Error creating new session:', error);
         setAnnouncement('Failed to create new chat session');
       }
     })();
+  };
+
+  const handleSampleQuestionClick = (question: string) => {
+    if (selectedAgent && question.trim()) {
+      append({
+        role: 'user',
+        content: question,
+      });
+    }
+  };
+
+  const toggleSampleQuestions = () => {
+    setShowSampleQuestions(!showSampleQuestions);
   };
 
   const handleDeleteSession = useCallback((sessionId: string) => {
@@ -193,11 +307,7 @@ export function Chat() {
     },
     onSuccess: async () => {
       if (!selectedAgent) return;
-
       setAnnouncement('Session deleted successfully');
-      // Simply refresh sessions data - fetchSessionsData handles everything:
-      // - If sessions remain: updates UI and loads first session if current was deleted
-      // - If no sessions remain: creates new session, loads it, and updates UI
       await fetchSessionsData(selectedAgent);
     },
     onError: (error) => {
@@ -205,7 +315,6 @@ export function Chat() {
       setAnnouncement(`Failed to delete session: ${error.message}`);
     },
     onSettled: () => {
-      // Always clean up modal state when mutation completes
       setIsDeleteModalOpen(false);
       setSessionToDelete(null);
     },
@@ -213,8 +322,6 @@ export function Chat() {
 
   const confirmDeleteSession = () => {
     if (!sessionToDelete) return;
-
-    // Trigger the mutation
     deleteSessionMutation.mutate(sessionToDelete);
   };
 
@@ -223,7 +330,6 @@ export function Chat() {
     setSessionToDelete(null);
   };
 
-  // Create menu items for session actions
   const createSessionMenuItems = useCallback(
     (sessionId: string) => [
       <DropdownList key="session-actions">
@@ -244,7 +350,6 @@ export function Chat() {
       session.title.toLowerCase().includes(targetValue.toLowerCase())
     );
 
-    // Convert to PatternFly conversation format
     const conversations = filteredConversations.map((session) => ({
       id: session.id,
       text: session.title,
@@ -253,7 +358,6 @@ export function Chat() {
       menuItems: createSessionMenuItems(session.id),
     }));
 
-    // append message if no items are found
     if (conversations.length === 0) {
       conversations.push({
         id: '13',
@@ -269,12 +373,9 @@ export function Chat() {
   const fetchSessionsData = useCallback(
     async (agentId?: string) => {
       try {
-        console.log('fetchSessionsData called with agentId:', agentId);
         const sessions = await fetchChatSessions(agentId);
-        console.log('Fetched sessions:', sessions);
         setChatSessions(sessions);
 
-        // Convert to PatternFly conversation format
         const conversations = sessions.map((session) => ({
           id: session.id,
           text: session.title,
@@ -284,24 +385,15 @@ export function Chat() {
         }));
 
         setConversations(conversations);
-        console.log('Set conversations:', conversations);
 
-        // Auto-select first session if no session is currently selected and sessions exist
-        // OR if the current sessionId doesn't exist in the fetched sessions (i.e., from different agent)
-        console.log('Current sessionId:', sessionId, 'sessions.length:', sessions.length);
         const currentSessionExists =
           sessionId && sessions.some((session) => session.id === sessionId);
-        console.log('Current session exists in fetched sessions:', currentSessionExists);
 
         if ((!sessionId || !currentSessionExists) && sessions.length > 0) {
-          const firstSession = sessions[0]; // Sessions should be ordered by updated_at desc (most recent first)
-          console.log('Auto-selecting first session:', firstSession.id);
+          const firstSession = sessions[0];
           await loadSession(firstSession.id);
         } else if (sessions.length === 0 && agentId) {
-          // Create a new session if agent has no sessions
           try {
-            console.log('No sessions found, creating new session for agent:', agentId);
-            // Generate unique session name with timestamp
             const timestamp = new Date()
               .toISOString()
               .slice(0, 19)
@@ -313,7 +405,6 @@ export function Chat() {
             const newSession = await createChatSession(agentId, uniqueSessionName);
             await loadSession(newSession.id);
 
-            // Update UI state with the new session
             const newSessionSummary: ChatSessionSummary = {
               id: newSession.id,
               title: newSession.title,
@@ -343,21 +434,17 @@ export function Chat() {
         );
       }
     },
-    [sessionId, loadSession, setAnnouncement, createSessionMenuItems]
+    [sessionId, loadSession, createSessionMenuItems]
   );
 
-  // Fetch available agents on mount
   useEffect(() => {
     const fetchAgentsData = async () => {
       try {
-        console.log('Fetching agents on app load...');
         const agents = await fetchAgents();
         setAvailableAgents(agents);
         if (agents.length > 0) {
           const firstAgent = agents[0].id;
-          console.log('Setting first agent:', firstAgent);
           setSelectedAgent(firstAgent);
-          // Don't fetch sessions here - let the selectedAgent useEffect handle it
         }
       } catch (err) {
         console.error('Error fetching agents:', err);
@@ -368,31 +455,18 @@ export function Chat() {
     void fetchAgentsData();
   }, []);
 
-  // Handle selectedAgent changes - fetch sessions for the new agent
   useEffect(() => {
     if (selectedAgent) {
-      console.log('selectedAgent changed to:', selectedAgent, 'fetching sessions...');
       void fetchSessionsData(selectedAgent);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgent]); // fetchSessionsData intentionally excluded to prevent infinite loop
+  }, [selectedAgent]); // ONLY selectedAgent dependency - fetchSessionsData intentionally excluded
 
-  // Handle message sending
   const handleSendMessage = (message: string | number) => {
-    console.log('handleSendMessage called with:', message, 'selectedAgent:', selectedAgent);
-    console.log('Current session ID:', sessionId);
     if (typeof message === 'string' && message.trim() && selectedAgent) {
-      console.log('Sending message via append:', message, 'using session:', sessionId);
-      // Add the message to the chat
       append({
         role: 'user',
         content: message.toString(),
-      });
-    } else {
-      console.log('Message not sent - conditions not met:', {
-        messageType: typeof message,
-        messageLength: typeof message === 'string' ? message.trim().length : 0,
-        selectedAgent: selectedAgent,
       });
     }
   };
@@ -412,7 +486,6 @@ export function Chat() {
         onNewChat={onNewChat}
         handleTextInputChange={(value: string) => {
           if (value === '') {
-            // Convert sessions to conversations format
             const conversations = chatSessions.map((session) => ({
               id: session.id,
               text: session.title,
@@ -439,24 +512,98 @@ export function Chat() {
               <ChatbotHeaderActions>
                 <ChatbotHeaderSelectorDropdown
                   value={
-                    availableAgents.find((agent) => agent.id === selectedAgent)?.name ||
-                    'Select Agent'
+                    (() => {
+                      const selectedAgentData = availableAgents.find((agent) => agent.id === selectedAgent);
+                      if (!selectedAgentData) return 'Select Agent';
+                      
+                      const persona = personaStorage.getPersona(selectedAgentData.id);
+                      const personaLabel = persona ? BANKING_PERSONA_LABELS[persona] : '';
+                      
+                      return personaLabel 
+                        ? `${selectedAgentData.name} (${personaLabel})`
+                        : selectedAgentData.name;
+                    })()
                   }
                   onSelect={onSelectAgent}
                   tooltipContent="Select Agent"
                 >
                   <DropdownList>
-                    {availableAgents.map((agent) => (
-                      <DropdownItem value={agent.id} key={agent.id}>
-                        {agent.name}
-                      </DropdownItem>
-                    ))}
+                    {availableAgents.map((agent) => {
+                      const persona = personaStorage.getPersona(agent.id);
+                      const personaLabel = persona ? BANKING_PERSONA_LABELS[persona] : '';
+                      const displayText = personaLabel 
+                        ? `${agent.name} (${personaLabel})`
+                        : agent.name;
+                      
+                      return (
+                        <DropdownItem value={agent.id} key={agent.id}>
+                          {displayText}
+                        </DropdownItem>
+                      );
+                    })}
                   </DropdownList>
                 </ChatbotHeaderSelectorDropdown>
               </ChatbotHeaderActions>
             </ChatbotHeader>
             <ChatbotContent>
               <MessageBox announcement={announcement}>
+                {showSampleQuestions && currentSampleQuestions && (
+                  <div className="pf-v6-u-mb-md">
+                    <div className="pf-v6-u-mb-sm pf-v6-u-font-weight-bold pf-v6-u-color-200">
+                      {currentSampleQuestions.title} - {selectedPersonaLabel}
+                    </div>
+                    <Flex direction={{ default: 'column' }} gap={{ default: 'gapXs' }}>
+                      {currentSampleQuestions.questions.map((question, index) => (
+                        <FlexItem key={index}>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleSampleQuestionClick(question)}
+                            className="pf-v6-u-text-align-left"
+                            style={{
+                              whiteSpace: 'normal',
+                              height: 'auto',
+                              padding: '8px 12px',
+                              fontSize: '14px',
+                              borderRadius: '20px',
+                              border: '1px solid var(--pf-v6-global--BorderColor--200)',
+                              backgroundColor: 'var(--pf-v6-global--BackgroundColor--100)',
+                              width: 'fit-content',
+                              maxWidth: '80%',
+                              textAlign: 'left',
+                              display: 'block'
+                            }}
+                          >
+                            {question}
+                          </Button>
+                        </FlexItem>
+                      ))}
+                    </Flex>
+                    <div className="pf-v6-u-mt-sm">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={toggleSampleQuestions}
+                        style={{ fontSize: '12px', color: 'var(--pf-v6-global--Color--200)' }}
+                      >
+                        Hide suggestions
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!showSampleQuestions && currentSampleQuestions && (
+                  <div className="pf-v6-u-mb-md">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={toggleSampleQuestions}
+                      style={{ fontSize: '12px', color: 'var(--pf-v6-global--Color--200)' }}
+                    >
+                      Show {selectedPersonaLabel} suggestions
+                    </Button>
+                  </div>
+                )}
                 {messages.map((message, index) => {
                   if (index === messages.length - 1) {
                     return (

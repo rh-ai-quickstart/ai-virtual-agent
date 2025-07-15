@@ -1,3 +1,3 @@
 """
-Utility modules for the AI Virtual Assistant backend.
+Utility modules for the AI Agent Builder backend.
 """
