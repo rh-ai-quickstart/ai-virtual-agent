@@ -1,9 +1,9 @@
 """
-FastAPI main application module for AI Agent Builder.
+FastAPI main application module for AI AaaS.
 
 This module initializes the FastAPI application, configures middleware,
 registers API routes, and handles static file serving for the frontend.
-The app provides a complete REST API for managing Agent Builders,
+The app provides a complete REST API for managing AaaSs,
 knowledge bases, tools, and chat interactions.
 """
 

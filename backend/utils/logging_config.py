@@ -1,5 +1,5 @@
 """
-Centralized logging configuration for the AI Agent Builder backend.
+Centralized logging configuration for the AI AaaS backend.
 
 This module provides a consistent logging setup across all backend components,
 with proper formatting, levels, and optional file output configuration.

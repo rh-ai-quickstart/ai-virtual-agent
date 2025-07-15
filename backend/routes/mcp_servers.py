@@ -9,7 +9,7 @@ Key Features:
 - Register and manage MCP server configurations
 - Automatic synchronization with LlamaStack tool discovery
 - Tool group management and parameter configuration
-- Integration with Agent Builders for enhanced capabilities
+- Integration with AaaSs for enhanced capabilities
 """
 
 from typing import List
@@ -160,7 +160,7 @@ async def delete_mcp_server(toolgroup_id: str, db: AsyncSession = Depends(get_db
     Delete an MCP server configuration.
 
     This endpoint removes an MCP server from the database. The server will
-    no longer be available for use by Agent Builders.
+    no longer be available for use by AaaSs.
 
     Args:
         toolgroup_id: The tool group identifier of the MCP server to delete

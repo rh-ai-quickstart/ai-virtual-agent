@@ -1,6 +1,6 @@
 # Backend Technical Reference
 
-FastAPI backend for the AI Agent Builder project. For complete setup instructions, see the [Contributing Guide](../CONTRIBUTING.md).
+FastAPI backend for the AI AaaS project. For complete setup instructions, see the [Contributing Guide](../CONTRIBUTING.md).
 
 ## Quick API Access
 

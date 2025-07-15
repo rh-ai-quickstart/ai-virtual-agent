@@ -1,11 +1,11 @@
 """
-SQLAlchemy database models for the AI Agent Builder application.
+SQLAlchemy database models for the AI AaaS application.
 
 This module defines the database schema and relationships for:
 - Users and role-based access control
 - MCP servers and tool configurations
 - Knowledge bases for RAG functionality
-- Agent Builders and chat sessions
+- AaaSs and chat sessions
 - Guardrails for AI safety
 - Model servers for LLM providers
 """

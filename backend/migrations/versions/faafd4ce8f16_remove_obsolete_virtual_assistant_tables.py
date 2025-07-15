@@ -1,4 +1,4 @@
-"""Remove obsolete Agent Builder tables
+"""Remove obsolete AaaS tables
 
 Revision ID: faafd4ce8f16
 Revises: 7fc140ef6ec7

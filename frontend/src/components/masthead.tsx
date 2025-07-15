@@ -163,7 +163,7 @@ export function Masthead({
       <MastheadMain>
         {showSidebarToggle && <MastheadToggle>{toggle}</MastheadToggle>}
         <MastheadBrand data-codemods>
-          <Title headingLevel="h1">Agent Builder</Title>
+          <Title headingLevel="h1">AaaS</Title>
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent>{toolbar}</MastheadContent>

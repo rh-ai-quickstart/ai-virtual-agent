@@ -2,7 +2,7 @@
 Pydantic schemas for API request/response validation and serialization.
 
 This module defines all Pydantic models used for data validation, serialization,
-and API documentation generation throughout the AI Agent Builder application.
+and API documentation generation throughout the AI AaaS application.
 Each schema group corresponds to a specific domain:
 
 - User schemas: Authentication and user management

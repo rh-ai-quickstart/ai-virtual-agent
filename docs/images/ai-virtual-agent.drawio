@@ -76,7 +76,7 @@
         <mxCell id="q0MprUQv03H-z0zO9nw7-40" value="Ingestion Pipeline" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="102.5" y="594" width="160" height="45" as="geometry" />
         </mxCell>
-        <mxCell id="q0MprUQv03H-z0zO9nw7-41" value="AI Agent Builder&amp;nbsp;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+        <mxCell id="q0MprUQv03H-z0zO9nw7-41" value="AI AaaS&amp;nbsp;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
           <mxGeometry x="117" y="544" width="140" height="45" as="geometry" />
         </mxCell>
         <mxCell id="q0MprUQv03H-z0zO9nw7-43" value="Docling libraries" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">

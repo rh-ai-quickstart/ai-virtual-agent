@@ -2,7 +2,7 @@
 Database configuration and session management for PostgreSQL with SQLAlchemy async.
 
 This module sets up the async database engine and provides session management
-for the AI Agent Builder application.
+for the AI AaaS application.
 """
 
 import os

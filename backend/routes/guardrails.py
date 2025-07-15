@@ -2,7 +2,7 @@
 Guardrails API endpoints for managing AI safety and content filtering rules.
 
 This module provides CRUD operations for guardrails that define safety constraints
-and content filtering rules for AI Agent Builders.
+and content filtering rules for AI AaaSs.
 """
 
 from typing import List

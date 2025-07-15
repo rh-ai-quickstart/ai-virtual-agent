@@ -55,7 +55,7 @@ CREATE DATABASE ai_virtual_assistant;
 --     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 -- );
 
--- -- Agent Builders (Agents) table
+-- -- AaaSs (Agents) table
 -- CREATE TABLE virtual_assistants (
 --     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 --     name VARCHAR(255) NOT NULL,
@@ -66,14 +66,14 @@ CREATE DATABASE ai_virtual_assistant;
 --     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 -- );
 
--- -- Agent Builder Knowledge Bases (junction table)
+-- -- AaaS Knowledge Bases (junction table)
 -- CREATE TABLE virtual_assistant_knowledge_bases (
 --     virtual_assistant_id UUID REFERENCES virtual_assistants(id) ON DELETE CASCADE,
 --     knowledge_base_id VARCHAR(255),
 --     PRIMARY KEY (virtual_assistant_id, knowledge_base_id)
 -- );
 
--- -- Agent Builder Tools (junction table)
+-- -- AaaS Tools (junction table)
 -- CREATE TABLE virtual_assistant_tools (
 --     virtual_assistant_id UUID REFERENCES virtual_assistants(id) ON DELETE CASCADE,
 --     mcp_server_id VARCHAR(255),
@@ -112,7 +112,7 @@ CREATE DATABASE ai_virtual_assistant;
 --     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 -- );
 
--- -- Agent Builder Guardrails (junction table)
+-- -- AaaS Guardrails (junction table)
 -- CREATE TABLE virtual_assistant_guardrails (
 --     virtual_assistant_id UUID REFERENCES virtual_assistants(id) ON DELETE CASCADE,
 --     guardrail_id UUID REFERENCES guardrails(id) ON DELETE CASCADE,
