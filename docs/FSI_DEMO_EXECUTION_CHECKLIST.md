@@ -64,30 +64,93 @@
 
 ---
 
-## 🎬 Demo Script (6-8 minutes)
+## 🎬 Multi-Person Demo Script (8-10 minutes)
 
-### **Opening (30 seconds)**
-*"Today I'll demonstrate how our AI Virtual Agent platform transforms banking operations. We'll see how different AI agents work together to process a complex business loan application, ensuring compliance while providing excellent customer service."*
+### **Demo Team Roles**
 
-### **Demo Flow**
+#### **👤 Presenter 1: Sarah Chen - Banking Operations Manager**
+- **Role**: Demonstrates customer service workflow and initial loan processing
+- **Expertise**: Branch operations, customer experience, regulatory procedures
+- **Focus**: Professional customer interaction and process efficiency
 
-#### **1. Customer Service Representative (2-3 minutes)**
-- **Context**: Business owner with $250,000 loan application
-- **Focus**: Professional handling, clear procedures, customer guidance
-- **Business Value**: Immediate access to current procedures, professional service
+#### **👤 Presenter 2: Marcus Rodriguez - Compliance & Risk Officer**
+- **Role**: Handles fraud detection and compliance investigation
+- **Expertise**: AML procedures, regulatory compliance, risk assessment
+- **Focus**: Risk management and regulatory adherence
 
-#### **2. AML Investigator (2-3 minutes)**
-- **Context**: Red flags identified in the application
-- **Focus**: Risk assessment, compliance procedures, investigation steps
-- **Business Value**: Proactive compliance, structured investigation approach
+#### **👤 Presenter 3: Jennifer Park - Senior Commercial Lender**
+- **Role**: Makes final credit decision and loan structuring
+- **Expertise**: Commercial lending, credit analysis, business development
+- **Focus**: Credit decision-making and business growth
 
-#### **3. Commercial Loan Officer (2-3 minutes)**
-- **Context**: Credit decision with fraud team concerns
-- **Focus**: Credit analysis, risk management, loan structuring
-- **Business Value**: Informed decision-making, comprehensive risk assessment
+### **Opening (1 minute) - Sarah Chen**
+*"Welcome everyone! I'm Sarah Chen, Banking Operations Manager at Horizon Community Bank. Today we'll demonstrate how our AI Virtual Agent platform transforms complex banking workflows. We'll follow a real business loan application through three critical stages, showing how different AI agents work together to ensure compliance, manage risk, and deliver excellent customer service."*
 
-### **Closing (1 minute)**
-*"This demo shows how our AI agents work together to handle complex banking scenarios. Each agent brings specialized expertise while maintaining consistency with banking regulations. The result is faster, more accurate decision-making, improved compliance, and better customer service."*
+### **Demo Scenario: Tech Solutions LLC - $250,000 Business Loan Application**
+
+#### **🎯 Stage 1: Customer Service & Initial Processing (2-3 minutes) - Sarah Chen**
+
+**Sarah's Introduction:**
+*"Let me start by showing you how our Customer Service Representative agent handles the initial loan application. This is where the customer journey begins."*
+
+**Action**: Sarah switches to Customer Service Representative agent in the chat interface.
+
+**Sarah's Question** (exactly as written):
+*"Hi, I'm a customer service rep at Horizon Community Bank. A business owner just came in with a loan application for $250,000. The business is called 'Tech Solutions LLC' and they want to expand their operations. What should I do first?"*
+
+**Sarah's Transition** (after agent responds):
+*"Perfect! The agent provided clear documentation requirements and procedures. Now, as we process this application, our system has identified some potential red flags that require investigation. Let me hand this over to Marcus, our Compliance Officer."*
+
+---
+
+#### **🔍 Stage 2: Fraud Detection & Compliance Investigation (2-3 minutes) - Marcus Rodriguez**
+
+**Marcus's Introduction:**
+*"Thank you, Sarah. I'm Marcus Rodriguez, Compliance & Risk Officer. When our system flags potential risks, our AML Investigator agent helps us conduct thorough due diligence. Let me show you how this works."*
+
+**Action**: Marcus switches to AML Investigator agent in the chat interface.
+
+**Marcus's Question** (exactly as written):
+*"I'm reviewing the Tech Solutions LLC loan application. The business was incorporated only 3 months ago, but they're requesting $250,000. The owner has no prior banking history with us, and the business address is a residential property. What red flags should I investigate?"*
+
+**Marcus's Transition** (after agent responds):
+*"Excellent! The agent identified specific compliance risks and investigation steps. Now that we have a clear risk assessment, let me pass this to Jennifer, our Senior Commercial Lender, for the final credit decision."*
+
+---
+
+#### **💰 Stage 3: Credit Decision & Loan Structuring (2-3 minutes) - Jennifer Park**
+
+**Jennifer's Introduction:**
+*"Thank you, Marcus. I'm Jennifer Park, Senior Commercial Lender. Even with identified risks, we need to make informed credit decisions. Our Commercial Loan Officer agent helps us balance risk with opportunity."*
+
+**Action**: Jennifer switches to Commercial Loan Officer agent in the chat interface.
+
+**Jennifer's Question** (exactly as written):
+*"I'm the commercial loan officer reviewing the Tech Solutions LLC application. The fraud team has flagged some concerns, but the business plan looks solid. They have a $50,000 deposit and good credit score. What factors should I consider for approval, and what additional documentation should I request?"*
+
+**Jennifer's Analysis** (after agent responds):
+*"Perfect! The agent provided comprehensive credit analysis and risk mitigation strategies. This demonstrates how our AI platform enables informed decision-making while maintaining compliance."*
+
+---
+
+### **Closing (1-2 minutes) - Sarah Chen**
+
+**Sarah's Summary:**
+*"Thank you, team! This demo shows the power of our AI Virtual Agent platform in real-world banking scenarios. We've seen how three specialized agents work together seamlessly:*
+
+- *Customer Service ensures professional, efficient processing*
+- *AML Investigation maintains regulatory compliance and risk management*
+- *Commercial Lending enables informed credit decisions*
+
+*The result is faster, more accurate decision-making, improved compliance, and better customer service. Each agent brings specialized expertise while maintaining consistency across our banking operations. This is how AI transforms banking workflows."*
+
+### **Key Demo Highlights**
+
+ **Logical Workflow**: Customer Service → Compliance → Credit Decision  
+ **Realistic Scenario**: Tech Solutions LLC loan application  
+ **Clear Transitions**: Each presenter hands off to the next  
+ **Business Value**: Shows operational efficiency and risk management  
+ **Technical Capabilities**: Demonstrates agent specialization and collaboration
 
 ---
 
@@ -121,7 +184,7 @@
 ### **Demo Flow Success**
 -  Smooth transition between agents
 -  Each step builds on the previous one
--  Business value is clear and compelling
+-  Business value is clear and impactful
 -  Technical capabilities are naturally demonstrated
 
 ---
