@@ -3,10 +3,18 @@ import json
 import os
 
 from llama_stack_client.lib.agents.react.tool_parser import ReActOutput
+from llama_stack_client.types import SamplingParams
 
 from ..agents import ExistingAgent, ExistingReActAgent
 from ..api.llamastack import client
 from ..utils.logging_config import get_logger
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import Optional
+
+from .chat_sessions import create_chat_session, CreateSessionRequest
 
 logger = get_logger(__name__)
 
@@ -126,7 +134,10 @@ class Chat:
                         "type": "json_schema",
                         "json_schema": ReActOutput.model_json_schema(),
                     },
-                    sampling_params={"strategy": {"type": "greedy"}, "max_tokens": 512},
+                    sampling_params=SamplingParams(
+                        strategy={"type": "greedy"},
+                        max_tokens=512,
+                    ),
                 )
             else:
                 return ExistingAgent(
@@ -138,10 +149,10 @@ class Chat:
                         "always respond with a summary of the result."
                     ),
                     tools=tools,
-                    sampling_params={
-                        "strategy": {"type": "greedy"},
-                        "max_tokens": 512,
-                    },
+                    sampling_params=SamplingParams(
+                        strategy={"type": "greedy"},
+                        max_tokens=512,
+                    ),
                 )
         except Exception as e:
             self.log.error(f"Error creating agent with ID {agent_id}: {e}")
@@ -202,7 +213,7 @@ class Chat:
             for chunk in self._format_tool_results_summary_json(tool_results):
                 yield chunk
 
-    def _process_inference_step(self, current_step_content, tool_results, final_answer):
+    def _process_inference_step(self, current_step_content, tool_results, final_answer):  # noqa: F841
         """Original method for backward compatibility"""
         try:
             react_output_data = json.loads(current_step_content)
@@ -456,6 +467,18 @@ class Chat:
         yield json.dumps({"type": "session", "sessionId": session_id})
 
         for response in turn_response:
+            # Check if there's an error in the response
+            if hasattr(response, 'error') and response.error:
+                error_msg = f"LlamaStack Error: {response.error.get('message', 'Unknown error')}"
+                yield json.dumps({"type": "error", "content": error_msg})
+                return
+            
+            # Check if event is None (which indicates an error)
+            if not hasattr(response, 'event') or response.event is None:
+                error_msg = "LlamaStack Error: Received null event response"
+                yield json.dumps({"type": "error", "content": error_msg})
+                return
+            
             if hasattr(response.event, "payload"):
                 logger.debug(response.event.payload)
                 if response.event.payload.event_type == "step_progress":
@@ -545,3 +568,65 @@ class Chat:
                     ),
                 }
             )
+
+router = APIRouter(prefix="/chat", tags=["chat"])
+
+class ChatRequest(BaseModel):
+    virtualAssistantId: str
+    messages: list
+    stream: bool = True
+    sessionId: Optional[str] = None
+
+@router.post("/")
+async def chat_endpoint(request: ChatRequest):
+    """
+    Chat endpoint that streams responses from LlamaStack agents.
+    """
+    try:
+        # Create chat instance
+        chat_instance = Chat(logger)
+        
+        # Get session ID (use existing or create new properly)
+        session_id = request.sessionId
+        if not session_id:
+            # Create a new session using the proper API
+            session_request = CreateSessionRequest(
+                agent_id=request.virtualAssistantId,
+                session_name=None
+            )
+            session_response = await create_chat_session(session_request)
+            session_id = session_response["id"]
+        
+        # Get the last user message
+        if not request.messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        last_message = request.messages[-1]
+        if last_message["role"] != "user":
+            raise HTTPException(status_code=400, detail="Last message must be from user")
+        
+        prompt = last_message["content"]
+        
+        # Stream the response
+        def generate():
+            for chunk in chat_instance.stream(
+                agent_id=request.virtualAssistantId,
+                session_id=session_id,
+                prompt=prompt
+            ):
+                yield f"data: {chunk}\n\n"
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            generate(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

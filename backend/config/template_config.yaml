@@ -1,0 +1,54 @@
+# Template Service Configuration
+template_service:
+  # Directory settings
+  templates_dir: "templates"  # Relative to project root, or absolute path
+  
+  # Cache settings
+  cache:
+    ttl_seconds: 300  # 5 minutes
+    enabled: true
+  
+  # Default agent settings (used when not specified in YAML)
+  default_agent_settings:
+    temperature: 0.1
+    repetition_penalty: 1.0
+    max_tokens: 4096
+    top_p: 0.95
+    max_infer_iters: 10
+    input_shields: []
+    output_shields: []
+    knowledge_base_ids: []
+    tools: []
+  
+  # Validation rules
+  validation:
+    required_template_fields:
+      - "id"
+      - "name" 
+      - "description"
+      - "category"
+      - "agents"
+    
+    required_agent_fields:
+      - "name"
+      - "model_name"
+      - "prompt"
+    
+    numeric_agent_fields:
+      - "temperature"
+      - "repetition_penalty"
+      - "max_tokens"
+      - "top_p"
+      - "max_infer_iters"
+    
+    list_agent_fields:
+      - "tools"
+      - "knowledge_base_ids"
+      - "input_shields"
+      - "output_shields"
+  
+  # Deployment settings
+  deployment:
+    max_agents_per_deployment: 10
+    timeout_seconds: 300
+    retry_attempts: 3 

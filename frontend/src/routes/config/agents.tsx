@@ -1,7 +1,7 @@
-import { AgentList } from '@/components/agent-list';
 import { NewAgentCard } from '@/components/new-agent-card';
-import { createAgent } from '@/services/agents';
-import { personaStorage } from '@/services/persona-storage';
+import { TemplateList } from '@/components/template-list';
+import { templateService } from '@/services/templates';
+import { createAgent, fetchAgents } from '@/services/agents';
 import { ToolAssociationInfo } from '@/types';
 import { 
   Flex, 
@@ -16,12 +16,19 @@ import {
   ModalFooter,
   Card,
   CardBody,
-  Label
+  Label,
+  Tabs,
+  Tab,
+  TabTitleText,
+  AlertActionCloseButton
 } from '@patternfly/react-core';
-import { MagicIcon, RocketIcon } from '@patternfly/react-icons';
+import { MagicIcon, RocketIcon, PlusIcon, BookOpenIcon, UsersIcon } from '@patternfly/react-icons';
 import { createFileRoute } from '@tanstack/react-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { TemplateAgentList } from '@/components/template-agent-list';
+import { personaStorage } from '@/services/persona-storage';
+import { useSearch } from '@tanstack/react-router';
 
 // Type def for fetching agents
 export interface Agent {
@@ -29,12 +36,18 @@ export interface Agent {
   name: string;
   model_name: string;
   prompt: string;
-  persona?: string; // Added persona field
   tools: ToolAssociationInfo[];
   knowledge_base_ids: string[];
   created_by: string;
   created_at: string;
   updated_at: string;
+  metadata?: {
+    template_id?: string;
+    template_name?: string;
+    persona?: string;
+    deployed_from_template?: boolean;
+    deployment_timestamp?: string;
+  };
 }
 
 // Type def for creating agents
@@ -42,24 +55,22 @@ export interface NewAgent {
   name: string;
   model_name: string;
   prompt: string;
-  persona?: string; // Added persona field
   tools: ToolAssociationInfo[];
   knowledge_base_ids: string[];
 }
 
 // NEW: Banking demo agents configuration
-const BANKING_DEMO_AGENTS = [
+const BANKING_DEMO_AGENTS: NewAgent[] = [
   {
-    name: 'Compliance Policy Assistant',
-    persona: 'compliance_officer',
-    prompt: 'You are a Compliance Policy Agent for a US bank. You help ensure adherence to US banking regulations including BSA/AML, OFAC, CFPB, OCC, and FDIC guidance. You provide accurate information about compliance procedures, reporting requirements, and regulatory updates.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
+    name: "Compliance Policy Assistant",
+    description: "Ensures adherence to US banking regulations",
+    prompt: "You are a Compliance Policy Agent for a US bank. You help ensure adherence to US banking regulations including BSA/AML, OFAC, CFPB, OCC, and FDIC guidance. You provide accurate information about compliance procedures, reporting requirements, and regulatory updates.",
+    model_name: "meta-llama/Llama-3.1-8B-Instruct",
+    tools: [{ toolgroup_id: "builtin::websearch" }],
+    knowledge_base_ids: [],
   },
   {
     name: 'Lending Policy Assistant',
-    persona: 'relationship_manager',
     prompt: 'You are a Lending Policy Assistant for relationship managers and loan officers. You help with credit assessment, lending requests, documentation requirements, and regulatory compliance for loans. You know FHA guidelines, conventional loan requirements, and small business lending procedures.',
     model_name: 'meta-llama/Llama-3.1-8B-Instruct',
     tools: [{ toolgroup_id: 'builtin::websearch' }],
@@ -67,7 +78,6 @@ const BANKING_DEMO_AGENTS = [
   },
   {
     name: 'Customer Service Assistant',
-    persona: 'branch_teller',
     prompt: 'You are a Customer Service Assistant for branch tellers and customer service representatives. You help with day-to-day customer queries about product fees, account policies, transaction processing, and regulatory timelines. You provide accurate information about bank products and services.',
     model_name: 'meta-llama/Llama-3.1-8B-Instruct',
     tools: [{ toolgroup_id: 'builtin::websearch' }],
@@ -75,7 +85,6 @@ const BANKING_DEMO_AGENTS = [
   },
   {
     name: 'Fraud Detection Assistant',
-    persona: 'fraud_analyst',
     prompt: 'You are a Fraud Detection Assistant for fraud analysts and AML specialists. You help review alerts for suspicious transactions, investigate AML/BSA/OFAC red flags, and ensure reporting compliance. You provide guidance on escalation procedures and regulatory requirements.',
     model_name: 'meta-llama/Llama-3.1-8B-Instruct',
     tools: [{ toolgroup_id: 'builtin::websearch' }],
@@ -83,7 +92,6 @@ const BANKING_DEMO_AGENTS = [
   },
   {
     name: 'Training & Market Intelligence Assistant',
-    persona: 'training_lead',
     prompt: 'You are a Training & Market Intelligence Assistant for training leads and analysts. You help keep staff current on new US regulations, industry certifications, and market developments. You provide information about regulatory updates, certification requirements, and industry best practices.',
     model_name: 'meta-llama/Llama-3.1-8B-Instruct',
     tools: [{ toolgroup_id: 'builtin::websearch' }],
@@ -91,7 +99,6 @@ const BANKING_DEMO_AGENTS = [
   },
   {
     name: 'IT Support Assistant',
-    persona: 'it_support',
     prompt: 'You are an IT Support Assistant for banking operations. You help support banking employees with system/process issues and ensure adherence to IT policies. You provide guidance on password resets, system access, security protocols, and technical procedures.',
     model_name: 'meta-llama/Llama-3.1-8B-Instruct',
     tools: [{ toolgroup_id: 'builtin::websearch' }],
@@ -104,9 +111,131 @@ export const Route = createFileRoute('/config/agents')({
 });
 
 export function Agents() {
+  const search = useSearch({ from: '/config/agents' });
+  const [activeTab, setActiveTab] = useState(0);
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [demoProgress, setDemoProgress] = useState<string[]>([]);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Use React Query with better error handling
+  const { 
+    data: templates = [], 
+    isLoading: isLoadingTemplates, 
+    error: templatesError,
+    refetch: refetchTemplates 
+  } = useQuery({
+    queryKey: ['templates'],
+    queryFn: async () => {
+      console.log('Fetching templates...');
+      const response = await templateService.getTemplates();
+      console.log('Templates response:', response);
+      return response;
+    },
+    staleTime: 600000, // 10 minutes
+    gcTime: 1800000, // 30 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on network interruption errors
+      if (error.message?.includes('message channel closed')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: 2000,
+  });
+
+  // Use React Query for categories
+  const { 
+    data: categories = [], 
+    isLoading: isLoadingCategories 
+  } = useQuery({
+    queryKey: ['template-categories'],
+    queryFn: async () => {
+      const response = await templateService.getCategories();
+      return response;
+    },
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Use React Query for agents
+  const { 
+    data: agents = [], 
+    isLoading: isLoadingAgents 
+  } = useQuery({
+    queryKey: ['agents'],
+    queryFn: fetchAgents,
+    staleTime: 10000, // 10 seconds
+  });
+
+  // Initialize personas from agent metadata when agents are loaded
+  useEffect(() => {
+    if (agents && agents.length > 0) {
+      personaStorage.initializeFromAgents(agents);
+    }
+  }, [agents]);
+
+  // Handle tab selection from URL search params
+  useEffect(() => {
+    if (search.tab === 'my-agents') {
+      setActiveTab(2); // Switch to "My Agents" tab
+    } else if (search.tab === 'templates') {
+      setActiveTab(0); // Switch to "Templates" tab
+    } else if (search.tab === 'new-agent') {
+      setActiveTab(1); // Switch to "New Agent" tab
+    }
+  }, [search.tab]);
+
+  const handleDeploy = async (templateId: string, selectedAgents?: string[]) => {
+    try {
+      setIsDeploying(true);
+      setError(null);
+      
+      const result = await templateService.deployTemplate(templateId, selectedAgents);
+      console.log('Deployment result:', result);
+      
+      if (result.success) {
+        const agentCount = selectedAgents ? selectedAgents.length : 'all';
+        setSuccess(`Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`);
+        
+        // Auto-dismiss success message after 5 seconds
+        setTimeout(() => {
+          setSuccess(null);
+        }, 5000);
+        
+        // Save persona mappings for deployed agents
+        if (result.deployed_agents) {
+          console.log('Deployed agents with metadata:', result.deployed_agents);
+          result.deployed_agents.forEach((agent: any) => {
+            console.log(`Agent ${agent.name} metadata:`, agent.metadata);
+            if (agent.metadata?.persona) {
+              console.log(`Saving persona "${agent.metadata.persona}" for agent ${agent.id} from template ${templateId}`);
+              personaStorage.setPersona(agent.id, agent.metadata.persona, templateId);
+            } else {
+              console.log(`No persona found in metadata for agent ${agent.id}`);
+            }
+          });
+        } else {
+          console.log('No deployed_agents in result:', result);
+        }
+        
+        // Refresh both templates and agents
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['templates'] }),
+          queryClient.invalidateQueries({ queryKey: ['agents'] })
+        ]);
+        // Automatically switch to Agents tab
+        setActiveTab(2); // Changed from 0 to 2 for "My Agents" tab
+      } else {
+        setError(result.error || 'Deployment failed');
+      }
+    } catch (err: any) {
+      setError('Deployment failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   // Mutation for creating demo agents
   const createDemoMutation = useMutation({
@@ -116,16 +245,8 @@ export function Agents() {
       
       for (const demoAgent of BANKING_DEMO_AGENTS) {
         try {
-          // Extract persona from the demo agent
-          const { persona, ...agentPayload } = demoAgent;
-          
-          // Create the agent
-          const createdAgent = await createAgent(agentPayload as NewAgent);
-          
-          // Save persona mapping if persona exists
-          if (persona && createdAgent.id) {
-            personaStorage.setPersona(createdAgent.id, persona);
-          }
+          // Create the agent without persona field
+          const createdAgent = await createAgent(demoAgent as NewAgent);
           
           results.push(createdAgent);
           setDemoProgress(prev => [...prev, `✅ Created ${demoAgent.name}`]);
@@ -142,7 +263,7 @@ export function Agents() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
-              setDemoProgress(prev => [...prev, '🏦 Banking templates deployed successfully!']);
+      setDemoProgress(prev => [...prev, '🏦 Banking templates deployed successfully!']);
       setTimeout(() => {
         setShowDemoModal(false);
         setDemoProgress([]);
@@ -159,59 +280,95 @@ export function Agents() {
     createDemoMutation.mutate();
   };
 
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   return (
     <PageSection>
       <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
         <FlexItem>
-          <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
-            <FlexItem>
-              <Title headingLevel="h1">Agents</Title>
-            </FlexItem>
-            {/* NEW: Banking Templates Button */}
-            <FlexItem>
-              <Button
-                variant="tertiary"
-                icon={<RocketIcon />}
-                onClick={handleCreateDemo}
-                isDisabled={createDemoMutation.isPending}
-              >
-                Use Banking Templates
-              </Button>
-            </FlexItem>
-          </Flex>
-        </FlexItem>
-        
-        {/* NEW: Banking Templates Card */}
-        <FlexItem>
-          <Card>
-            <CardBody>
-              <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
-                <FlexItem>
-                  <MagicIcon />
-                </FlexItem>
-                <FlexItem flex={{ default: 'flex_1' }}>
-                  <strong>Banking Templates:</strong> Get started quickly with pre-configured banking agent templates. Choose from specialized roles designed for financial institutions.
-                </FlexItem>
-                <FlexItem>
-                  <Flex gap={{ default: 'gapXs' }}>
-                    <Label color="red" variant="outline">Compliance</Label>
-                    <Label color="green" variant="outline">Lending</Label>
-                    <Label color="blue" variant="outline">Customer Service</Label>
-                    <Label color="orange" variant="outline">Fraud</Label>
-                    <Label color="purple" variant="outline">Training</Label>
-                    <Label color="grey" variant="outline">IT Support</Label>
-                  </Flex>
-                </FlexItem>
-              </Flex>
-            </CardBody>
-          </Card>
+          <Title headingLevel="h1">AI Agent Management</Title>
+          <p>Create, deploy, and manage intelligent AI agents for your organization.</p>
         </FlexItem>
 
         <FlexItem>
-          <NewAgentCard />
-        </FlexItem>
-        <FlexItem>
-          <AgentList />
+          <Tabs 
+            activeKey={activeTab} 
+            onSelect={(_, tabIndex) => setActiveTab(tabIndex as number)}
+          >
+            <Tab 
+              eventKey={0} 
+              title={<TabTitleText icon={<BookOpenIcon />}>Templates</TabTitleText>}
+            >
+              <div style={{ padding: '1rem 0' }}>
+                {error && (
+                  <Alert
+                    variant="danger"
+                    title="Error"
+                    actionClose={<AlertActionCloseButton onClose={clearMessages} />}
+                    style={{ marginBottom: '1rem' }}
+                  >
+                    {error}
+                  </Alert>
+                )}
+
+                {success && (
+                  <Alert
+                    variant="success"
+                    title="Success"
+                    actionClose={<AlertActionCloseButton onClose={clearMessages} />}
+                    style={{ marginBottom: '1rem' }}
+                  >
+                    {success}
+                  </Alert>
+                )}
+
+                {templatesError && (
+                  <Alert
+                    variant="warning"
+                    title="Warning"
+                    style={{ marginBottom: '1rem' }}
+                  >
+                    Failed to load templates. <Button variant="link" onClick={() => refetchTemplates()}>Retry</Button>
+                  </Alert>
+                )}
+
+                <TemplateList
+                  templates={templates}
+                  agents={agents || []} // Add agents prop
+                  onDeploy={handleDeploy}
+                  isDeploying={isDeploying}
+                  isLoading={isLoadingTemplates}
+                  selectedCategory=""
+                />
+              </div>
+            </Tab>
+            
+            <Tab 
+              eventKey={1} 
+              title={<TabTitleText icon={<PlusIcon />}>New Agent</TabTitleText>}
+            >
+              <div style={{ padding: '1rem 0' }}>
+                <NewAgentCard />
+              </div>
+            </Tab>
+            
+            <Tab 
+              eventKey={2} 
+              title={<TabTitleText icon={<UsersIcon />}>My Agents</TabTitleText>}
+            >
+              <div style={{ padding: '1rem 0' }}>
+                <TemplateAgentList 
+                  agents={agents || []} 
+                  templates={templates || []} // Add templates prop
+                  isLoading={isLoadingAgents} 
+                  onSwitchToTemplates={() => setActiveTab(0)} // Add this prop
+                />
+              </div>
+            </Tab>
+          </Tabs>
         </FlexItem>
       </Flex>
 

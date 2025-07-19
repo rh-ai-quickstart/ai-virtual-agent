@@ -25,9 +25,11 @@ from .routes import (
     llama_stack,
     mcp_servers,
     model_servers,
+    templates,  # NEW: Add templates import
     tools,
     users,
     virtual_assistants,
+    chat,
 )
 from .utils.logging_config import get_logger, setup_logging
 
@@ -39,7 +41,7 @@ logger = get_logger(__name__)
 
 app = FastAPI()
 
-origins = ["*"]  # Update this with the frontend domain in production
+origins = ["http://localhost:5173", "http://localhost:3000", "*"]  # Add your frontend URL
 
 app.add_middleware(
     CORSMiddleware,
@@ -86,6 +88,8 @@ app.include_router(guardrails.router, prefix="/api")
 app.include_router(model_servers.router, prefix="/api")
 app.include_router(llama_stack.router, prefix="/api")
 app.include_router(chat_sessions.router, prefix="/api")
+app.include_router(templates.router, prefix="/api")  # NEW: Add templates router
+app.include_router(chat.router, prefix="/api")
 
 
 # Serve React App (frontend)

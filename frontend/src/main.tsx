@@ -1,6 +1,8 @@
 import '@patternfly/chatbot/dist/css/main.css';
 import '@patternfly/react-core/dist/styles/base.css';
 import '@patternfly/react-styles/css/utilities/_index.css';
+import './styles/global.css'; // NEW: Import enhanced global styles
+import './styles/agent-cards.css';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';

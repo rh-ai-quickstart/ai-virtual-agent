@@ -1,0 +1,256 @@
+id: "fsi_banking"
+name: "Financial Services & Banking"
+description: "Complete banking foundation with customer service, lending, and fraud prevention capabilities"
+category: "banking"
+metadata:
+  success_rate: 95
+  deployment_time: "2 minutes"
+  agent_count: 6
+  features:
+    - "Customer Support"
+    - "Loan Processing"
+    - "Fraud Detection"
+    - "Account Management"
+    - "Compliance"
+    - "IT Support"
+
+personas:
+  compliance_officer:
+    label: "Compliance Officer"
+    description: "Ensures adherence to banking regulations and compliance procedures"
+    icon: "ShieldAltIcon"
+    color: "red"
+    className: "persona-compliance"
+    avatarBg: "#dc2626"
+    avatarIcon: "🛡️"
+    gradient: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+    borderColor: "#dc2626"
+    demo_questions:
+      - "What are the current BSA/AML reporting requirements for cash transactions over $10,000?"
+      - "How do I handle a customer who appears on the OFAC sanctions list?"
+      - "What are the CFPB requirements for mortgage loan disclosures?"
+      - "What's the process for filing a Suspicious Activity Report (SAR)?"
+    agents:
+      - name: "BSA/AML Specialist"
+        description: "Handles Bank Secrecy Act and Anti-Money Laundering compliance"
+        prompt: "You are a BSA/AML Specialist for a US bank. You help ensure compliance with Bank Secrecy Act regulations, including CTR filing, SAR reporting, and customer due diligence. You provide guidance on suspicious activity detection and regulatory reporting requirements."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What are the current BSA/AML reporting requirements for cash transactions over $10,000?"
+          - "How do I handle a customer who appears on the OFAC sanctions list?"
+          - "What's the process for filing a Suspicious Activity Report (SAR)?"
+          - "What are the red flags for suspicious activity in customer transactions?"
+
+      - name: "Regulatory Compliance Officer"
+        description: "Manages overall regulatory compliance and policy enforcement"
+        prompt: "You are a Regulatory Compliance Officer for a US bank. You help ensure adherence to all banking regulations including CFPB, OCC, FDIC, and state-specific requirements. You provide guidance on compliance procedures, policy updates, and regulatory changes."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What are the CFPB requirements for mortgage loan disclosures?"
+          - "How do I stay updated on regulatory changes affecting our bank?"
+          - "What are the OCC requirements for risk management?"
+          - "How do I ensure our policies comply with state-specific regulations?"
+
+  relationship_manager:
+    label: "Relationship Manager"
+    description: "Handles lending requests and credit assessment"
+    icon: "DollarSignIcon"
+    color: "green"
+    className: "persona-lending"
+    avatarBg: "#059669"
+    avatarIcon: "💰"
+    gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)"
+    borderColor: "#059669"
+    demo_questions:
+      - "What documentation is required for a small business loan application?"
+      - "How do I assess credit risk for a new commercial client?"
+      - "What are the current FHA loan limits and requirements?"
+      - "How do I calculate debt-to-income ratios for loan approval?"
+    agents:
+      - name: "Commercial Loan Officer"
+        description: "Specializes in business lending and commercial credit"
+        prompt: "You are a Commercial Loan Officer for a US bank. You help with commercial lending requests, credit analysis, and business loan processing. You know SBA lending programs, commercial real estate financing, and business credit assessment."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What documentation is required for a commercial real estate loan?"
+          - "How do I assess credit risk for a new commercial client?"
+          - "What are the SBA 7(a) loan requirements and limits?"
+          - "How do I calculate debt service coverage ratios?"
+
+      - name: "Small Business Specialist"
+        description: "Focuses on small business lending and support"
+        prompt: "You are a Small Business Specialist for a US bank. You help small business owners with loan applications, financial planning, and business development. You know SBA 7(a) and 504 programs, microloans, and small business credit requirements."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What documentation is required for a small business loan application?"
+          - "What are the current FHA loan limits and requirements?"
+          - "How do I calculate debt-to-income ratios for loan approval?"
+          - "What are the SBA 504 program requirements?"
+
+  branch_operations:
+    label: "Branch Operations"
+    description: "Handles day-to-day branch operations and customer service"
+    icon: "UserIcon"
+    color: "blue"
+    className: "persona-customer"
+    avatarBg: "#2563eb"
+    avatarIcon: "👥"
+    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+    borderColor: "#2563eb"
+    demo_questions:
+      - "What are the daily withdrawal limits for different account types?"
+      - "How do I handle a customer reporting a lost or stolen card?"
+      - "What's the process for opening a new business account?"
+      - "How do I verify customer identity for large transactions?"
+    agents:
+      - name: "Customer Service Representative"
+        description: "Assists with customer queries and account services"
+        prompt: "You are a Customer Service Representative for a US bank. You help customers with account inquiries, transaction processing, and product information. You provide guidance on fees, policies, and regulatory timelines."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What are the daily withdrawal limits for different account types?"
+          - "How do I handle a customer reporting a lost or stolen card?"
+          - "What's the process for opening a new personal account?"
+          - "How do I explain account fees and charges to customers?"
+
+      - name: "Teller Supervisor"
+        description: "Manages teller operations and cash handling"
+        prompt: "You are a Teller Supervisor for a US bank. You oversee teller operations, cash handling procedures, and customer transactions. You ensure compliance with cash reporting requirements and transaction limits."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What's the process for opening a new business account?"
+          - "How do I verify customer identity for large transactions?"
+          - "What are the cash reporting requirements for transactions over $10,000?"
+          - "How do I handle cash shortages or overages in the vault?"
+
+  fraud_analyst:
+    label: "Fraud Analyst"
+    description: "Reviews alerts and investigates suspicious activities"
+    icon: "EyeIcon"
+    color: "orange"
+    className: "persona-fraud"
+    avatarBg: "#ea580c"
+    avatarIcon: "🔍"
+    gradient: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)"
+    borderColor: "#ea580c"
+    demo_questions:
+      - "What are the red flags for potential money laundering?"
+      - "How do I investigate suspicious transaction patterns?"
+      - "What's the escalation process for high-risk alerts?"
+      - "How do I determine if a transaction requires CTR filing?"
+    agents:
+      - name: "AML Investigator"
+        description: "Investigates money laundering and suspicious activities"
+        prompt: "You are an AML Investigator for a US bank. You investigate suspicious transactions, money laundering patterns, and OFAC compliance issues. You help with SAR filing and escalation procedures."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What are the red flags for potential money laundering?"
+          - "How do I investigate suspicious transaction patterns?"
+          - "What's the escalation process for high-risk alerts?"
+          - "How do I determine if a transaction requires CTR filing?"
+
+  it_support:
+    label: "IT Support"
+    description: "Provides technical support for banking operations"
+    icon: "CogIcon"
+    color: "grey"
+    className: "persona-it"
+    avatarBg: "#6b7280"
+    avatarIcon: "⚙️"
+    gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)"
+    borderColor: "#6b7280"
+    demo_questions:
+      - "How do I reset a user's password in the banking system?"
+      - "What's the process for granting system access to new employees?"
+      - "How do I troubleshoot login issues with the core banking platform?"
+      - "What security protocols should I follow for remote access?"
+    agents:
+      - name: "Banking Systems Support"
+        description: "Supports core banking systems and applications"
+        prompt: "You are a Banking Systems Support specialist for a US bank. You help employees with core banking platform issues, system access, and technical procedures. You ensure compliance with IT security policies."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "How do I reset a user's password in the banking system?"
+          - "What's the process for granting system access to new employees?"
+          - "How do I troubleshoot login issues with the core banking platform?"
+          - "What security protocols should I follow for remote access?" 

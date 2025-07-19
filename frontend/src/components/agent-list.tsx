@@ -1,7 +1,7 @@
 import { AgentCard } from '@/components/agent-card';
 import { Agent } from '@/routes/config/agents';
 import { fetchAgents } from '@/services/agents';
-import { Alert, Flex, Spinner } from '@patternfly/react-core';
+import { Alert, Spinner } from '@patternfly/react-core';
 import { useQuery } from '@tanstack/react-query';
 
 export function AgentList() {
@@ -27,13 +27,23 @@ export function AgentList() {
         <p>No agents configured yet.</p>
       )}
       {!isLoadingAgents && !agentsError && agents && agents.length > 0 && (
-        <Flex direction={{ default: 'column' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: '1rem',
+          padding: '1rem 0'
+        }}>
           {agents
-            .sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''))
+            .sort((a, b) => {
+              // Safe sorting with fallback for missing dates
+              const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+              const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+              return dateB - dateA;
+            })
             .map((agent) => (
               <AgentCard key={agent.id} agent={agent} />
             ))}
-        </Flex>
+        </div>
       )}
     </div>
   );

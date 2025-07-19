@@ -1,0 +1,198 @@
+/* OLED Black Background for Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --oled-black: #000000;
+    --oled-card-bg: #0a0a0a;
+    --oled-border: #1a1a1a;
+    --oled-hover: #0f0f0f;
+  }
+  
+  body {
+    background-color: var(--oled-black) !important;
+  }
+  
+  .pf-v6-c-page__main {
+    background-color: var(--oled-black) !important;
+  }
+  
+  .pf-v6-c-page__main-section {
+    background-color: var(--oled-black) !important;
+  }
+}
+
+/* Enhanced Agent Cards */
+.agent-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.agent-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.agent-card:active {
+  transform: translateY(-2px);
+}
+
+.agent-card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
+  background: linear-gradient(135deg, var(--pf-v6-global--BackgroundColor--100) 0%, var(--pf-v6-global--BackgroundColor--200) 100%);
+}
+
+.agent-card-body {
+  padding: 1.5rem;
+}
+
+.agent-card-footer {
+  padding: 1rem 1.5rem;
+  background-color: var(--pf-v6-global--BackgroundColor--200);
+  border-top: 1px solid var(--pf-v6-global--BorderColor--100);
+}
+
+.agent-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  margin-right: 1rem;
+}
+
+.agent-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.agent-stat {
+  text-align: center;
+  padding: 0.75rem;
+  background-color: var(--pf-v6-global--BackgroundColor--200);
+  border-radius: 8px;
+  border: 1px solid var(--pf-v6-global--BorderColor--100);
+}
+
+.agent-stat-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--pf-v6-global--Color--100);
+}
+
+.agent-stat-label {
+  font-size: 0.875rem;
+  color: var(--pf-v6-global--Color--200);
+  margin-top: 0.25rem;
+}
+
+.agent-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.agent-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Persona-specific styling */
+.persona-compliance {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-color: #dc2626;
+}
+
+.persona-lending {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #059669;
+}
+
+.persona-customer {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #2563eb;
+}
+
+.persona-fraud {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  border-color: #ea580c;
+}
+
+.persona-training {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border-color: #7c3aed;
+}
+
+.persona-it {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  border-color: #6b7280;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.status-active {
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.status-inactive {
+  background-color: #6b7280;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .agent-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .agent-card-header {
+    padding: 1rem;
+  }
+  
+  .agent-card-body {
+    padding: 1rem;
+  }
+} 
+
+.demo-question-button:hover {
+  color: var(--pf-v6-global--primary-color--100) !important;
+  text-decoration: underline !important;
+}
+
+.demo-question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--pf-v6-global--primary-color--100);
+}
+
+.demo-question-card:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.demo-questions {
+  background: var(--pf-v6-global--BackgroundColor--100);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--pf-v6-global--BorderColor--100);
+} 

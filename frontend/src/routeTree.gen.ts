@@ -10,12 +10,13 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root';
-import { Route as ConfigRouteImport } from './routes/config/route';
-import { Route as IndexImport } from './routes/index';
-import { Route as ConfigMcpServersImport } from './routes/config/mcp-servers';
-import { Route as ConfigKnowledgeBasesImport } from './routes/config/knowledge-bases';
-import { Route as ConfigAgentsImport } from './routes/config/agents';
+import { Route as rootRoute } from './routes/__root'
+import { Route as ConfigRouteImport } from './routes/config/route'
+import { Route as IndexImport } from './routes/index'
+import { Route as ConfigTemplatesImport } from './routes/config/templates'
+import { Route as ConfigMcpServersImport } from './routes/config/mcp-servers'
+import { Route as ConfigKnowledgeBasesImport } from './routes/config/knowledge-bases'
+import { Route as ConfigAgentsImport } from './routes/config/agents'
 
 // Create/Update Routes
 
@@ -23,143 +24,176 @@ const ConfigRouteRoute = ConfigRouteImport.update({
   id: '/config',
   path: '/config',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
+
+const ConfigTemplatesRoute = ConfigTemplatesImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => ConfigRouteRoute,
+} as any)
 
 const ConfigMcpServersRoute = ConfigMcpServersImport.update({
   id: '/mcp-servers',
   path: '/mcp-servers',
   getParentRoute: () => ConfigRouteRoute,
-} as any);
+} as any)
 
 const ConfigKnowledgeBasesRoute = ConfigKnowledgeBasesImport.update({
   id: '/knowledge-bases',
   path: '/knowledge-bases',
   getParentRoute: () => ConfigRouteRoute,
-} as any);
+} as any)
 
 const ConfigAgentsRoute = ConfigAgentsImport.update({
   id: '/agents',
   path: '/agents',
   getParentRoute: () => ConfigRouteRoute,
-} as any);
+} as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
     '/config': {
-      id: '/config';
-      path: '/config';
-      fullPath: '/config';
-      preLoaderRoute: typeof ConfigRouteImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof ConfigRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/config/agents': {
-      id: '/config/agents';
-      path: '/agents';
-      fullPath: '/config/agents';
-      preLoaderRoute: typeof ConfigAgentsImport;
-      parentRoute: typeof ConfigRouteImport;
-    };
+      id: '/config/agents'
+      path: '/agents'
+      fullPath: '/config/agents'
+      preLoaderRoute: typeof ConfigAgentsImport
+      parentRoute: typeof ConfigRouteImport
+    }
     '/config/knowledge-bases': {
-      id: '/config/knowledge-bases';
-      path: '/knowledge-bases';
-      fullPath: '/config/knowledge-bases';
-      preLoaderRoute: typeof ConfigKnowledgeBasesImport;
-      parentRoute: typeof ConfigRouteImport;
-    };
+      id: '/config/knowledge-bases'
+      path: '/knowledge-bases'
+      fullPath: '/config/knowledge-bases'
+      preLoaderRoute: typeof ConfigKnowledgeBasesImport
+      parentRoute: typeof ConfigRouteImport
+    }
     '/config/mcp-servers': {
-      id: '/config/mcp-servers';
-      path: '/mcp-servers';
-      fullPath: '/config/mcp-servers';
-      preLoaderRoute: typeof ConfigMcpServersImport;
-      parentRoute: typeof ConfigRouteImport;
-    };
+      id: '/config/mcp-servers'
+      path: '/mcp-servers'
+      fullPath: '/config/mcp-servers'
+      preLoaderRoute: typeof ConfigMcpServersImport
+      parentRoute: typeof ConfigRouteImport
+    }
+    '/config/templates': {
+      id: '/config/templates'
+      path: '/templates'
+      fullPath: '/config/templates'
+      preLoaderRoute: typeof ConfigTemplatesImport
+      parentRoute: typeof ConfigRouteImport
+    }
   }
 }
 
 // Create and export the route tree
 
 interface ConfigRouteRouteChildren {
-  ConfigAgentsRoute: typeof ConfigAgentsRoute;
-  ConfigKnowledgeBasesRoute: typeof ConfigKnowledgeBasesRoute;
-  ConfigMcpServersRoute: typeof ConfigMcpServersRoute;
+  ConfigAgentsRoute: typeof ConfigAgentsRoute
+  ConfigKnowledgeBasesRoute: typeof ConfigKnowledgeBasesRoute
+  ConfigMcpServersRoute: typeof ConfigMcpServersRoute
+  ConfigTemplatesRoute: typeof ConfigTemplatesRoute
 }
 
 const ConfigRouteRouteChildren: ConfigRouteRouteChildren = {
   ConfigAgentsRoute: ConfigAgentsRoute,
   ConfigKnowledgeBasesRoute: ConfigKnowledgeBasesRoute,
   ConfigMcpServersRoute: ConfigMcpServersRoute,
-};
+  ConfigTemplatesRoute: ConfigTemplatesRoute,
+}
 
-const ConfigRouteRouteWithChildren = ConfigRouteRoute._addFileChildren(ConfigRouteRouteChildren);
+const ConfigRouteRouteWithChildren = ConfigRouteRoute._addFileChildren(
+  ConfigRouteRouteChildren,
+)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/config': typeof ConfigRouteRouteWithChildren;
-  '/config/agents': typeof ConfigAgentsRoute;
-  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute;
-  '/config/mcp-servers': typeof ConfigMcpServersRoute;
+  '/': typeof IndexRoute
+  '/config': typeof ConfigRouteRouteWithChildren
+  '/config/agents': typeof ConfigAgentsRoute
+  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute
+  '/config/mcp-servers': typeof ConfigMcpServersRoute
+  '/config/templates': typeof ConfigTemplatesRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/config': typeof ConfigRouteRouteWithChildren;
-  '/config/agents': typeof ConfigAgentsRoute;
-  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute;
-  '/config/mcp-servers': typeof ConfigMcpServersRoute;
+  '/': typeof IndexRoute
+  '/config': typeof ConfigRouteRouteWithChildren
+  '/config/agents': typeof ConfigAgentsRoute
+  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute
+  '/config/mcp-servers': typeof ConfigMcpServersRoute
+  '/config/templates': typeof ConfigTemplatesRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  '/': typeof IndexRoute;
-  '/config': typeof ConfigRouteRouteWithChildren;
-  '/config/agents': typeof ConfigAgentsRoute;
-  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute;
-  '/config/mcp-servers': typeof ConfigMcpServersRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/config': typeof ConfigRouteRouteWithChildren
+  '/config/agents': typeof ConfigAgentsRoute
+  '/config/knowledge-bases': typeof ConfigKnowledgeBasesRoute
+  '/config/mcp-servers': typeof ConfigMcpServersRoute
+  '/config/templates': typeof ConfigTemplatesRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/config' | '/config/agents' | '/config/knowledge-bases' | '/config/mcp-servers';
-  fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/config' | '/config/agents' | '/config/knowledge-bases' | '/config/mcp-servers';
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/config'
+    | '/config/agents'
+    | '/config/knowledge-bases'
+    | '/config/mcp-servers'
+    | '/config/templates'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/config'
+    | '/config/agents'
+    | '/config/knowledge-bases'
+    | '/config/mcp-servers'
+    | '/config/templates'
   id:
     | '__root__'
     | '/'
     | '/config'
     | '/config/agents'
     | '/config/knowledge-bases'
-    | '/config/mcp-servers';
-  fileRoutesById: FileRoutesById;
+    | '/config/mcp-servers'
+    | '/config/templates'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  ConfigRouteRoute: typeof ConfigRouteRouteWithChildren;
+  IndexRoute: typeof IndexRoute
+  ConfigRouteRoute: typeof ConfigRouteRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfigRouteRoute: ConfigRouteRouteWithChildren,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -179,7 +213,8 @@ export const routeTree = rootRoute
       "children": [
         "/config/agents",
         "/config/knowledge-bases",
-        "/config/mcp-servers"
+        "/config/mcp-servers",
+        "/config/templates"
       ]
     },
     "/config/agents": {
@@ -192,6 +227,10 @@ export const routeTree = rootRoute
     },
     "/config/mcp-servers": {
       "filePath": "config/mcp-servers.tsx",
+      "parent": "/config"
+    },
+    "/config/templates": {
+      "filePath": "config/templates.tsx",
       "parent": "/config"
     }
   }

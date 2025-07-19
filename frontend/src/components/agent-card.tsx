@@ -1,12 +1,11 @@
 import { Agent } from '@/routes/config/agents';
 import { deleteAgent } from '@/services/agents';
 import { personaStorage } from '@/services/persona-storage';
+import { personaService, PersonaConfig } from '@/services/personas';
 import {
   Button,
   Card,
   CardBody,
-  CardExpandableContent,
-  CardHeader,
   CardTitle,
   Dropdown,
   DropdownItem,
@@ -22,76 +21,27 @@ import {
   ModalFooter,
   ModalHeader,
   Title,
+  Badge,
+  CardHeader,
+  Form,
+  FormGroup,
+  FormSelect,
+  FormSelectOption
 } from '@patternfly/react-core';
 import { 
   EllipsisVIcon, 
   TrashIcon,
-  ShieldAltIcon,
-  DollarSignIcon,
-  UserIcon,
-  EyeIcon,
-  BookIcon,
-  CogIcon
+  ChatIcon,
+  ClockIcon,
+  PlayIcon,
+  PauseIcon,
+  UserIcon
 } from '@patternfly/react-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fragment, useState } from 'react';
+import React, { Fragment, useState, useEffect } from 'react';
 import { fetchTools } from '@/services/tools';
 import { ToolGroup } from '@/types';
-
-// Banking persona labels mapping
-const BANKING_PERSONA_LABELS: Record<string, string> = {
-  'compliance_officer': 'Compliance Officer',
-  'relationship_manager': 'Relationship Manager / Loan Officer',
-  'branch_teller': 'Branch Teller / Customer Service Rep',
-  'fraud_analyst': 'Fraud Analyst / AML Specialist',
-  'training_lead': 'Training Lead / Market Analyst',
-  'it_support': 'IT Support / Operations',
-};
-
-// NEW: Persona-specific visual styling
-const PERSONA_STYLES: Record<string, { 
-  color: 'red' | 'green' | 'blue' | 'orange' | 'purple' | 'grey';
-  icon: React.ComponentType;
-  bgColor: string;
-  borderColor: string;
-}> = {
-  'compliance_officer': { 
-    color: 'red', 
-    icon: ShieldAltIcon,
-    bgColor: 'var(--pf-v6-global--palette--red-50)',
-    borderColor: 'var(--pf-v6-global--palette--red-200)'
-  },
-  'relationship_manager': { 
-    color: 'green', 
-    icon: DollarSignIcon,
-    bgColor: 'var(--pf-v6-global--palette--green-50)', 
-    borderColor: 'var(--pf-v6-global--palette--green-200)'
-  },
-  'branch_teller': { 
-    color: 'blue', 
-    icon: UserIcon,
-    bgColor: 'var(--pf-v6-global--palette--blue-50)',
-    borderColor: 'var(--pf-v6-global--palette--blue-200)'
-  },
-  'fraud_analyst': { 
-    color: 'orange', 
-    icon: EyeIcon,
-    bgColor: 'var(--pf-v6-global--palette--orange-50)',
-    borderColor: 'var(--pf-v6-global--palette--orange-200)'
-  },
-  'training_lead': { 
-    color: 'purple', 
-    icon: BookIcon,
-    bgColor: 'var(--pf-v6-global--palette--purple-50)',
-    borderColor: 'var(--pf-v6-global--palette--purple-200)'
-  },
-  'it_support': { 
-    color: 'grey', 
-    icon: CogIcon,
-    bgColor: 'var(--pf-v6-global--palette--black-150)',
-    borderColor: 'var(--pf-v6-global--palette--black-300)'
-  }
-};
+import { Link } from '@tanstack/react-router';
 
 interface AgentCardProps {
   agent: Agent;
@@ -100,7 +50,9 @@ interface AgentCardProps {
 export function AgentCard({ agent }: AgentCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [personaConfig, setPersonaConfig] = useState<PersonaConfig | null>(null);
+  const [showPersonaModal, setShowPersonaModal] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -110,25 +62,42 @@ export function AgentCard({ agent }: AgentCardProps) {
     queryFn: fetchTools,
   });
 
-  // Get persona from localStorage
+  // Get persona from localStorage and load config
   const agentPersona = personaStorage.getPersona(agent.id);
-  const personaLabel = agentPersona ? BANKING_PERSONA_LABELS[agentPersona] || agentPersona : null;
   
-  // NEW: Get persona styling
-  const personaStyle = agentPersona ? PERSONA_STYLES[agentPersona] : null;
-  const PersonaIcon = personaStyle?.icon || CogIcon;
+  useEffect(() => {
+    if (agentPersona) {
+      const config = personaService.getPersona(agentPersona);
+      setPersonaConfig(config);
+    }
+  }, [agentPersona]);
+
+  // Calculate agent stats with safe date handling
+  const toolCount = agent.tools?.length || 0;
+  const knowledgeBaseCount = agent.knowledge_base_ids?.length || 0;
+  
+  // Safe date parsing with fallback
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
+  };
+  
+  const createdDate = formatDate(agent.created_at);
+  const updatedDate = formatDate(agent.updated_at);
+  const isActive = true; // You can add actual status logic here
 
   // Mutation for deleting an Agent
   const deleteAgentMutation = useMutation<void, Error, string>({
     mutationFn: deleteAgent,
     onSuccess: () => {
-      // Clean up persona storage when agent is deleted
       personaStorage.removePersona(agent.id);
-      
-      // Invalidate and refetch the agents list
       void queryClient.invalidateQueries({ queryKey: ['agents'] });
       setModalOpen(false);
-      console.log('Agent deleted successfully');
     },
     onError: (error) => {
       console.error('Error deleting agent:', error);
@@ -139,17 +108,8 @@ export function AgentCard({ agent }: AgentCardProps) {
     deleteAgentMutation.mutate(agent.id);
   };
 
-  const toggleModal = () => {
-    setModalOpen(!modalOpen);
-  };
-  
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-  };
+  const toggleModal = () => setModalOpen(!modalOpen);
+  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const headerActions = (
     <Fragment>
@@ -162,15 +122,11 @@ export function AgentCard({ agent }: AgentCardProps) {
             aria-label="kebab dropdown toggle"
             variant="plain"
             onClick={(e) => {
-              e.stopPropagation(); // Prevent header click
+              e.stopPropagation();
               toggleDropdown();
             }}
             isExpanded={dropdownOpen}
-            icon={
-              <Icon iconSize="lg">
-                <EllipsisVIcon />
-              </Icon>
-            }
+            icon={<Icon iconSize="lg"><EllipsisVIcon /></Icon>}
           />
         )}
         shouldFocusToggleOnSelect
@@ -203,9 +159,7 @@ export function AgentCard({ agent }: AgentCardProps) {
           Are you sure you want to delete this AI agent? This action cannot be undone.
         </ModalBody>
         <ModalFooter>
-          <Button variant="link" onClick={toggleModal}>
-            Cancel
-          </Button>
+          <Button variant="link" onClick={toggleModal}>Cancel</Button>
           <Button
             isLoading={deleteAgentMutation.isPending}
             onClick={handleDeleteAgent}
@@ -220,139 +174,188 @@ export function AgentCard({ agent }: AgentCardProps) {
 
   return (
     <Card 
-      id={`expandable-agent-card-${agent.id}`} 
-      isExpanded={expanded} 
-      className="pf-v6-u-mb-md"
-      // NEW: Apply persona-specific styling
+      className={`agent-card ${personaConfig?.className || 'persona-default'}`}
       style={{
-        backgroundColor: personaStyle?.bgColor || 'var(--pf-v6-global--BackgroundColor--100)',
-        borderLeft: personaStyle ? `4px solid ${personaStyle.borderColor}` : undefined,
-        transition: 'all 0.2s ease'
+        marginBottom: '0.5rem',
+        border: personaConfig ? `2px solid ${personaConfig.borderColor}` : undefined,
+        width: '280px', // Better size for catalog view
+        height: '200px', // Good height for content
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
     >
-      <Fragment>
-        <CardHeader
-          actions={{ actions: headerActions }}
-          onExpand={toggleExpanded}
-          toggleButtonProps={{
-            id: `toggle-agent-button-${agent.id}`,
-            'aria-label': 'Details',
-            'aria-labelledby': `expandable-agent-title-${agent.id} toggle-agent-button-${agent.id}`,
-            'aria-expanded': expanded,
-          }}
-        >
-          <CardTitle id={`expandable-agent-title-${agent.id}`}>
-            <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
-              {/* NEW: Persona icon */}
-              {personaStyle && (
+      <CardHeader actions={{ actions: headerActions }} style={{ padding: '0.75rem' }}>
+        <CardTitle>
+          <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapMd' }}>
+            {/* Agent Avatar */}
+            <div 
+              className="agent-avatar"
+              style={{ 
+                backgroundColor: personaConfig?.avatarBg || '#6b7280',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                flexShrink: 0
+              }}
+            >
+              {personaConfig?.avatarIcon || '🤖'}
+            </div>
+            
+            {/* Agent Info */}
+            <FlexItem flex={{ default: 'flex_1' }}>
+              <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
                 <FlexItem>
-                  <div 
-                    style={{
-                      padding: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: personaStyle.borderColor,
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '32px',
-                      height: '32px'
-                    }}
-                  >
-                    <PersonaIcon size="sm" />
-                  </div>
+                  <Title headingLevel="h3" size="lg" style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.3' }}>
+                    {agent.name.length > 25 ? `${agent.name.substring(0, 25)}...` : agent.name}
+                  </Title>
                 </FlexItem>
-              )}
-              <FlexItem>
-                <Title className="pf-v6-u-mb-0" headingLevel="h2">
-                  {agent.name}
-                </Title>
-              </FlexItem>
-              <FlexItem>
-                <Title className="pf-v6-u-text-color-subtle pf-v6-u-mb-0" headingLevel="h5">
-                  {agent.model_name}
-                </Title>
-              </FlexItem>
-              {/* Enhanced persona badge with icon */}
-              {personaLabel && personaStyle && (
+                
                 <FlexItem>
-                  <Label 
-                    color={personaStyle.color}
-                    icon={<PersonaIcon />}
-                  >
-                    {personaLabel}
-                  </Label>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+                    <span 
+                      className={`status-indicator ${isActive ? 'status-active' : 'status-inactive'}`}
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: isActive ? '#52c41a' : '#d9d9d9',
+                        display: 'inline-block'
+                      }}
+                    />
+                    <small style={{ color: 'var(--pf-v6-global--Color--200)', fontSize: '0.7rem' }}>
+                      {isActive ? 'Active' : 'Inactive'}
+                    </small>
+                    {personaConfig && (
+                      <>
+                        <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>•</span>
+                        <Label color={personaConfig.color} variant="outline" style={{ fontSize: '0.6rem' }}>
+                          {personaConfig.label}
+                        </Label>
+                      </>
+                    )}
+                  </Flex>
                 </FlexItem>
-              )}
-            </Flex>
-          </CardTitle>
-        </CardHeader>
-        <CardExpandableContent>
-          <CardBody>
-            <Flex direction={{ default: 'column' }}>
-              {/* Enhanced persona display */}
-              <FlexItem>
-                <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
-                  <FlexItem>
-                    <span className="pf-v6-u-text-color-subtle">Persona: </span>
-                  </FlexItem>
-                  {personaLabel && personaStyle ? (
-                    <FlexItem>
-                      <Label 
-                        color={personaStyle.color}
-                        icon={<PersonaIcon />}
-                        variant="outline"
-                      >
-                        {personaLabel}
-                      </Label>
-                    </FlexItem>
-                  ) : (
-                    <FlexItem>None</FlexItem>
-                  )}
-                </Flex>
-              </FlexItem>
-              <FlexItem>
-                <span className="pf-v6-u-text-color-subtle">Prompt: </span>
-                {agent.prompt}
-              </FlexItem>
-              <FlexItem>
-                <Flex gap={{ default: 'gapSm' }}>
-                  <FlexItem>
-                    <span className="pf-v6-u-text-color-subtle">Knowledge Bases: </span>
-                  </FlexItem>
+              </Flex>
+            </FlexItem>
+          </Flex>
+        </CardTitle>
+      </CardHeader>
 
-                  {agent.knowledge_base_ids.length > 0
-                    ? agent.knowledge_base_ids.map((kb, index) => (
-                        <FlexItem key={index}>
-                          <Label color="blue">{kb}</Label>
-                        </FlexItem>
-                      ))
-                    : 'None'}
-                </Flex>
-              </FlexItem>
-              <FlexItem>
-                <Flex gap={{ default: 'gapSm' }}>
-                  <FlexItem>
-                    <span className="pf-v6-u-text-color-subtle">Tool Groups: </span>
-                  </FlexItem>
-                  {agent.tools.length > 0
-                    ? agent.tools.map((tool, index) => {
-                        // Find the tool group name from the tools data
-                        const toolGroup = tools?.find((t) => t.toolgroup_id === tool.toolgroup_id);
-                        const displayName = toolGroup?.name || tool.toolgroup_id;
-                        return (
-                          <FlexItem key={index}>
-                            <Label color="orange">{displayName}</Label>
-                          </FlexItem>
-                        );
-                      })
-                    : 'None'}
-                </Flex>
-              </FlexItem>
-            </Flex>
-          </CardBody>
-        </CardExpandableContent>
-      </Fragment>
+      <CardBody style={{ flex: 1, padding: '0.75rem', overflow: 'hidden' }}>
+        <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
+          {/* Agent Description */}
+          <FlexItem>
+            <p style={{ 
+              color: 'var(--pf-v6-global--Color--200)',
+              margin: 0,
+              lineHeight: '1.4',
+              fontSize: '0.7rem',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {agent.prompt.length > 100 
+                ? `${agent.prompt.substring(0, 100)}...` 
+                : agent.prompt
+              }
+            </p>
+          </FlexItem>
+
+          {/* Agent Stats */}
+          <FlexItem>
+            <div className="agent-stats" style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '0.5rem',
+              marginTop: '0.5rem'
+            }}>
+              <div className="agent-stat" style={{ textAlign: 'center' }}>
+                <div className="agent-stat-value" style={{ 
+                  fontSize: '0.9rem', 
+                  fontWeight: 'bold',
+                  color: 'var(--pf-v6-global--Color--100)'
+                }}>{toolCount}</div>
+                <div className="agent-stat-label" style={{ 
+                  fontSize: '0.6rem',
+                  color: 'var(--pf-v6-global--Color--200)'
+                }}>Tools</div>
+              </div>
+              <div className="agent-stat" style={{ textAlign: 'center' }}>
+                <div className="agent-stat-value" style={{ 
+                  fontSize: '0.9rem', 
+                  fontWeight: 'bold',
+                  color: 'var(--pf-v6-global--Color--100)'
+                }}>{knowledgeBaseCount}</div>
+                <div className="agent-stat-label" style={{ 
+                  fontSize: '0.6rem',
+                  color: 'var(--pf-v6-global--Color--200)'
+                }}>KB</div>
+              </div>
+              <div className="agent-stat" style={{ textAlign: 'center' }}>
+                <div className="agent-stat-value" style={{ 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold',
+                  color: 'var(--pf-v6-global--Color--100)'
+                }}>{agent.model_name.split('/').pop()}</div>
+                <div className="agent-stat-label" style={{ 
+                  fontSize: '0.6rem',
+                  color: 'var(--pf-v6-global--Color--200)'
+                }}>Model</div>
+              </div>
+              <div className="agent-stat" style={{ textAlign: 'center' }}>
+                <div className="agent-stat-value" style={{ 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold',
+                  color: 'var(--pf-v6-global--Color--100)'
+                }}>{createdDate}</div>
+                <div className="agent-stat-label" style={{ 
+                  fontSize: '0.6rem',
+                  color: 'var(--pf-v6-global--Color--200)'
+                }}>Created</div>
+              </div>
+            </div>
+          </FlexItem>
+        </Flex>
+      </CardBody>
+
+      {/* Card Footer with Actions */}
+      <div className="agent-card-footer" style={{
+        padding: '0.75rem',
+        borderTop: '1px solid var(--pf-v6-global--BorderColor--100)',
+        marginTop: 'auto'
+      }}>
+        <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+          <FlexItem>
+            <small style={{ 
+              color: 'var(--pf-v6-global--Color--200)',
+              fontSize: '0.6rem'
+            }}>
+              {agent.created_by || 'System'}
+            </small>
+          </FlexItem>
+          <FlexItem>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<PlayIcon />}
+              component={(props) => (
+                <Link to="/" search={{ agentId: agent.id }} {...props}>
+                  Chat
+                </Link>
+              )}
+              style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem' }}
+            >
+              Chat
+            </Button>
+          </FlexItem>
+        </Flex>
+      </div>
     </Card>
   );
 }

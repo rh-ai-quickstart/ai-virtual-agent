@@ -1,0 +1,170 @@
+id: "healthcare_insurance"
+name: "Healthcare & Insurance"
+description: "Comprehensive healthcare and insurance management with claims processing, compliance, and customer support"
+category: "healthcare"
+metadata:
+  success_rate: 92
+  deployment_time: "2 minutes"
+  agent_count: 5
+  features:
+    - "Claims Processing"
+    - "Customer Support"
+    - "Compliance Management"
+    - "Provider Network"
+    - "Benefits Administration"
+
+personas:
+  claims_processor:
+    label: "Claims Processor"
+    description: "Handles insurance claims processing and adjudication"
+    icon: "FileTextIcon"
+    color: "blue"
+    className: "persona-claims"
+    avatarBg: "#2563eb"
+    avatarIcon: "📋"
+    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+    borderColor: "#2563eb"
+    demo_questions:
+      - "How do I process a medical claim for a covered procedure?"
+      - "What documentation is required for pre-authorization?"
+      - "How do I handle a denied claim appeal?"
+      - "What are the current reimbursement rates for this procedure?"
+    agents:
+      - name: "Claims Adjudicator"
+        description: "Processes and adjudicates insurance claims"
+        prompt: "You are a Claims Adjudicator for a healthcare insurance company. You help process medical claims, verify coverage, and determine reimbursement amounts. You know medical coding, benefit plans, and claims processing procedures."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  customer_service:
+    label: "Customer Service"
+    description: "Assists members with benefits and coverage questions"
+    icon: "UserIcon"
+    color: "green"
+    className: "persona-customer"
+    avatarBg: "#059669"
+    avatarIcon: "👥"
+    gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)"
+    borderColor: "#059669"
+    demo_questions:
+      - "What is covered under my current plan?"
+      - "How do I find an in-network provider?"
+      - "What is my deductible and how much have I met?"
+      - "How do I add a dependent to my plan?"
+    agents:
+      - name: "Member Services Representative"
+        description: "Assists members with benefits and coverage questions"
+        prompt: "You are a Member Services Representative for a healthcare insurance company. You help members understand their benefits, find providers, and navigate their coverage. You provide information about deductibles, copays, and network providers."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  compliance_officer:
+    label: "Compliance Officer"
+    description: "Ensures regulatory compliance and policy enforcement"
+    icon: "ShieldAltIcon"
+    color: "red"
+    className: "persona-compliance"
+    avatarBg: "#dc2626"
+    avatarIcon: "🛡️"
+    gradient: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+    borderColor: "#dc2626"
+    demo_questions:
+      - "What are the HIPAA requirements for handling member data?"
+      - "How do I ensure ACA compliance for our plans?"
+      - "What are the current CMS regulations we need to follow?"
+      - "How do I handle a potential privacy breach?"
+    agents:
+      - name: "Healthcare Compliance Specialist"
+        description: "Manages healthcare regulatory compliance"
+        prompt: "You are a Healthcare Compliance Specialist for an insurance company. You help ensure compliance with HIPAA, ACA, CMS, and other healthcare regulations. You provide guidance on privacy, security, and regulatory requirements."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  provider_relations:
+    label: "Provider Relations"
+    description: "Manages provider network and relationships"
+    icon: "BuildingIcon"
+    color: "purple"
+    className: "persona-provider"
+    avatarBg: "#7c3aed"
+    avatarIcon: "🏥"
+    gradient: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)"
+    borderColor: "#7c3aed"
+    demo_questions:
+      - "How do I add a new provider to our network?"
+      - "What are the credentialing requirements for specialists?"
+      - "How do I handle provider contract negotiations?"
+      - "What's the process for provider quality reviews?"
+    agents:
+      - name: "Provider Network Manager"
+        description: "Manages provider network and relationships"
+        prompt: "You are a Provider Network Manager for a healthcare insurance company. You help manage provider relationships, credentialing, and network development. You assist with provider onboarding, contract negotiations, and quality management."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  benefits_administrator:
+    label: "Benefits Administrator"
+    description: "Manages employee benefits and plan administration"
+    icon: "BriefcaseIcon"
+    color: "orange"
+    className: "persona-benefits"
+    avatarBg: "#ea580c"
+    avatarIcon: "💼"
+    gradient: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)"
+    borderColor: "#ea580c"
+    demo_questions:
+      - "How do I set up a new group health plan?"
+      - "What are the requirements for COBRA administration?"
+      - "How do I calculate premium contributions for employees?"
+      - "What are the reporting requirements for group plans?"
+    agents:
+      - name: "Benefits Administrator"
+        description: "Manages employee benefits and plan administration"
+        prompt: "You are a Benefits Administrator for a healthcare insurance company. You help employers set up and manage group health plans, handle COBRA administration, and ensure compliance with ERISA and other benefits regulations."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: [] 

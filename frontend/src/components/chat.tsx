@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState, useCallback } from 'react';
+import { useSearch, useNavigate } from '@tanstack/react-router';
 import {
   Chatbot,
   ChatbotContent,
@@ -30,6 +31,8 @@ import {
   Flex,
   FlexItem,
   Label,
+  Breadcrumb,
+  BreadcrumbItem,
 } from '@patternfly/react-core';
 import { 
   ShieldAltIcon,
@@ -37,7 +40,8 @@ import {
   UserIcon,
   EyeIcon,
   BookIcon,
-  CogIcon
+  CogIcon,
+  AngleLeftIcon
 } from '@patternfly/react-icons';
 import { Agent } from '@/routes/config/agents';
 import { fetchAgents } from '@/services/agents';
@@ -52,6 +56,8 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import botAvatar from "../assets/img/bot-avatar.svg";
 import userAvatar from "../assets/img/user-avatar.svg";
+import { templateService } from '@/services/templates';
+import { DemoQuestions } from '@/components/demo-questions';
 
 // Banking persona labels mapping
 const BANKING_PERSONA_LABELS: Record<string, string> = {
@@ -164,6 +170,8 @@ const footnoteProps = {
 };
 
 export function Chat() {
+  const search = useSearch({ from: '/' });
+  const navigate = useNavigate();
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
@@ -174,19 +182,11 @@ export function Chat() {
   const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
-  const [showSampleQuestions, setShowSampleQuestions] = useState<boolean>(true);
   const scrollToBottomRef = React.useRef<HTMLDivElement>(null);
   const historyRef = React.useRef<HTMLButtonElement>(null);
 
-  const {
-    messages: chatMessages,
-    input,
-    handleInputChange,
-    append,
-    isLoading,
-    loadSession,
-    sessionId,
-  } = useChat(selectedAgent || 'default', {
+  // Add the missing useChat hook with safety check
+  const chatHook = useChat(selectedAgent || 'default', {
     onError: (error: Error) => {
       console.error('Chat error:', error);
       setAnnouncement(`Error: ${error.message}`);
@@ -199,30 +199,41 @@ export function Chat() {
     },
   });
 
+  // Destructure with safety check
+  const {
+    messages: chatMessages = [],
+    input = '',
+    handleInputChange = () => {},
+    append = () => {},
+    isLoading = false,
+    loadSession = async () => {},
+    sessionId = '',
+  } = chatHook || {};
+
+  // Add this line to define selectedAgentData
   const selectedAgentData = availableAgents.find((agent) => agent.id === selectedAgent);
   const selectedAgentPersona = selectedAgent ? personaStorage.getPersona(selectedAgent) : null;
   const selectedPersonaLabel = selectedAgentPersona ? BANKING_PERSONA_LABELS[selectedAgentPersona] || selectedAgentPersona : null;
-
   const currentSampleQuestions = selectedAgentPersona ? BANKING_SAMPLE_QUESTIONS[selectedAgentPersona] : null;
 
   const messages = React.useMemo(
     () =>
-      chatMessages.map(
+      (chatMessages || []).map(
         (msg): MessageProps => ({
           id: msg.id,
           role: msg.role === 'user' ? 'user' : 'bot',
           content: msg.content,
-          name: msg.role === 'user' ? 'You' : selectedPersonaLabel || selectedAgentData?.name || 'Assistant',
+          name: msg.role === 'user' ? 'You' : selectedAgentData?.name || 'Assistant',
           timestamp: msg.timestamp.toLocaleString(),
           avatar: msg.role === 'user' ? userAvatar : botAvatar,
           avatarProps: { isBordered: true },
           isLoading:
             msg.role === 'assistant' &&
             isLoading &&
-            msg.id === chatMessages[chatMessages.length - 1]?.id,
+            msg.id === (chatMessages || [])[(chatMessages || []).length - 1]?.id,
         })
       ),
-    [chatMessages, isLoading, selectedPersonaLabel, selectedAgentData]
+    [chatMessages, isLoading, selectedAgentData]
   );
 
   const displayMode = ChatbotDisplayMode.embedded;
@@ -235,7 +246,6 @@ export function Chat() {
       const agentId = value.toString();
       console.log('Agent selected:', agentId);
       setSelectedAgent(agentId);
-      setShowSampleQuestions(true);
     }
   };
 
@@ -274,7 +284,6 @@ export function Chat() {
         await fetchSessionsData(selectedAgent);
 
         setIsDrawerOpen(false);
-        setShowSampleQuestions(true);
       } catch (error) {
         console.error('Error creating new session:', error);
         setAnnouncement('Failed to create new chat session');
@@ -292,10 +301,11 @@ export function Chat() {
   };
 
   const toggleSampleQuestions = () => {
-    setShowSampleQuestions(!showSampleQuestions);
+    // setShowSampleQuestions(!showSampleQuestions); // This line is removed
   };
 
   const handleDeleteSession = useCallback((sessionId: string) => {
+    console.log('Delete session clicked:', sessionId); // Add this debug line
     setSessionToDelete(sessionId);
     setIsDeleteModalOpen(true);
   }, []);
@@ -303,11 +313,15 @@ export function Chat() {
   const deleteSessionMutation = useMutation<void, Error, string>({
     mutationFn: (sessionId: string) => {
       if (!selectedAgent) throw new Error('No agent selected');
+      console.log('Deleting session:', sessionId, 'for agent:', selectedAgent);
       return deleteChatSession(sessionId, selectedAgent);
     },
-    onSuccess: async () => {
+    onSuccess: async (deletedSessionId: string) => {
       if (!selectedAgent) return;
+      console.log('Session deleted successfully, refreshing sessions...');
       setAnnouncement('Session deleted successfully');
+      
+      // Let fetchSessionsData handle the session switching logic
       await fetchSessionsData(selectedAgent);
     },
     onError: (error) => {
@@ -315,12 +329,14 @@ export function Chat() {
       setAnnouncement(`Failed to delete session: ${error.message}`);
     },
     onSettled: () => {
+      console.log('Delete session mutation settled');
       setIsDeleteModalOpen(false);
       setSessionToDelete(null);
     },
   });
 
   const confirmDeleteSession = () => {
+    console.log('Confirming delete for session:', sessionToDelete); // Add this debug line
     if (!sessionToDelete) return;
     deleteSessionMutation.mutate(sessionToDelete);
   };
@@ -370,6 +386,8 @@ export function Chat() {
     return conversations;
   };
 
+  // Revert the fetchSessionsData to the original working version:
+
   const fetchSessionsData = useCallback(
     async (agentId?: string) => {
       try {
@@ -392,7 +410,8 @@ export function Chat() {
         if ((!sessionId || !currentSessionExists) && sessions.length > 0) {
           const firstSession = sessions[0];
           await loadSession(firstSession.id);
-        } else if (sessions.length === 0 && agentId) {
+        } else if (sessions.length === 0 && agentId && !sessionId) {
+          // Only create a new session if there's no current session (first time loading)
           try {
             const timestamp = new Date()
               .toISOString()
@@ -437,13 +456,30 @@ export function Chat() {
     [sessionId, loadSession, createSessionMenuItems]
   );
 
+  // Revert the useEffect to exclude fetchSessionsData:
+  useEffect(() => {
+    if (selectedAgent) {
+      void fetchSessionsData(selectedAgent);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAgent]); // ONLY selectedAgent dependency - fetchSessionsData intentionally excluded
+
   useEffect(() => {
     const fetchAgentsData = async () => {
       try {
         const agents = await fetchAgents();
         setAvailableAgents(agents);
-        if (agents.length > 0) {
+        
+        // Check if agentId is provided in URL search params
+        console.log('Search params:', search);
+        console.log('AgentId from URL:', search.agentId);
+        
+        if (search.agentId && agents.some(agent => agent.id === search.agentId)) {
+          console.log('Setting selected agent from URL:', search.agentId);
+          setSelectedAgent(search.agentId);
+        } else if (agents.length > 0) {
           const firstAgent = agents[0].id;
+          console.log('Setting first agent as default:', firstAgent);
           setSelectedAgent(firstAgent);
         }
       } catch (err) {
@@ -453,14 +489,7 @@ export function Chat() {
     };
 
     void fetchAgentsData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAgent) {
-      void fetchSessionsData(selectedAgent);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgent]); // ONLY selectedAgent dependency - fetchSessionsData intentionally excluded
+  }, [search.agentId]); // Add search.agentId as dependency
 
   const handleSendMessage = (message: string | number) => {
     if (typeof message === 'string' && message.trim() && selectedAgent) {
@@ -468,7 +497,18 @@ export function Chat() {
         role: 'user',
         content: message.toString(),
       });
+      
+      // Add a small delay to ensure the message is added to the DOM
+      setTimeout(() => {
+        if (scrollToBottomRef.current) {
+          scrollToBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
     }
+  };
+
+  const handleBackToAgents = () => {
+    navigate({ to: '/config/agents', search: { tab: 'my-agents' } });
   };
 
   return (
@@ -507,7 +547,27 @@ export function Chat() {
                   aria-expanded={isDrawerOpen}
                   onMenuToggle={() => setIsDrawerOpen(!isDrawerOpen)}
                 />
-                <ChatbotHeaderTitle>Chat</ChatbotHeaderTitle>
+                <ChatbotHeaderTitle>
+                  <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
+                    <Breadcrumb style={{ marginBottom: '0.5rem' }}>
+                      <BreadcrumbItem>
+                        <Button
+                          variant="link"
+                          icon={<AngleLeftIcon />}
+                          onClick={handleBackToAgents}
+                          style={{ 
+                            color: 'var(--text-primary)', 
+                            padding: '0',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          Back to Agents
+                        </Button>
+                      </BreadcrumbItem>
+                    </Breadcrumb>
+                    <span>Chat with {selectedAgentData?.name || 'Agent'}</span>
+                  </Flex>
+                </ChatbotHeaderTitle>
               </ChatbotHeaderMain>
               <ChatbotHeaderActions>
                 <ChatbotHeaderSelectorDropdown
@@ -547,63 +607,19 @@ export function Chat() {
             </ChatbotHeader>
             <ChatbotContent>
               <MessageBox announcement={announcement}>
-                {showSampleQuestions && currentSampleQuestions && (
-                  <div className="pf-v6-u-mb-md">
-                    <div className="pf-v6-u-mb-sm pf-v6-u-font-weight-bold pf-v6-u-color-200">
-                      {currentSampleQuestions.title} - {selectedPersonaLabel}
-                    </div>
-                    <Flex direction={{ default: 'column' }} gap={{ default: 'gapXs' }}>
-                      {currentSampleQuestions.questions.map((question, index) => (
-                        <FlexItem key={index}>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleSampleQuestionClick(question)}
-                            className="pf-v6-u-text-align-left"
-                            style={{
-                              whiteSpace: 'normal',
-                              height: 'auto',
-                              padding: '8px 12px',
-                              fontSize: '14px',
-                              borderRadius: '20px',
-                              border: '1px solid var(--pf-v6-global--BorderColor--200)',
-                              backgroundColor: 'var(--pf-v6-global--BackgroundColor--100)',
-                              width: 'fit-content',
-                              maxWidth: '80%',
-                              textAlign: 'left',
-                              display: 'block'
-                            }}
-                          >
-                            {question}
-                          </Button>
-                        </FlexItem>
-                      ))}
-                    </Flex>
-                    <div className="pf-v6-u-mt-sm">
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={toggleSampleQuestions}
-                        style={{ fontSize: '12px', color: 'var(--pf-v6-global--Color--200)' }}
-                      >
-                        Hide suggestions
-                      </Button>
-                    </div>
+                {selectedAgent && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <DemoQuestions
+                      agentId={selectedAgent}
+                      agentName={selectedAgentData?.name}
+                      onQuestionClick={(question) => {
+                        handleSendMessage(question);
+                      }}
+                      maxQuestions={4}
+                    />
                   </div>
                 )}
 
-                {!showSampleQuestions && currentSampleQuestions && (
-                  <div className="pf-v6-u-mb-md">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={toggleSampleQuestions}
-                      style={{ fontSize: '12px', color: 'var(--pf-v6-global--Color--200)' }}
-                    >
-                      Show {selectedPersonaLabel} suggestions
-                    </Button>
-                  </div>
-                )}
                 {messages.map((message, index) => {
                   if (index === messages.length - 1) {
                     return (

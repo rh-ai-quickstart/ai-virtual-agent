@@ -156,6 +156,7 @@ class VirtualAssistantUpdate(VirtualAssistantBase):
 
 class VirtualAssistantRead(VirtualAssistantBase):
     id: str
+    metadata: Optional[Dict[str, Any]] = {}  # Add metadata field for persona info
 
     class Config:
         orm_mode = True
@@ -206,3 +207,101 @@ class ModelServerRead(ModelServerBase):
 
     class Config:
         orm_mode = True
+
+
+# Template Schemas - NEW ADDITION (following existing patterns)
+class AgentTemplate(BaseModel):
+    """Individual agent configuration within a template"""
+    name: str
+    description: Optional[str] = None
+    model_name: str
+    prompt: str
+    persona: Optional[str] = None
+    tools: List[ToolAssociationInfo] = []
+    knowledge_base_ids: List[str] = []
+    temperature: Optional[float] = 0.1
+    repetition_penalty: Optional[float] = 1.0
+    max_tokens: Optional[int] = 4096
+    top_p: Optional[float] = 0.95
+    max_infer_iters: Optional[int] = 10
+    input_shields: Optional[List[str]] = []
+    output_shields: Optional[List[str]] = []
+
+
+class TemplateSuiteBase(BaseModel):
+    """Base template suite configuration"""
+    id: str
+    name: str
+    description: str
+    category: str  # e.g., "fsi_banking", "us_banking", "wealth_management"
+    agents: List[AgentTemplate]
+    metadata: Optional[Dict[str, Any]] = {}
+
+
+class TemplateSuiteCreate(TemplateSuiteBase):
+    """Template suite for creation"""
+    pass
+
+
+class TemplateSuiteRead(BaseModel):
+    """Template suite for API responses"""
+    id: str
+    name: str
+    description: str
+    category: str
+    metadata: Dict[str, Any] = {}
+    personas: Optional[Dict[str, Any]] = {}  # Add personas data
+    industry_id: Optional[str] = None  # Make it optional
+    agents: List[AgentTemplate] = []
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+class TemplateDeployRequest(BaseModel):
+    """Request model for deploying template agents"""
+    selected_agents: Optional[List[str]] = None  # Agent names to deploy, None = all
+    override_settings: Optional[Dict[str, Any]] = None  # Override any agent settings
+
+
+class TemplateDeployResponse(BaseModel):
+    """Response model for template deployment"""
+    deployed_agents: List[VirtualAssistantRead]
+    failed_agents: List[Dict[str, str]]  # List of {name: error_message}
+    template_id: str
+    deployment_summary: Dict[str, Any]
+
+
+class TemplatePersona(BaseModel):
+    """Persona configuration within a template"""
+    label: str
+    description: str
+    icon: str
+    color: str
+    className: str
+    avatarBg: str
+    avatarIcon: str
+    gradient: str
+    borderColor: str
+    demo_questions: Optional[List[str]] = []
+    agents: List[AgentTemplate]
+
+
+class IndustryRead(BaseModel):
+    id: str
+    name: str
+    description: str
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    template_count: int = 0
+    total_agents: int = 0
+
+class TemplateRead(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    metadata: Dict[str, Any] = {}
+    persona_count: int = 0
+    agent_count: int = 0
+    industry_id: str
+

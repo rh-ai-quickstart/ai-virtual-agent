@@ -41,7 +41,7 @@ class EnhancedSessionResource(SessionResource):
                 response = http_client.get(
                     f"{llamastack_url}/v1/agents/{agent_id}/sessions",
                     headers={"Accept": "application/json"},
-                    timeout=30.0,
+                    timeout=60.0,  # Increase from default 30s
                 )
                 response.raise_for_status()
                 data = response.json()

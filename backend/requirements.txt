@@ -15,3 +15,4 @@ isort
 pre-commit
 flake8
 httpx
+PyYAML

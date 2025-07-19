@@ -5,6 +5,9 @@ import { Masthead } from '../components/masthead';
 
 export const Route = createFileRoute('/')({
   component: ChatPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    agentId: search.agentId as string | undefined,
+  }),
 });
 
 const pageId = 'primary-app-container';

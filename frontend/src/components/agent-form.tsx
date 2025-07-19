@@ -19,37 +19,6 @@ import { Fragment, useMemo } from 'react';
 import { CustomSelectOptionProps, MultiSelect } from './multi-select';
 import { PaperPlaneIcon, MagicIcon } from '@patternfly/react-icons';
 
-// Banking personas for your demo
-const BANKING_PERSONAS = [
-  { value: '', label: 'Select a banking role', disabled: true },
-  { value: 'compliance_officer', label: 'Compliance Officer', disabled: false },
-  { value: 'relationship_manager', label: 'Relationship Manager / Loan Officer', disabled: false },
-  { value: 'branch_teller', label: 'Branch Teller / Customer Service Rep', disabled: false },
-  { value: 'fraud_analyst', label: 'Fraud Analyst / AML Specialist', disabled: false },
-  { value: 'training_lead', label: 'Training Lead / Market Analyst', disabled: false },
-  { value: 'it_support', label: 'IT Support / Operations', disabled: false },
-];
-
-// NEW: Auto-naming suggestions for each persona
-const PERSONA_NAME_SUGGESTIONS: Record<string, string> = {
-  'compliance_officer': 'Compliance Policy Assistant',
-  'relationship_manager': 'Lending Policy Assistant',
-  'branch_teller': 'Customer Service Assistant',
-  'fraud_analyst': 'Fraud Detection Assistant',
-  'training_lead': 'Training & Market Intelligence Assistant',
-  'it_support': 'IT Support Assistant'
-};
-
-// NEW: Professional prompts for each persona
-const PERSONA_PROMPT_SUGGESTIONS: Record<string, string> = {
-  'compliance_officer': 'You are a Compliance Policy Agent for a US bank. You help ensure adherence to US banking regulations including BSA/AML, OFAC, CFPB, OCC, and FDIC guidance. You provide accurate information about compliance procedures, reporting requirements, and regulatory updates.',
-  'relationship_manager': 'You are a Lending Policy Assistant for relationship managers and loan officers. You help with credit assessment, lending requests, documentation requirements, and regulatory compliance for loans. You know FHA guidelines, conventional loan requirements, and small business lending procedures.',
-  'branch_teller': 'You are a Customer Service Assistant for branch tellers and customer service representatives. You help with day-to-day customer queries about product fees, account policies, transaction processing, and regulatory timelines. You provide accurate information about bank products and services.',
-  'fraud_analyst': 'You are a Fraud Detection Assistant for fraud analysts and AML specialists. You help review alerts for suspicious transactions, investigate AML/BSA/OFAC red flags, and ensure reporting compliance. You provide guidance on escalation procedures and regulatory requirements.',
-  'training_lead': 'You are a Training & Market Intelligence Assistant for training leads and analysts. You help keep staff current on new US regulations, industry certifications, and market developments. You provide information about regulatory updates, certification requirements, and industry best practices.',
-  'it_support': 'You are an IT Support Assistant for banking operations. You help support banking employees with system/process issues and ensure adherence to IT policies. You provide guidance on password resets, system access, security protocols, and technical procedures.'
-};
-
 interface ModelsFieldProps {
   models: Model[];
   isLoadingModels: boolean;
@@ -83,7 +52,6 @@ interface AgentFormData {
   name: string;
   model_name: string;
   prompt: string;
-  persona: string;
   knowledge_base_ids: string[];
   tool_ids: string[];
 }
@@ -95,7 +63,6 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
       name: '',
       model_name: '',
       prompt: '',
-      persona: '',
       knowledge_base_ids: [],
       tool_ids: [],
     };
@@ -107,13 +74,12 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
     name: agent.name,
     model_name: agent.model_name,
     prompt: agent.prompt,
-    persona: '', // Always start with empty persona for new forms
     knowledge_base_ids: agent.knowledge_base_ids,
     tool_ids,
   };
 };
 
-const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): NewAgent & { persona?: string } => {
+const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): NewAgent => {
   const toolAssociations: ToolAssociationInfo[] = formData.tool_ids.map((toolId) => {
     const tool = tools.find((t) => t.toolgroup_id === toolId);
     if (!tool) {
@@ -127,21 +93,13 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
   const hasRAGTool = formData.tool_ids.includes('builtin::rag');
   const knowledge_base_ids = hasRAGTool ? formData.knowledge_base_ids : [];
 
-  const result = {
+  return {
     name: formData.name,
     model_name: formData.model_name,
     prompt: formData.prompt,
     knowledge_base_ids,
     tools: toolAssociations,
-    persona: formData.persona || undefined,
   };
-
-  console.log('=== FORM SUBMISSION ===');
-  console.log('Selected persona:', formData.persona);
-  console.log('Agent payload:', result);
-  console.log('======================');
-
-  return result;
 };
 
 export function AgentForm({
@@ -173,46 +131,46 @@ export function AgentForm({
   };
 
   // NEW: Auto-fill name based on persona selection
-  const handlePersonaChange = (persona: string) => {
-    form.setFieldValue('persona', persona);
+  // const handlePersonaChange = (persona: string) => {
+  //   form.setFieldValue('persona', persona);
     
-    // Auto-suggest name if current name is empty or was a previous suggestion
-    const currentName = form.state.values.name;
-    const isEmptyOrSuggestion = !currentName || Object.values(PERSONA_NAME_SUGGESTIONS).includes(currentName);
+  //   // Auto-suggest name if current name is empty or was a previous suggestion
+  //   const currentName = form.state.values.name;
+  //   const isEmptyOrSuggestion = !currentName || Object.values(PERSONA_NAME_SUGGESTIONS).includes(currentName);
     
-    if (persona && isEmptyOrSuggestion) {
-      const suggestedName = PERSONA_NAME_SUGGESTIONS[persona];
-      if (suggestedName) {
-        form.setFieldValue('name', suggestedName);
-      }
-    }
+  //   if (persona && isEmptyOrSuggestion) {
+  //     const suggestedName = PERSONA_NAME_SUGGESTIONS[persona];
+  //     if (suggestedName) {
+  //       form.setFieldValue('name', suggestedName);
+  //     }
+  //   }
     
-    // Auto-suggest prompt if current prompt is empty or was a previous suggestion
-    const currentPrompt = form.state.values.prompt;
-    const isEmptyPromptOrSuggestion = !currentPrompt || Object.values(PERSONA_PROMPT_SUGGESTIONS).includes(currentPrompt);
+  //   // Auto-suggest prompt if current prompt is empty or was a previous suggestion
+  //   const currentPrompt = form.state.values.prompt;
+  //   const isEmptyPromptOrSuggestion = !currentPrompt || Object.values(PERSONA_PROMPT_SUGGESTIONS).includes(currentPrompt);
     
-    if (persona && isEmptyPromptOrSuggestion) {
-      const suggestedPrompt = PERSONA_PROMPT_SUGGESTIONS[persona];
-      if (suggestedPrompt) {
-        form.setFieldValue('prompt', suggestedPrompt);
-      }
-    }
-  };
+  //   if (persona && isEmptyPromptOrSuggestion) {
+  //     const suggestedPrompt = PERSONA_PROMPT_SUGGESTIONS[persona];
+  //     if (suggestedPrompt) {
+  //       form.setFieldValue('prompt', suggestedPrompt);
+  //     }
+  //   }
+  // };
 
   // NEW: Manual suggestion buttons
-  const applySuggestedName = () => {
-    const currentPersona = form.state.values.persona;
-    if (currentPersona && PERSONA_NAME_SUGGESTIONS[currentPersona]) {
-      form.setFieldValue('name', PERSONA_NAME_SUGGESTIONS[currentPersona]);
-    }
-  };
+  // const applySuggestedName = () => {
+  //   const currentPersona = form.state.values.persona;
+  //   if (currentPersona && PERSONA_NAME_SUGGESTIONS[currentPersona]) {
+  //     form.setFieldValue('name', PERSONA_NAME_SUGGESTIONS[currentPersona]);
+  //   }
+  // };
 
-  const applySuggestedPrompt = () => {
-    const currentPersona = form.state.values.persona;
-    if (currentPersona && PERSONA_PROMPT_SUGGESTIONS[currentPersona]) {
-      form.setFieldValue('prompt', PERSONA_PROMPT_SUGGESTIONS[currentPersona]);
-    }
-  };
+  // const applySuggestedPrompt = () => {
+  //   const currentPersona = form.state.values.persona;
+  //   if (currentPersona && PERSONA_PROMPT_SUGGESTIONS[currentPersona]) {
+  //     form.setFieldValue('prompt', PERSONA_PROMPT_SUGGESTIONS[currentPersona]);
+  //   }
+  // };
 
   const knowledgeBaseOptions = useMemo((): CustomSelectOptionProps[] => {
     if (isLoadingKnowledgeBases) {
@@ -299,7 +257,7 @@ export function AgentForm({
       }}
     >
       {/* PERSONA FIELD - MOVED TO TOP */}
-      <form.Field name="persona">
+      {/* <form.Field name="persona">
         {(field) => (
           <FormGroup label="Banking Role" fieldId="banking-persona">
             <FormSelect
@@ -331,7 +289,7 @@ export function AgentForm({
             )}
           </FormGroup>
         )}
-      </form.Field>
+      </form.Field> */}
 
       <form.Field
         name="name"
@@ -363,7 +321,7 @@ export function AgentForm({
                 />
               </FlexItem>
               {/* NEW: Auto-suggest name button */}
-              {form.state.values.persona && PERSONA_NAME_SUGGESTIONS[form.state.values.persona] && (
+              {/* {form.state.values.persona && PERSONA_NAME_SUGGESTIONS[form.state.values.persona] && (
                 <FlexItem>
                   <Button
                     variant="secondary"
@@ -374,7 +332,7 @@ export function AgentForm({
                     Suggest
                   </Button>
                 </FlexItem>
-              )}
+              )} */}
             </Flex>
             {!field.state.meta.isValid && (
               <FormHelperText className="pf-v6-u-text-color-status-danger">
@@ -382,12 +340,12 @@ export function AgentForm({
               </FormHelperText>
             )}
             {/* NEW: Show suggestion preview */}
-            {form.state.values.persona && PERSONA_NAME_SUGGESTIONS[form.state.values.persona] && 
+            {/* {form.state.values.persona && PERSONA_NAME_SUGGESTIONS[form.state.values.persona] && 
              field.state.value !== PERSONA_NAME_SUGGESTIONS[form.state.values.persona] && (
               <FormHelperText>
                 💡 Suggestion: <em>{PERSONA_NAME_SUGGESTIONS[form.state.values.persona]}</em>
               </FormHelperText>
-            )}
+            )} */}
           </FormGroup>
         )}
       </form.Field>
@@ -472,7 +430,7 @@ export function AgentForm({
                     />
                   </FlexItem>
                   {/* NEW: Auto-suggest prompt button */}
-                  {form.state.values.persona && PERSONA_PROMPT_SUGGESTIONS[form.state.values.persona] && (
+                  {/* {form.state.values.persona && PERSONA_PROMPT_SUGGESTIONS[form.state.values.persona] && (
                     <FlexItem>
                       <Button
                         variant="secondary"
@@ -483,7 +441,7 @@ export function AgentForm({
                         Suggest
                       </Button>
                     </FlexItem>
-                  )}
+                  )} */}
                 </Flex>
               </FlexItem>
             </Flex>
