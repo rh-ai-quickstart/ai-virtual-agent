@@ -10,11 +10,11 @@
 
 ### **Knowledge Bases Status**
 - [ ] **5 knowledge bases created** and show "READY" status:
-  - Banking Compliance & Regulations (`banking-compliance-v1`)
-  - Loan Processing & Underwriting (`loan-processing-v1`)
-  - Fraud Detection & AML Procedures (`fraud-detection-v1`)
-  - Customer Service & Account Operations (`customer-service-v1`)
-  - Business Banking Procedures (`business-banking-v1`)
+  - Banking Compliance & Regulations (`banking-compliance-v1`) - Path: `ingest/data/banking-compliance/`
+  - Loan Processing & Underwriting (`loan-processing-v1`) - Path: `ingest/data/loan-processing/`
+  - Fraud Detection & AML Procedures (`fraud-detection-v1`) - Path: `ingest/data/fraud-detection/`
+  - Customer Service & Account Operations (`customer-service-v1`) - Path: `ingest/data/customer-service/`
+  - Business Banking Procedures (`business-banking-v1`) - Path: `ingest/data/business-banking/`
 
 ### **Template Status**
 - [ ] **FSI Banking template** is available in the UI
