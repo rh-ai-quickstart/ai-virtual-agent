@@ -49,7 +49,7 @@
 #### **Test Customer Service Agent**
 1. Go to **Chat** section
 2. Select the **Customer Service Representative** agent
-3. Ask: *"Hi, I'm a customer service rep at First National Bank. A business owner just came in with a loan application for $250,000. The business is called 'Tech Solutions LLC' and they want to expand their operations. What should I do first?"*
+3. Ask: *"Hi, I'm a customer service rep at Horizon Community Bank. A business owner just came in with a loan application for $250,000. The business is called 'Tech Solutions LLC' and they want to expand their operations. What should I do first?"*
 4. Verify response includes: documentation requirements, procedures, timeline
 
 #### **Test AML Investigator**
