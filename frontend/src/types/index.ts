@@ -50,11 +50,18 @@ export interface Model {
 
 // Tool types
 export interface ToolGroup {
-  id: string;
-  name: string;
-  description: string;
-  toolgroup_id: string;
-  tools: Tool[];
+  identifier: string; // Primary key - LlamaStack identifier
+  provider_resource_id: string;
+  provider_id: string;
+  type: string;
+  mcp_endpoint?: string | null;
+  args?: Record<string, unknown> | null;
+  // Legacy fields for backward compatibility
+  id?: string;
+  name?: string;
+  description?: string;
+  toolgroup_id?: string;
+  tools?: Tool[];
 }
 
 export interface Tool {
@@ -83,7 +90,7 @@ export interface KnowledgeBase {
   vector_db_name?: string;
   is_external?: boolean;
   source?: string;
-  source_configuration?: Record<string, any>;
+  source_configuration?: Record<string, unknown>;
 }
 
 export interface KnowledgeBaseWithStatus extends KnowledgeBase {

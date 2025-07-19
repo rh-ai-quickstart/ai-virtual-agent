@@ -1,0 +1,61 @@
+{{- if .Values.mcpDbstore.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-virtual-assistant.fullname" . }}-mcp-dbstore
+  labels:
+    {{- include "ai-virtual-assistant.labels" . | nindent 4 }}
+    app: mcp-dbstore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-dbstore
+  template:
+    metadata:
+      labels:
+        app: mcp-dbstore
+    spec:
+      containers:
+        - name: mcp-dbstore
+          image: {{ .Values.mcpDbstore.image.repository }}:{{ .Values.mcpDbstore.image.tag }}
+          imagePullPolicy: {{ .Values.mcpDbstore.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.mcpDbstore.service.port }}
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:rag_password@{{ .Values.pgSecret }}:5432/{{ .Values.dbName }}"
+          resources:
+            {{- toYaml .Values.mcpDbstore.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.mcpDbstore.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.mcpDbstore.service.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+{{- end }}
+{{- if .Values.mcpDbstore.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-virtual-assistant.fullname" . }}-mcp-dbstore
+  labels:
+    {{- include "ai-virtual-assistant.labels" . | nindent 4 }}
+    app: mcp-dbstore
+spec:
+  type: {{ .Values.mcpDbstore.service.type }}
+  ports:
+    - port: {{ .Values.mcpDbstore.service.port }}
+      targetPort: {{ .Values.mcpDbstore.service.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: mcp-dbstore
+{{- end }} 

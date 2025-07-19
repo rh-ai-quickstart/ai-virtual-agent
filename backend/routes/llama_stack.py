@@ -336,6 +336,44 @@ async def get_providers():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/toolgroups", response_model=List[Dict[str, Any]])
+async def get_toolgroups():
+    """
+    Retrieve all available tool groups directly from LlamaStack.
+    
+    This endpoint proxies to LlamaStack's /v1/toolgroups endpoint to get
+    the complete tool group data including MCP endpoints and configuration.
+
+    Returns:
+        List of dictionaries containing complete tool group information:
+        - identifier: The tool group identifier
+        - provider_resource_id: Provider resource identifier
+        - provider_id: Provider identifier
+        - type: Tool group type
+        - mcp_endpoint: MCP endpoint configuration (if applicable)
+        - args: Additional arguments
+
+    Raises:
+        HTTPException: If LlamaStack communication fails
+    """
+    try:
+        import httpx
+        import os
+        
+        llamastack_url = os.getenv("LLAMASTACK_URL", "http://localhost:8321")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{llamastack_url}/v1/toolgroups")
+            response.raise_for_status()
+            data = response.json()
+            
+            # Return the data in the same format as the curl command
+            return data.get("data", [])
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class ChatRequest(BaseModel):
     """
     Request model for LlamaStack chat interactions.

@@ -11,7 +11,7 @@ export const VIRTUAL_ASSISTANTS_API_ENDPOINT = '/api/virtual_assistants/';
 export const TEMPLATES_API_ENDPOINT = '/api/templates/';
 export const LLAMA_STACK_KNOWLEDGE_BASES_API_ENDPOINT = '/api/llama_stack/knowledge_bases';
 export const AGENTS_API_ENDPOINT = '/api/virtual_assistants/';
-export const LLAMA_STACK_TOOLS_API_ENDPOINT = '/api/llama_stack/tools';
+export const LLAMA_STACK_TOOLS_API_ENDPOINT = '/api/llama_stack/toolgroups';
 export const CHAT_SESSIONS_API_ENDPOINT = '/api/chat_sessions/';
 export const CHAT_API_ENDPOINT = '/api/chat/';
 

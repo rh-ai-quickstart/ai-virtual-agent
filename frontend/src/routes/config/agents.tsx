@@ -250,7 +250,7 @@ export function Agents() {
     <PageSection>
       <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
         <FlexItem>
-          <Title headingLevel="h1">AI Agent Management</Title>
+          <Title headingLevel="h1">AI Agents</Title>
           <p>Create, deploy, and manage intelligent AI agents for your organization.</p>
         </FlexItem>
 

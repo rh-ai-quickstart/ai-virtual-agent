@@ -154,6 +154,26 @@ minio:
 # llama-stack:
 #   secrets:
 #     TAVILY_SEARCH_API_KEY: "api-key"
-   mcp-servers:
-     mcp-weather:
-       uri: http://rag-mcp-weather:8000/sse
+mcp-servers:
+  mcp-weather:
+    uri: http://rag-mcp-weather:8000/sse
+  mcp-dbstore:
+    uri: http://rag-mcp-dbstore:8002/sse
+
+# MCP DBStore Configuration
+mcpDbstore:
+  enabled: true
+  image:
+    repository: quay.io/skattoju/mcp_dbstore
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  service:
+    type: ClusterIP
+    port: 8002

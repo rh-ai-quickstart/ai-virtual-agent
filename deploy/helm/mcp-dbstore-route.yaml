@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mcp-dbstore-route
+  namespace: ai-assistant
+  labels:
+    app: mcp-dbstore-standalone
+spec:
+  host: mcp-dbstore-ai-assistant.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com
+  port:
+    targetPort: 8002
+  to:
+    kind: Service
+    name: mcp-dbstore-standalone
+    weight: 100
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect 

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-dbstore-standalone
+  namespace: ai-assistant
+  labels:
+    app: mcp-dbstore-standalone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-dbstore-standalone
+  template:
+    metadata:
+      labels:
+        app: mcp-dbstore-standalone
+    spec:
+      containers:
+        - name: mcp-dbstore
+          image: quay.io/skattoju/mcp_dbstore:latest
+          ports:
+            - containerPort: 8002
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:rag_password@pgvector:5432/ai_virtual_assistant"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-dbstore-standalone
+  namespace: ai-assistant
+  labels:
+    app: mcp-dbstore-standalone
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP
+      name: http
+  selector:
+    app: mcp-dbstore-standalone 

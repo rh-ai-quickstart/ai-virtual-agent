@@ -80,12 +80,12 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
 
 const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): NewAgent => {
   const toolAssociations: ToolAssociationInfo[] = formData.tool_ids.map((toolId) => {
-    const tool = tools.find((t) => t.toolgroup_id === toolId);
+    const tool = tools.find((t) => t.identifier === toolId);
     if (!tool) {
-      throw new Error(`Tool with toolgroup_id ${toolId} not found`);
+      throw new Error(`Tool with identifier ${toolId} not found`);
     }
     return {
-      toolgroup_id: tool.toolgroup_id,
+      toolgroup_id: tool.identifier,
     };
   });
 
@@ -241,9 +241,9 @@ export function AgentForm({
       ];
     }
     return tools.map((tool) => ({
-      value: tool.toolgroup_id,
-      children: tool.name,
-      id: `tools-option-${tool.toolgroup_id}`,
+      value: tool.identifier,
+      children: tool.provider_resource_id,
+      id: `tools-option-${tool.identifier}`,
     }));
   }, [tools, isLoadingTools, toolsError]);
 

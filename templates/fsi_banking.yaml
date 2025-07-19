@@ -95,11 +95,12 @@ personas:
     agents:
       - name: "Commercial Loan Officer"
         description: "Specializes in business lending and commercial credit"
-        prompt: "You are a Commercial Loan Officer for a US bank. You help with commercial lending requests, credit analysis, and business loan processing. You know SBA lending programs, commercial real estate financing, and business credit assessment. You have access to comprehensive loan processing and underwriting information."
+        prompt: "You are a Commercial Loan Officer for a US bank. You help with commercial lending requests, credit analysis, and business loan processing. You know SBA lending programs, commercial real estate financing, and business credit assessment. You have access to comprehensive loan processing and underwriting information, as well as live loan data and credit history through our database systems for informed decision-making."
         model_name: "meta-llama/Llama-3.1-8B-Instruct"
         tools:
           - toolgroup_id: "builtin::websearch"
           - toolgroup_id: "builtin::rag"
+          - toolgroup_id: "mcp::dbstore"
         knowledge_base_ids:
           - "loan-processing-v1"
           - "business-banking-v1"
@@ -116,6 +117,7 @@ personas:
           - "How do I assess credit risk for a new commercial client?"
           - "What are the current SBA 7(a) loan requirements and limits?"
           - "What are the current commercial loan rates and terms?"
+          - "Search the database for similar loan applications and show me the approval patterns."
 
       - name: "Small Business Specialist"
         description: "Focuses on small business lending and support"
@@ -159,11 +161,12 @@ personas:
     agents:
       - name: "Customer Service Representative"
         description: "Assists with customer queries and account services"
-        prompt: "You are a Customer Service Representative for a US bank. You help customers with account inquiries, transaction processing, and product information. You provide guidance on fees, policies, and regulatory timelines. You have access to comprehensive banking procedures and compliance information."
+        prompt: "You are a Customer Service Representative for a US bank. You help customers with account inquiries, transaction processing, and product information. You provide guidance on fees, policies, and regulatory timelines. You have access to comprehensive banking procedures and compliance information, as well as live customer and account data through our database systems."
         model_name: "meta-llama/Llama-3.1-8B-Instruct"
         tools:
           - toolgroup_id: "builtin::websearch"
           - toolgroup_id: "builtin::rag"
+          - toolgroup_id: "mcp::dbstore"
         knowledge_base_ids:
           - "customer-service-v1"
           - "business-banking-v1"
@@ -180,6 +183,7 @@ personas:
           - "How do I handle a customer reporting a lost or stolen card?"
           - "What's the process for opening a new personal account?"
           - "How do I explain account fees and charges to customers?"
+          - "Can you search the database for any existing records for Tech Solutions LLC?"
 
       - name: "Teller Supervisor"
         description: "Manages teller operations and cash handling"
@@ -223,11 +227,12 @@ personas:
     agents:
       - name: "AML Investigator"
         description: "Investigates money laundering and suspicious activities"
-        prompt: "You are an AML Investigator for a US bank. You investigate suspicious transactions, money laundering patterns, and OFAC compliance issues. You help with SAR filing and escalation procedures. You have access to comprehensive fraud detection and compliance information."
+        prompt: "You are an AML Investigator for a US bank. You investigate suspicious transactions, money laundering patterns, and OFAC compliance issues. You help with SAR filing and escalation procedures. You have access to comprehensive fraud detection and compliance information, as well as live transaction data and customer records through our database systems for pattern analysis and investigation."
         model_name: "meta-llama/Llama-3.1-8B-Instruct"
         tools:
           - toolgroup_id: "builtin::websearch"
           - toolgroup_id: "builtin::rag"
+          - toolgroup_id: "mcp::dbstore"
         knowledge_base_ids:
           - "fraud-detection-v1"
           - "banking-compliance-v1"
@@ -244,6 +249,7 @@ personas:
           - "How do I investigate suspicious transaction patterns?"
           - "What's the escalation process for high-risk alerts?"
           - "What are the latest OFAC screening requirements?"
+          - "Search the database for any records related to Red Flag Business or similar high-risk applications."
 
   it_support:
     label: "IT Support"

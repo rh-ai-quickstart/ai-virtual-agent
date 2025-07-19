@@ -1,0 +1,62 @@
+apiVersion: v1
+data:
+  config.yaml: "version: '2'\nimage_name: remote-vllm\napis:\n- agents\n- datasetio\n-
+    eval\n- inference\n- safety\n- scoring\n- telemetry\n- tool_runtime\n- vector_io\nproviders:\n
+    \ inference:\n  - provider_id: llama-3-1-8b-instruct\n    provider_type: remote::vllm\n
+    \   config:\n      url: http://llama-3-1-8b-instruct-predictor.chai.svc.cluster.local:8080/v1\n
+    \     api_token: fake\n      max_tokens: 4096\n      tls_verify: false\n  - provider_id:
+    sentence-transformers\n    provider_type: inline::sentence-transformers\n    config:
+    {}\n  vector_io:\n  - provider_id: faiss\n    provider_type: inline::faiss\n    config:\n
+    \     kvstore:\n        type: sqlite\n        namespace: null\n        db_path:
+    ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/faiss_store.db\n  -
+    provider_id: pgvector\n    provider_type: remote::pgvector\n    config:\n      host:
+    ${env.POSTGRES_HOST:pgvector}\n      port: ${env.POSTGRES_PORT:5432}\n      db:
+    ${env.POSTGRES_DBNAME:rag_blueprint}\n      user: ${env.POSTGRES_USER:postgres}\n
+    \     password: ${env.POSTGRES_PASSWORD:rag_password}\n  safety:\n  - provider_id:
+    llama-guard\n    provider_type: inline::llama-guard\n    config: {}\n  agents:\n
+    \ - provider_id: meta-reference\n    provider_type: inline::meta-reference\n    config:\n
+    \     persistence_store:\n        type: sqlite\n        namespace: null\n        db_path:
+    ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/agents_store.db\n      responses_store:\n
+    \       type: sqlite\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/responses_store.db\n
+    \ eval:\n  - provider_id: meta-reference\n    provider_type: inline::meta-reference\n
+    \   config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path:
+    ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/meta_reference_eval.db\n
+    \ datasetio:\n  - provider_id: huggingface\n    provider_type: remote::huggingface\n
+    \   config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path:
+    ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/huggingface_datasetio.db\n
+    \ - provider_id: localfs\n    provider_type: inline::localfs\n    config:\n      kvstore:\n
+    \       type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/localfs_datasetio.db\n
+    \ scoring:\n  - provider_id: basic\n    provider_type: inline::basic\n    config:
+    {}\n  - provider_id: llm-as-judge\n    provider_type: inline::llm-as-judge\n    config:
+    {}\n  - provider_id: braintrust\n    provider_type: inline::braintrust\n    config:\n
+    \     openai_api_key: ${env.OPENAI_API_KEY:}\n  telemetry:\n  - provider_id: meta-reference\n
+    \   provider_type: inline::meta-reference\n    config:\n      sinks: ${env.TELEMETRY_SINKS:console,sqlite}\n
+    \     sqlite_db_path: ${env.SQLITE_DB_PATH:~/.llama/distributions/remote-vllm/trace_store.db}\n
+    \ tool_runtime:\n  - provider_id: brave-search\n    provider_type: remote::brave-search\n
+    \   config:\n      api_key: ${env.BRAVE_SEARCH_API_KEY:}\n      max_results: 3\n
+    \ - provider_id: tavily-search\n    provider_type: remote::tavily-search\n    config:\n
+    \     api_key: ${env.TAVILY_SEARCH_API_KEY:}\n      max_results: 3\n  - provider_id:
+    rag-runtime\n    provider_type: inline::rag-runtime\n    config: {}\n  - provider_id:
+    model-context-protocol\n    provider_type: remote::model-context-protocol\n    config:
+    {}\nmetadata_store:\n  type: sqlite\n  db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/registry.db\nmodels:\n-
+    metadata: {}\n  model_id: meta-llama/Llama-3.1-8B-Instruct\n  provider_id: llama-3-1-8b-instruct\n
+    \ model_type: llm\n- metadata:\n    embedding_dimension: 384\n  model_id: all-MiniLM-L6-v2\n
+    \ provider_id: sentence-transformers\n  model_type: embedding\nvector_dbs: []\ndatasets:
+    []\nscoring_fns: []\neval_tasks: []\ntool_groups:\n- toolgroup_id: builtin::websearch\n
+    \ provider_id: tavily-search\n- toolgroup_id: builtin::rag\n  provider_id: rag-runtime\n-
+    toolgroup_id: mcp-dbstore::database\n  provider_id: model-context-protocol\n  mcp_endpoint:
+    http://mcp-dbstore-standalone:8002/sse \n"
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"config.yaml":"version: '2'\nimage_name: remote-vllm\napis:\n- agents\n- datasetio\n- eval\n- inference\n- safety\n- scoring\n- telemetry\n- tool_runtime\n- vector_io\nproviders:\n  inference:\n  - provider_id: llama-3-1-8b-instruct\n    provider_type: remote::vllm\n    config:\n      url: http://llama-3-1-8b-instruct-predictor.chai.svc.cluster.local:8080/v1\n      api_token: fake\n      max_tokens: 4096\n      tls_verify: false\n  - provider_id: sentence-transformers\n    provider_type: inline::sentence-transformers\n    config: {}\n  vector_io:\n  - provider_id: faiss\n    provider_type: inline::faiss\n    config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/faiss_store.db\n  - provider_id: pgvector\n    provider_type: remote::pgvector\n    config:\n      host: ${env.POSTGRES_HOST:pgvector}\n      port: ${env.POSTGRES_PORT:5432}\n      db: ${env.POSTGRES_DBNAME:rag_blueprint}\n      user: ${env.POSTGRES_USER:postgres}\n      password: ${env.POSTGRES_PASSWORD:rag_password}\n  safety:\n  - provider_id: llama-guard\n    provider_type: inline::llama-guard\n    config: {}\n  agents:\n  - provider_id: meta-reference\n    provider_type: inline::meta-reference\n    config:\n      persistence_store:\n        type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/agents_store.db\n      responses_store:\n        type: sqlite\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/responses_store.db\n  eval:\n  - provider_id: meta-reference\n    provider_type: inline::meta-reference\n    config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/meta_reference_eval.db\n  datasetio:\n  - provider_id: huggingface\n    provider_type: remote::huggingface\n    config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/huggingface_datasetio.db\n  - provider_id: localfs\n    provider_type: inline::localfs\n    config:\n      kvstore:\n        type: sqlite\n        namespace: null\n        db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/localfs_datasetio.db\n  scoring:\n  - provider_id: basic\n    provider_type: inline::basic\n    config: {}\n  - provider_id: llm-as-judge\n    provider_type: inline::llm-as-judge\n    config: {}\n  - provider_id: braintrust\n    provider_type: inline::braintrust\n    config:\n      openai_api_key: ${env.OPENAI_API_KEY:}\n  telemetry:\n  - provider_id: meta-reference\n    provider_type: inline::meta-reference\n    config:\n      sinks: ${env.TELEMETRY_SINKS:console,sqlite}\n      sqlite_db_path: ${env.SQLITE_DB_PATH:~/.llama/distributions/remote-vllm/trace_store.db}\n  tool_runtime:\n  - provider_id: brave-search\n    provider_type: remote::brave-search\n    config:\n      api_key: ${env.BRAVE_SEARCH_API_KEY:}\n      max_results: 3\n  - provider_id: tavily-search\n    provider_type: remote::tavily-search\n    config:\n      api_key: ${env.TAVILY_SEARCH_API_KEY:}\n      max_results: 3\n  - provider_id: rag-runtime\n    provider_type: inline::rag-runtime\n    config: {}\n  - provider_id: model-context-protocol\n    provider_type: remote::model-context-protocol\n    config: {}\nmetadata_store:\n  type: sqlite\n  db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/registry.db\nmodels:\n- metadata: {}\n  model_id: meta-llama/Llama-3.1-8B-Instruct\n  provider_id: llama-3-1-8b-instruct\n  model_type: llm\n- metadata:\n    embedding_dimension: 384\n  model_id: all-MiniLM-L6-v2\n  provider_id: sentence-transformers\n  model_type: embedding\nvector_dbs: []\ndatasets: []\nscoring_fns: []\neval_tasks: []\ntool_groups:\n- toolgroup_id: builtin::websearch\n  provider_id: tavily-search\n- toolgroup_id: builtin::rag\n  provider_id: rag-runtime\n- toolgroup_id: mcp-dbstore::database\n  provider_id: model-context-protocol\n  mcp_endpoint: http://mcp-dbstore-standalone:8002/sse \n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"run-config","namespace":"ai-assistant"}}
+    meta.helm.sh/release-name: ai-virtual-assistant
+    meta.helm.sh/release-namespace: ai-assistant
+  creationTimestamp: "2025-07-03T16:54:33Z"
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  name: run-config
+  namespace: ai-assistant
+  resourceVersion: "131726638"
+  uid: d877ce30-5f6f-45a5-bd85-276a8e5d7261

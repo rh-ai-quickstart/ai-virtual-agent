@@ -15,8 +15,15 @@ export interface KnowledgeBase {
 export type ToolType = 'builtin' | 'mcp_server';
 
 export interface ToolGroup {
-  toolgroup_id: string; // Primary key - LlamaStack identifier
-  name: string;
+  identifier: string; // Primary key - LlamaStack identifier
+  provider_resource_id: string;
+  provider_id: string;
+  type: string;
+  mcp_endpoint?: string | null;
+  args?: any | null;
+  // Legacy fields for backward compatibility
+  toolgroup_id?: string;
+  name?: string;
   description?: string;
   endpoint_url?: string;
   configuration?: Record<string, unknown>;
