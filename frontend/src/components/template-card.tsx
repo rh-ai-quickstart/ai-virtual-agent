@@ -19,7 +19,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@patternfly/react-icons';
-import { useState } from 'react';
+// import { useState } from 'react';
 
 interface TemplateCardProps {
   template: TemplateSuite;
@@ -47,24 +47,33 @@ const CATEGORY_STYLES: Record<string, {
     color: 'purple', 
     bgColor: 'var(--pf-v6-global--palette--purple-50)',
     borderColor: 'var(--pf-v6-global--palette--purple-200)'
+  },
+  'insurance': { 
+    color: 'orange', 
+    bgColor: 'var(--pf-v6-global--palette--orange-50)',
+    borderColor: 'var(--pf-v6-global--palette--orange-200)'
   }
 };
 
 export function TemplateCard({ template, onDeploy, isDeploying = false }: TemplateCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  // const [expanded, setExpanded] = useState(false);
   
-  const categoryStyle = CATEGORY_STYLES[template.category] || CATEGORY_STYLES['fsi_banking'];
+  const categoryStyle = CATEGORY_STYLES[template.category] || { 
+    color: 'grey' as const, 
+    bgColor: 'var(--pf-v6-global--palette--grey-50)',
+    borderColor: 'var(--pf-v6-global--palette--grey-200)'
+  };
   const successRate = template.metadata?.success_rate || 0;
   const deploymentTime = template.metadata?.deployment_time || 'Unknown';
-  const agentCount = template.agents.length;
+  const agentCount = template.agents?.length || 0;
 
   const handleDeploy = () => {
     onDeploy(template.id);
   };
 
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-  };
+  // const toggleExpanded = () => {
+  //   setExpanded(!expanded);
+  // };
 
   return (
     <Card 
@@ -77,7 +86,7 @@ export function TemplateCard({ template, onDeploy, isDeploying = false }: Templa
       <CardHeader 
         toggleButtonProps={{
           'aria-label': 'Toggle template details',
-          'aria-expanded': expanded,
+          'aria-expanded': false,
         }}
       >
         <CardTitle>
@@ -145,7 +154,7 @@ export function TemplateCard({ template, onDeploy, isDeploying = false }: Templa
           </Flex>
         )}
         
-        <Flex justifyContent={{ default: 'justifyContentEnd' }} style={{ marginTop: '1rem' }}>
+        <Flex justifyContent={{ default: 'justifyContentFlexEnd' }} style={{ marginTop: '1rem' }}>
           <Button
             variant="primary"
             icon={<RocketIcon />}
@@ -164,7 +173,7 @@ export function TemplateCard({ template, onDeploy, isDeploying = false }: Templa
           <h4 style={{ marginBottom: '1rem' }}>
             Included Agents
           </h4>
-          {template.agents.map((agent, index) => (
+          {template.agents?.map((agent, index) => (
             <div key={index} style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: 'var(--pf-v6-global--BackgroundColor--100)', borderRadius: '4px' }}>
               <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
                 <FlexItem flex={{ default: 'flex_1' }}>

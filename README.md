@@ -55,6 +55,8 @@ For detailed architecture information, see:
 
 - **[Installation Guide](INSTALLING.md)** - Install AI Virtual Agent
 - **[Contributing Guide](CONTRIBUTING.md)** - Setup, development, and contribution guidelines
+- **[Adding New Templates](docs/ADDING_NEW_TEMPLATES.md)** - Complete guide for creating new agent templates
+- **[Template Quick Reference](docs/TEMPLATE_QUICK_REFERENCE.md)** - Quick reference for template creation
 - **[Virtual Agents Architecture](docs/virtual-agents-architecture.md)** - How AI agents work in the platform
 - **[Knowledge Base Architecture](docs/knowledge-base-architecture.md)** - Document ingestion and RAG system
 - **[Backend README](backend/README.md)** - Backend API documentation and features

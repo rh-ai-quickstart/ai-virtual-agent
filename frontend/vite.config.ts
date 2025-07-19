@@ -9,7 +9,8 @@ export default defineConfig({
     // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
     TanStackRouterVite({ target: 'react', autoCodeSplitting: true }),
     react(),
-    // ...,
+    // YAML plugin removed due to type compatibility issues
+    // YAML files are handled via API calls instead
   ],
   resolve: {
     alias: {

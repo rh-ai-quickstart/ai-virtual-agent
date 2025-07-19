@@ -1,0 +1,170 @@
+id: "healthcare_operations"
+name: "Healthcare Operations"
+description: "Comprehensive healthcare operations platform with patient care, compliance, and clinical support capabilities"
+category: "healthcare"
+metadata:
+  success_rate: 92
+  deployment_time: "2 minutes"
+  agent_count: 5
+  features:
+    - "Patient Care"
+    - "Clinical Support"
+    - "Compliance Management"
+    - "Provider Relations"
+    - "Healthcare Operations"
+
+personas:
+  clinical_support:
+    label: "Clinical Support"
+    description: "Provides clinical support and patient care assistance"
+    icon: "FileTextIcon"
+    color: "blue"
+    className: "persona-claims"
+    avatarBg: "#2563eb"
+    avatarIcon: "📋"
+    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+    borderColor: "#2563eb"
+    demo_questions:
+      - "How do I handle patient medication reconciliation?"
+      - "What are the clinical documentation requirements for this procedure?"
+      - "How do I assess patient risk factors for this treatment?"
+      - "What are the current clinical guidelines for this condition?"
+    agents:
+      - name: "Clinical Documentation Specialist"
+        description: "Assists with clinical documentation and patient care coordination"
+        prompt: "You are a Clinical Documentation Specialist for a healthcare organization. You help ensure accurate clinical documentation, assist with patient care coordination, and support healthcare providers with clinical workflows. You understand medical terminology, clinical guidelines, and healthcare documentation standards."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  patient_care:
+    label: "Patient Care"
+    description: "Assists with patient care and support services"
+    icon: "UserIcon"
+    color: "green"
+    className: "persona-customer"
+    avatarBg: "#059669"
+    avatarIcon: "👥"
+    gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)"
+    borderColor: "#059669"
+    demo_questions:
+      - "How do I schedule a follow-up appointment for a patient?"
+      - "What are the patient education resources for this condition?"
+      - "How do I coordinate care between different specialists?"
+      - "What are the discharge planning requirements for this patient?"
+    agents:
+      - name: "Patient Care Coordinator"
+        description: "Coordinates patient care and support services"
+        prompt: "You are a Patient Care Coordinator for a healthcare organization. You help coordinate patient care, schedule appointments, and provide support services. You assist with care transitions, patient education, and ensuring continuity of care across different healthcare settings."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  compliance_officer:
+    label: "Compliance Officer"
+    description: "Ensures healthcare regulatory compliance and policy enforcement"
+    icon: "ShieldAltIcon"
+    color: "red"
+    className: "persona-compliance"
+    avatarBg: "#dc2626"
+    avatarIcon: "🛡️"
+    gradient: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+    borderColor: "#dc2626"
+    demo_questions:
+      - "What are the HIPAA requirements for handling patient data?"
+      - "How do I ensure Joint Commission compliance for our facility?"
+      - "What are the current CMS regulations for healthcare providers?"
+      - "How do I handle a potential patient privacy breach?"
+    agents:
+      - name: "Healthcare Compliance Specialist"
+        description: "Manages healthcare regulatory compliance"
+        prompt: "You are a Healthcare Compliance Specialist for a healthcare organization. You help ensure compliance with HIPAA, Joint Commission, CMS, and other healthcare regulations. You provide guidance on patient privacy, security, and regulatory requirements for healthcare providers."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  provider_relations:
+    label: "Provider Relations"
+    description: "Manages healthcare provider relationships and credentialing"
+    icon: "BuildingIcon"
+    color: "purple"
+    className: "persona-provider"
+    avatarBg: "#7c3aed"
+    avatarIcon: "🏥"
+    gradient: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)"
+    borderColor: "#7c3aed"
+    demo_questions:
+      - "How do I add a new physician to our medical staff?"
+      - "What are the credentialing requirements for specialists?"
+      - "How do I handle provider privileging and scope of practice?"
+      - "What's the process for provider performance reviews?"
+    agents:
+      - name: "Provider Relations Manager"
+        description: "Manages healthcare provider relationships and credentialing"
+        prompt: "You are a Provider Relations Manager for a healthcare organization. You help manage physician relationships, credentialing, and medical staff development. You assist with provider onboarding, privileging, and performance management."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+
+  healthcare_operations:
+    label: "Healthcare Operations"
+    description: "Manages healthcare facility operations and administration"
+    icon: "BriefcaseIcon"
+    color: "orange"
+    className: "persona-benefits"
+    avatarBg: "#ea580c"
+    avatarIcon: "💼"
+    gradient: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)"
+    borderColor: "#ea580c"
+    demo_questions:
+      - "How do I manage hospital bed capacity and patient flow?"
+      - "What are the requirements for healthcare facility accreditation?"
+      - "How do I optimize healthcare operations and resource allocation?"
+      - "What are the reporting requirements for healthcare quality metrics?"
+    agents:
+      - name: "Healthcare Operations Manager"
+        description: "Manages healthcare facility operations and administration"
+        prompt: "You are a Healthcare Operations Manager for a healthcare organization. You help manage facility operations, optimize patient flow, and ensure efficient healthcare delivery. You assist with resource allocation, quality improvement, and healthcare facility management."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: [] 

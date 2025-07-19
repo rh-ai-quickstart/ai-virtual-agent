@@ -1,7 +1,7 @@
 import { NewAgentCard } from '@/components/new-agent-card';
 import { TemplateList } from '@/components/template-list';
 import { templateService } from '@/services/templates';
-import { createAgent, fetchAgents } from '@/services/agents';
+import { fetchAgents } from '@/services/agents';
 import { ToolAssociationInfo } from '@/types';
 import { 
   Flex, 
@@ -14,15 +14,12 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Card,
-  CardBody,
-  Label,
   Tabs,
   Tab,
   TabTitleText,
   AlertActionCloseButton
 } from '@patternfly/react-core';
-import { MagicIcon, RocketIcon, PlusIcon, BookOpenIcon, UsersIcon } from '@patternfly/react-icons';
+// import { PlusIcon, BookOpenIcon, UsersIcon } from '@patternfly/react-icons';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
@@ -53,58 +50,15 @@ export interface Agent {
 // Type def for creating agents
 export interface NewAgent {
   name: string;
+  description?: string;
   model_name: string;
   prompt: string;
   tools: ToolAssociationInfo[];
   knowledge_base_ids: string[];
 }
 
-// NEW: Banking demo agents configuration
-const BANKING_DEMO_AGENTS: NewAgent[] = [
-  {
-    name: "Compliance Policy Assistant",
-    description: "Ensures adherence to US banking regulations",
-    prompt: "You are a Compliance Policy Agent for a US bank. You help ensure adherence to US banking regulations including BSA/AML, OFAC, CFPB, OCC, and FDIC guidance. You provide accurate information about compliance procedures, reporting requirements, and regulatory updates.",
-    model_name: "meta-llama/Llama-3.1-8B-Instruct",
-    tools: [{ toolgroup_id: "builtin::websearch" }],
-    knowledge_base_ids: [],
-  },
-  {
-    name: 'Lending Policy Assistant',
-    prompt: 'You are a Lending Policy Assistant for relationship managers and loan officers. You help with credit assessment, lending requests, documentation requirements, and regulatory compliance for loans. You know FHA guidelines, conventional loan requirements, and small business lending procedures.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
-  },
-  {
-    name: 'Customer Service Assistant',
-    prompt: 'You are a Customer Service Assistant for branch tellers and customer service representatives. You help with day-to-day customer queries about product fees, account policies, transaction processing, and regulatory timelines. You provide accurate information about bank products and services.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
-  },
-  {
-    name: 'Fraud Detection Assistant',
-    prompt: 'You are a Fraud Detection Assistant for fraud analysts and AML specialists. You help review alerts for suspicious transactions, investigate AML/BSA/OFAC red flags, and ensure reporting compliance. You provide guidance on escalation procedures and regulatory requirements.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
-  },
-  {
-    name: 'Training & Market Intelligence Assistant',
-    prompt: 'You are a Training & Market Intelligence Assistant for training leads and analysts. You help keep staff current on new US regulations, industry certifications, and market developments. You provide information about regulatory updates, certification requirements, and industry best practices.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
-  },
-  {
-    name: 'IT Support Assistant',
-    prompt: 'You are an IT Support Assistant for banking operations. You help support banking employees with system/process issues and ensure adherence to IT policies. You provide guidance on password resets, system access, security protocols, and technical procedures.',
-    model_name: 'meta-llama/Llama-3.1-8B-Instruct',
-    tools: [{ toolgroup_id: 'builtin::websearch' }],
-    knowledge_base_ids: []
-  }
-];
+// Use existing FSI banking template instead of hard-coded agents
+const DEMO_TEMPLATE_ID = 'fsi_banking';
 
 export const Route = createFileRoute('/config/agents')({
   component: Agents,
@@ -146,18 +100,18 @@ export function Agents() {
     retryDelay: 2000,
   });
 
-  // Use React Query for categories
-  const { 
-    data: categories = [], 
-    isLoading: isLoadingCategories 
-  } = useQuery({
-    queryKey: ['template-categories'],
-    queryFn: async () => {
-      const response = await templateService.getCategories();
-      return response;
-    },
-    staleTime: 30000, // 30 seconds
-  });
+  // Use React Query for categories - commented out as not used
+  // const { 
+  //   data: categories = [], 
+  //   isLoading: isLoadingCategories 
+  // } = useQuery({
+  //   queryKey: ['template-categories'],
+  //   queryFn: async () => {
+  //     const response = await templateService.getCategories();
+  //     return response;
+  //   },
+  //   staleTime: 30000, // 30 seconds
+  // });
 
   // Use React Query for agents
   const { 
@@ -178,14 +132,14 @@ export function Agents() {
 
   // Handle tab selection from URL search params
   useEffect(() => {
-    if (search.tab === 'my-agents') {
+    if ('tab' in search && search.tab === 'my-agents') {
       setActiveTab(2); // Switch to "My Agents" tab
-    } else if (search.tab === 'templates') {
+    } else if ('tab' in search && search.tab === 'templates') {
       setActiveTab(0); // Switch to "Templates" tab
-    } else if (search.tab === 'new-agent') {
+    } else if ('tab' in search && search.tab === 'new-agent') {
       setActiveTab(1); // Switch to "New Agent" tab
     }
-  }, [search.tab]);
+  }, ['tab' in search ? search.tab : undefined]);
 
   const handleDeploy = async (templateId: string, selectedAgents?: string[]) => {
     try {
@@ -196,7 +150,7 @@ export function Agents() {
       console.log('Deployment result:', result);
       
       if (result.success) {
-        const agentCount = selectedAgents ? selectedAgents.length : 'all';
+        // const agentCount = selectedAgents ? selectedAgents.length : 'all';
         setSuccess(`Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`);
         
         // Auto-dismiss success message after 5 seconds
@@ -237,33 +191,40 @@ export function Agents() {
     }
   };
 
-  // Mutation for creating demo agents
+  // Mutation for creating demo agents using template
   const createDemoMutation = useMutation({
     mutationFn: async () => {
-      const results = [];
       setDemoProgress([]);
       
-      for (const demoAgent of BANKING_DEMO_AGENTS) {
-        try {
-          // Create the agent without persona field
-          const createdAgent = await createAgent(demoAgent as NewAgent);
+      try {
+        // Deploy the demo template instead of creating individual agents
+        const result = await templateService.deployTemplate(DEMO_TEMPLATE_ID);
+        
+        if (result.success) {
+          setDemoProgress(prev => [...prev, ` Deployed ${result.agent_ids?.length || 0} demo agents`]);
           
-          results.push(createdAgent);
-          setDemoProgress(prev => [...prev, `✅ Created ${demoAgent.name}`]);
+          // Save persona mappings for deployed agents
+          if (result.deployed_agents) {
+            result.deployed_agents.forEach((agent: any) => {
+              if (agent.metadata?.persona) {
+                personaStorage.setPersona(agent.id, agent.metadata.persona, DEMO_TEMPLATE_ID);
+              }
+            });
+          }
           
-          // Small delay to show progress
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          console.error(`Failed to create ${demoAgent.name}:`, error);
-          setDemoProgress(prev => [...prev, `❌ Failed to create ${demoAgent.name}`]);
+          return result.deployed_agents || [];
+        } else {
+          throw new Error(result.error || 'Demo deployment failed');
         }
-      }
-      
-      return results;
+              } catch (error: any) {
+          console.error('Demo deployment failed:', error);
+          setDemoProgress(prev => [...prev, `❌ Demo deployment failed: ${error.message || 'Unknown error'}`]);
+          throw error;
+        }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      setDemoProgress(prev => [...prev, '🏦 Banking templates deployed successfully!']);
+              setDemoProgress(prev => [...prev, ' Demo agents deployed successfully!']);
       setTimeout(() => {
         setShowDemoModal(false);
         setDemoProgress([]);
@@ -275,10 +236,10 @@ export function Agents() {
     }
   });
 
-  const handleCreateDemo = () => {
-    setShowDemoModal(true);
-    createDemoMutation.mutate();
-  };
+  // const handleCreateDemo = () => {
+  //   setShowDemoModal(true);
+  //   createDemoMutation.mutate();
+  // };
 
   const clearMessages = () => {
     setError(null);
@@ -300,7 +261,7 @@ export function Agents() {
           >
             <Tab 
               eventKey={0} 
-              title={<TabTitleText icon={<BookOpenIcon />}>Templates</TabTitleText>}
+              title={<TabTitleText>Templates</TabTitleText>}
             >
               <div style={{ padding: '1rem 0' }}>
                 {error && (
@@ -348,7 +309,7 @@ export function Agents() {
             
             <Tab 
               eventKey={1} 
-              title={<TabTitleText icon={<PlusIcon />}>New Agent</TabTitleText>}
+              title={<TabTitleText>New Agent</TabTitleText>}
             >
               <div style={{ padding: '1rem 0' }}>
                 <NewAgentCard />
@@ -357,7 +318,7 @@ export function Agents() {
             
             <Tab 
               eventKey={2} 
-              title={<TabTitleText icon={<UsersIcon />}>My Agents</TabTitleText>}
+              title={<TabTitleText>My Agents</TabTitleText>}
             >
               <div style={{ padding: '1rem 0' }}>
                 <TemplateAgentList 
@@ -375,16 +336,15 @@ export function Agents() {
       {/* NEW: Banking Templates Modal */}
       <Modal
         variant="small"
-        title="Banking Templates"
+        title="Deploy Template"
         isOpen={showDemoModal}
         onClose={() => !createDemoMutation.isPending && setShowDemoModal(false)}
-        hasNoBodyWrapper
       >
-        <ModalHeader title="Setting Up Banking Agent Templates" />
+        <ModalHeader title="Setting Up Agent Templates" />
         <ModalBody>
           <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
             <FlexItem>
-              <p>Creating specialized banking agents from templates...</p>
+              <p>Creating specialized agents from templates...</p>
             </FlexItem>
             {demoProgress.map((progress, index) => (
               <FlexItem key={index}>
@@ -395,7 +355,7 @@ export function Agents() {
             ))}
             {createDemoMutation.isPending && demoProgress.length === 0 && (
               <FlexItem>
-                <div>🏦 Deploying banking templates...</div>
+                <div>🚀 Deploying templates...</div>
               </FlexItem>
             )}
           </Flex>

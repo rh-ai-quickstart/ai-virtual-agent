@@ -80,46 +80,5 @@ default:
   gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)"
   borderColor: "#6b7280" 
 
-# Replace the demo_questions section with workflow-based questions
-demo_questions:
-  default:
-    - "What documents do I need to collect for a $500K small business loan application?"
-    - "How do I calculate the debt service coverage ratio for this business loan?"
-    - "What are the current SBA 7(a) loan requirements and processing times?"
-    - "What's the next step after the loan is approved and how do I prepare closing documents?"
-  
-  compliance_officer:
-    - "What are the current BSA/AML reporting requirements for cash transactions over $10,000?"
-    - "How do I handle a customer who appears on the OFAC sanctions list?"
-    - "What are the CFPB requirements for mortgage loan disclosures?"
-    - "What's the process for filing a Suspicious Activity Report (SAR)?"
-  
-  relationship_manager:
-    - "What documents do I need to collect for a $500K small business loan application?"
-    - "How do I calculate the debt service coverage ratio for this business loan?"
-    - "What are the current SBA 7(a) loan requirements and processing times?"
-    - "What's the next step after the loan is approved and how do I prepare closing documents?"
-  
-  branch_teller:
-    - "What's the process for opening a new business checking account for a sole proprietorship?"
-    - "What customer identification documents are required for CIP compliance?"
-    - "How do I handle a customer who wants to deposit $15,000 in cash today?"
-    - "What are the daily transaction limits for this new business account?"
-  
-  fraud_analyst:
-    - "I received an alert for suspicious activity - what are the first steps in investigation?"
-    - "How do I determine if this transaction pattern indicates money laundering?"
-    - "What information do I need to include when filing a SAR for this case?"
-    - "What's the escalation process if this involves potential terrorist financing?"
-  
-  training_lead:
-    - "What are the mandatory training requirements for new compliance officers this year?"
-    - "How do I track completion of AML training for our branch staff?"
-    - "What certifications are required for our lending officers and how do I verify them?"
-    - "What's the process for updating training materials when new regulations are issued?"
-  
-  it_support:
-    - "How do I grant system access to a new loan officer in the core banking platform?"
-    - "What security protocols should I follow when setting up remote access for compliance staff?"
-    - "How do I troubleshoot login issues with the fraud detection system?"
-    - "What's the process for revoking access when an employee leaves the bank?" 
+# Demo questions are now loaded from template YAML files
+# This ensures no hard-coded questions and allows for template-specific customization 

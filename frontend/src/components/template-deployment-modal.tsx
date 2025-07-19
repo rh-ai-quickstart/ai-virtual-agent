@@ -13,9 +13,7 @@ import {
   TextArea,
   Flex,
   FlexItem,
-  Label,
-  Alert,
-  Spinner
+  Label
 } from '@patternfly/react-core';
 import { RocketIcon, UsersIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
@@ -53,7 +51,9 @@ export function TemplateDeploymentModal({
   const handleDeployAllToggle = (checked: boolean) => {
     setDeployAll(checked);
     if (checked) {
-      setSelectedAgents(template.agents.map(agent => agent.name));
+      if (template.agents) {
+        setSelectedAgents(template.agents.map(agent => agent.name));
+      }
     } else {
       setSelectedAgents([]);
     }
@@ -108,7 +108,7 @@ export function TemplateDeploymentModal({
               <FlexItem>
                 <TextArea
                   value={template.description}
-                  isReadOnly
+                  readOnly
                   aria-label="Template description"
                   style={{ minHeight: '60px' }}
                 />
@@ -120,7 +120,7 @@ export function TemplateDeploymentModal({
             <FormGroup label="Custom Name (Optional)">
               <TextInput
                 value={customName}
-                onChange={setCustomName}
+                onChange={(_, value) => setCustomName(value)}
                 placeholder="Enter custom name for deployed agents"
                 aria-label="Custom agent name"
               />
@@ -129,7 +129,7 @@ export function TemplateDeploymentModal({
             <FormGroup label="Custom Description (Optional)">
               <TextArea
                 value={customDescription}
-                onChange={setCustomDescription}
+                onChange={(_, value) => setCustomDescription(value)}
                 placeholder="Enter custom description for deployed agents"
                 aria-label="Custom agent description"
               />
@@ -141,7 +141,7 @@ export function TemplateDeploymentModal({
               <Checkbox
                 label="Deploy all agents"
                 isChecked={deployAll}
-                onChange={handleDeployAllToggle}
+                onChange={(_, checked) => handleDeployAllToggle(checked)}
                 id="deploy-all-checkbox"
               />
             </FormGroup>
@@ -149,7 +149,7 @@ export function TemplateDeploymentModal({
             {!deployAll && (
               <FormGroup label="Select agents to deploy:">
                 <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
-                  {template.agents.map((agent, index) => (
+                  {template.agents?.map((agent, index) => (
                     <FlexItem key={index}>
                       <Checkbox
                         label={
@@ -164,7 +164,7 @@ export function TemplateDeploymentModal({
                           </Flex>
                         }
                         isChecked={selectedAgents.includes(agent.name)}
-                        onChange={(checked) => handleAgentToggle(agent.name, checked)}
+                        onChange={(_, checked) => handleAgentToggle(agent.name, checked)}
                         id={`agent-${index}-checkbox`}
                       />
                     </FlexItem>

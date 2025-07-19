@@ -13,7 +13,6 @@ import {
   Flex,
   FlexItem,
   Icon,
-  Label,
   MenuToggle,
   MenuToggleElement,
   Modal,
@@ -21,26 +20,15 @@ import {
   ModalFooter,
   ModalHeader,
   Title,
-  Badge,
-  CardHeader,
-  Form,
-  FormGroup,
-  FormSelect,
-  FormSelectOption
+  CardHeader
 } from '@patternfly/react-core';
 import { 
   EllipsisVIcon, 
   TrashIcon,
-  ChatIcon,
-  ClockIcon,
-  PlayIcon,
-  PauseIcon,
-  UserIcon
+  PlayIcon
 } from '@patternfly/react-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { Fragment, useState, useEffect } from 'react';
-import { fetchTools } from '@/services/tools';
-import { ToolGroup } from '@/types';
 import { Link } from '@tanstack/react-router';
 
 interface AgentCardProps {
@@ -51,16 +39,16 @@ export function AgentCard({ agent }: AgentCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [personaConfig, setPersonaConfig] = useState<PersonaConfig | null>(null);
-  const [showPersonaModal, setShowPersonaModal] = useState(false);
-  const [selectedPersona, setSelectedPersona] = useState('');
+  // const [showPersonaModal, setShowPersonaModal] = useState(false);
+  // const [selectedPersona, setSelectedPersona] = useState('');
 
   const queryClient = useQueryClient();
 
   // Query for tools
-  const { data: tools } = useQuery<ToolGroup[], Error>({
-    queryKey: ['tools'],
-    queryFn: fetchTools,
-  });
+  // const { data: tools } = useQuery<ToolGroup[], Error>({
+  //   queryKey: ['tools'],
+  //   queryFn: fetchTools,
+  // });
 
   // Get persona from localStorage and load config
   const agentPersona = personaStorage.getPersona(agent.id);
@@ -88,7 +76,7 @@ export function AgentCard({ agent }: AgentCardProps) {
   };
   
   const createdDate = formatDate(agent.created_at);
-  const updatedDate = formatDate(agent.updated_at);
+  // const updatedDate = formatDate(agent.updated_at);
   const isActive = true; // You can add actual status logic here
 
   // Mutation for deleting an Agent
@@ -233,9 +221,16 @@ export function AgentCard({ agent }: AgentCardProps) {
                     {personaConfig && (
                       <>
                         <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>•</span>
-                        <Label color={personaConfig.color} variant="outline" style={{ fontSize: '0.6rem' }}>
+                        <span style={{ 
+                          color: personaConfig.color, 
+                          fontSize: '0.6rem',
+                          border: `1px solid ${personaConfig.color}`,
+                          borderRadius: '4px',
+                          padding: '2px 6px',
+                          backgroundColor: 'transparent'
+                        }}>
                           {personaConfig.label}
-                        </Label>
+                        </span>
                       </>
                     )}
                   </Flex>

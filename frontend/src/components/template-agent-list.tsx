@@ -626,7 +626,7 @@ export function TemplateAgentList({
               </Button>
             </BreadcrumbItem>
             <BreadcrumbItem isActive>
-              {selectedTemplateInfo?.templateName || 'Template'}
+              {selectedTemplateInfo && ('templateName' in selectedTemplateInfo ? selectedTemplateInfo.templateName : selectedTemplateInfo.name) || 'Template'}
             </BreadcrumbItem>
           </Breadcrumb>
         </CardBody>
@@ -648,7 +648,7 @@ export function TemplateAgentList({
               <Title headingLevel="h4" size="md" style={{ color: 'var(--text-primary)' }}>
                 {selectedAgents.size > 0 
                   ? `${selectedAgents.size} agent${selectedAgents.size > 1 ? 's' : ''} selected`
-                  : `${selectedTemplateAgents.length} agents in ${selectedTemplateInfo?.templateName || 'template'}`
+                  : `${selectedTemplateAgents.length} agents in ${selectedTemplateInfo && ('templateName' in selectedTemplateInfo ? selectedTemplateInfo.templateName : selectedTemplateInfo.name) || 'template'}`
                 }
               </Title>
             </FlexItem>

@@ -445,7 +445,7 @@ async def debug_session_listing(agent_id: str):
         # Test 1: Check if agent exists
         try:
             agent = client.agents.retrieve(agent_id=agent_id)
-            log.info(f"✅ Agent exists: {agent.agent_id}")
+            log.info(f" Agent exists: {agent.agent_id}")
         except Exception as e:
             log.error(f"❌ Agent not found: {e}")
             return {"error": f"Agent not found: {e}"}
@@ -461,7 +461,7 @@ async def debug_session_listing(agent_id: str):
         # Test 3: Try to call list method
         try:
             sessions_response = client.agents.session.list(agent_id=agent_id)
-            log.info("✅ List method called successfully")
+            log.info(" List method called successfully")
             log.info(f"Response type: {type(sessions_response)}")
             log.info(f"Response value: {sessions_response}")
             log.info(f"Response dir: {dir(sessions_response)}")

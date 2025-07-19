@@ -47,7 +47,9 @@ export function KnowledgeBaseCard({
   };
 
   const handleDeleteKnowledgeBase = () => {
-    onDelete?.(knowledgeBase.vector_db_name);
+    if (knowledgeBase.vector_db_name) {
+      onDelete?.(knowledgeBase.vector_db_name);
+    }
   };
 
   const dropdownItems = (

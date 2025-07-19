@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { 
   Page, 
   PageSection, 
-  PageSectionVariants, 
   Title, 
   Flex, 
   FlexItem, 
@@ -72,7 +71,11 @@ export function Templates() {
     if (category) {
       try {
         setIsLoading(true);
-        const categoryTemplates = await templateService.getTemplatesByCategory(category);
+        // Note: getTemplatesByCategory method doesn't exist, using getTemplates instead
+        const allTemplates = await templateService.getTemplates();
+        const categoryTemplates = allTemplates.filter(template => 
+          template.metadata?.category === category || template.category === category
+        );
         setTemplates(categoryTemplates || []);
       } catch (err: any) {
         setError('Failed to load category templates: ' + (err.message || 'Unknown error'));
@@ -105,7 +108,8 @@ export function Templates() {
 
   const handleRefresh = async () => {
     try {
-      await templateService.refreshCache();
+      // Note: refreshCache method doesn't exist, reloading templates instead
+      await loadData();
       await loadData();
       setSuccess('Template cache refreshed successfully!');
     } catch (err: any) {
@@ -135,7 +139,7 @@ export function Templates() {
 
   return (
     <Page>
-      <PageSection variant={PageSectionVariants.light}>
+      <PageSection>
         <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
           <FlexItem>
             <Title headingLevel="h1" size="2xl">
@@ -206,6 +210,7 @@ export function Templates() {
 
         <TemplateList
           templates={templates || []}
+          agents={[]} // Add empty agents array as it's required
           onDeploy={(templateId: string) => void handleDeploy(templateId)}
           isDeploying={isDeploying}
           isLoading={isLoading}

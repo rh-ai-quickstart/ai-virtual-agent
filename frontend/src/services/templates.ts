@@ -34,12 +34,14 @@ export const templateService = {
         return response || [];
       } catch (error) {
         console.error('Error fetching templates:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
+        if (error instanceof Error) {
+          console.error('Error name:', error.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
         
         // Add retry logic for network errors
-        if (error.message?.includes('message channel closed') || error.name === 'TypeError') {
+        if (error instanceof Error && (error.message?.includes('message channel closed') || error.name === 'TypeError')) {
           console.warn('Network interruption detected, retrying...');
           // Retry once after a short delay
           await new Promise(resolve => setTimeout(resolve, 2000));

@@ -50,6 +50,7 @@ export function mergeKnowledgeBasesWithStatus(
 
   // Process all DB knowledge bases first
   for (const dbKb of dbKnowledgeBases) {
+    if (!dbKb.vector_db_name) continue;
     const llamaStackKb = llamaStackKbMap.get(dbKb.vector_db_name);
     const { dbMatch, llamaStackMatch } = findMatchingKnowledgeBase(dbKb, llamaStackKb);
     const status = determineStatus(dbMatch, llamaStackMatch);
@@ -72,10 +73,12 @@ export function mergeKnowledgeBasesWithStatus(
 
       // Create a knowledge base object from LlamaStack data for orphaned items
       result.push({
+        id: `external-${llamaStackKb.kb_name}`,
         vector_db_name: llamaStackKb.kb_name,
         name: llamaStackKb.kb_name,
-        version: 'unknown',
+        description: `External knowledge base: ${llamaStackKb.kb_name}`,
         embedding_model: llamaStackKb.embedding_model,
+        provider: 'external',
         provider_id: llamaStackKb.provider_id,
         is_external: true,
         source: 'unknown',
@@ -84,6 +87,9 @@ export function mergeKnowledgeBasesWithStatus(
           type: llamaStackKb.type,
         },
         status,
+        created_by: 'system',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
     }
   }

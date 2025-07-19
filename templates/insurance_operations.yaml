@@ -1,0 +1,163 @@
+id: "insurance_operations"
+name: "Insurance Operations & Claims"
+description: "Comprehensive insurance operations platform with claims processing, underwriting, and customer service capabilities"
+category: "insurance"
+metadata:
+  success_rate: 92
+  deployment_time: "3 minutes"
+  agent_count: 5
+  features:
+    - "Claims Processing"
+    - "Underwriting Support"
+    - "Customer Service"
+    - "Policy Management"
+    - "Compliance & Regulations"
+
+personas:
+  claims_processor:
+    label: "Claims Processor"
+    description: "Handles insurance claims processing and customer support"
+    icon: "FileTextIcon"
+    color: "blue"
+    className: "persona-claims"
+    avatarBg: "#2563eb"
+    avatarIcon: "📋"
+    gradient: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+    borderColor: "#2563eb"
+    demo_questions:
+      - "What documents are required to file an auto insurance claim?"
+      - "How do I calculate the actual cash value vs replacement cost for a damaged item?"
+      - "What's the typical timeline for processing a homeowners insurance claim?"
+      - "How do I handle a claim where the policyholder has multiple insurance policies?"
+    agents:
+      - name: "Auto Claims Specialist"
+        description: "Specializes in automobile insurance claims processing and customer support"
+        prompt: "You are an Auto Claims Specialist for a major insurance company. You help customers file auto insurance claims, explain coverage details, and guide them through the claims process. You know about collision coverage, comprehensive coverage, liability limits, deductibles, and state-specific insurance requirements. You provide accurate information about claim timelines, required documentation, and settlement processes."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What documents do I need to file an auto insurance claim after an accident?"
+          - "How does my deductible affect my auto insurance claim payment?"
+          - "What's the difference between collision and comprehensive coverage?"
+          - "How long does it typically take to process an auto insurance claim?"
+
+      - name: "Property Claims Adjuster"
+        description: "Handles property damage claims including homeowners and commercial property"
+        prompt: "You are a Property Claims Adjuster for a major insurance company. You handle homeowners insurance claims, commercial property claims, and property damage assessments. You understand dwelling coverage, personal property coverage, liability coverage, and additional living expenses. You help customers understand their policy limits, coverage exclusions, and the claims settlement process."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "How do I calculate the actual cash value vs replacement cost for damaged property?"
+          - "What's covered under my homeowners insurance policy for water damage?"
+          - "How do I file a claim for storm damage to my roof?"
+          - "What documentation do I need for a property damage claim?"
+
+  underwriting_specialist:
+    label: "Underwriting Specialist"
+    description: "Assesses risk and determines policy terms and pricing"
+    icon: "CalculatorIcon"
+    color: "green"
+    className: "persona-underwriting"
+    avatarBg: "#059669"
+    avatarIcon: "📊"
+    gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)"
+    borderColor: "#059669"
+    demo_questions:
+      - "What factors affect auto insurance premium calculations?"
+      - "How do I assess risk for a commercial property insurance application?"
+      - "What underwriting guidelines apply to life insurance applications?"
+      - "How do I determine appropriate coverage limits for a business?"
+    agents:
+      - name: "Personal Lines Underwriter"
+        description: "Handles underwriting for personal insurance policies including auto, home, and life"
+        prompt: "You are a Personal Lines Underwriter for a major insurance company. You assess risk for personal insurance policies including auto, homeowners, and life insurance. You understand factors that affect premium calculations, risk assessment methodologies, and underwriting guidelines. You help determine appropriate coverage limits, policy terms, and pricing based on individual risk profiles."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "What factors affect auto insurance premium calculations?"
+          - "How do I assess risk for a homeowners insurance application?"
+          - "What underwriting guidelines apply to life insurance applications?"
+          - "How do credit scores affect insurance premiums?"
+
+      - name: "Commercial Underwriter"
+        description: "Specializes in commercial insurance underwriting and risk assessment"
+        prompt: "You are a Commercial Underwriter for a major insurance company. You handle underwriting for commercial insurance policies including general liability, commercial property, workers compensation, and business interruption coverage. You understand commercial risk assessment, industry-specific exposures, and underwriting guidelines for various business types."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "How do I assess risk for a commercial property insurance application?"
+          - "What factors determine workers compensation insurance rates?"
+          - "How do I determine appropriate coverage limits for a business?"
+          - "What underwriting considerations apply to restaurant insurance?"
+
+  customer_service:
+    label: "Customer Service Representative"
+    description: "Provides policy information and customer support"
+    icon: "UserIcon"
+    color: "orange"
+    className: "persona-customer"
+    avatarBg: "#ea580c"
+    avatarIcon: "👥"
+    gradient: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)"
+    borderColor: "#ea580c"
+    demo_questions:
+      - "How do I add a driver to my auto insurance policy?"
+      - "What's the process for changing my homeowners insurance coverage?"
+      - "How do I update my billing information for my insurance policy?"
+      - "What's the difference between comprehensive and collision coverage?"
+    agents:
+      - name: "Policy Service Representative"
+        description: "Assists customers with policy changes, billing, and general inquiries"
+        prompt: "You are a Policy Service Representative for a major insurance company. You help customers with policy changes, billing questions, coverage explanations, and general insurance inquiries. You understand policy terms, coverage options, billing procedures, and customer service best practices. You provide clear explanations of insurance concepts and help customers make informed decisions about their coverage."
+        model_name: "meta-llama/Llama-3.1-8B-Instruct"
+        tools:
+          - toolgroup_id: "builtin::websearch"
+        knowledge_base_ids: []
+        temperature: 0.1
+        repetition_penalty: 1.0
+        max_tokens: 4096
+        top_p: 0.95
+        max_infer_iters: 10
+        input_shields: []
+        output_shields: []
+        demo_questions:
+          - "How do I add a driver to my auto insurance policy?"
+          - "What's the process for changing my homeowners insurance coverage?"
+          - "How do I update my billing information for my insurance policy?"
+          - "What's the difference between comprehensive and collision coverage?" 

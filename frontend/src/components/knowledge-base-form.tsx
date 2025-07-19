@@ -167,17 +167,26 @@ export function KnowledgeBaseForm({
   const initialData: KnowledgeBaseFormData = defaultKnowledgeBase
     ? {
         ...defaultKnowledgeBase,
+        s3_access_key_id: '',
+        s3_secret_access_key: '',
+        s3_endpoint_url: '',
+        s3_bucket_name: '',
+        s3_region: '',
+        github_url: '',
+        github_path: '',
+        github_token: '',
+        github_branch: '',
       }
     : {
+        id: '',
         name: '',
-        version: '',
+        description: '',
         embedding_model: '',
-        provider_id: '',
-        vector_db_name: '',
-        is_external: false,
-        source: '',
-        source_configuration: {},
-        // Individual source configuration fields
+        provider: '',
+        status: 'idle',
+        created_by: '',
+        created_at: '',
+        updated_at: '',
         s3_access_key_id: '',
         s3_secret_access_key: '',
         s3_endpoint_url: '',
@@ -227,7 +236,7 @@ export function KnowledgeBaseForm({
         finalValue = value;
       }
 
-      if (finalValue.vector_db_name.trim() === '') {
+      if (finalValue.vector_db_name?.trim() === '') {
         finalValue.vector_db_name = defaultVectorDbName;
       }
 

@@ -101,7 +101,9 @@ export function TemplateList({
     }
     
     setSelectedTemplate(template);
-    setSelectedAgents(new Set(template.agents.map(agent => agent.name)));
+    if (template.agents) {
+      setSelectedAgents(new Set(template.agents.map(agent => agent.name)));
+    }
     setShowDeployModal(true);
   };
 
@@ -130,7 +132,7 @@ export function TemplateList({
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (selectedTemplate) {
+    if (selectedTemplate && selectedTemplate.agents) {
       if (checked) {
         setSelectedAgents(new Set(selectedTemplate.agents.map(agent => agent.name)));
       } else {
@@ -383,11 +385,11 @@ export function TemplateList({
               <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Checkbox
                   id="select-all-agents"
-                  isChecked={selectedAgents.size === selectedTemplate.agents.length}
+                  isChecked={selectedTemplate.agents ? selectedAgents.size === selectedTemplate.agents.length : false}
                   onChange={(_, checked) => handleSelectAll(checked)}
                   aria-label="Select all agents"
                 />
-                <span>Select All ({selectedTemplate.agents.length} agents)</span>
+                <span>Select All ({selectedTemplate.agents?.length || 0} agents)</span>
               </div>
               
               <div style={{
@@ -395,7 +397,7 @@ export function TemplateList({
                 gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
                 gap: '0.5rem'
               }}>
-                {selectedTemplate.agents.map((agent) => (
+                {selectedTemplate.agents?.map((agent) => (
                   <div
                     key={agent.name}
                     style={{

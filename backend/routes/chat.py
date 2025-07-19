@@ -8,6 +8,7 @@ from llama_stack_client.types import SamplingParams
 from ..agents import ExistingAgent, ExistingReActAgent
 from ..api.llamastack import client
 from ..utils.logging_config import get_logger
+from ..config.config import config_manager
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -120,11 +121,20 @@ class Chat:
             model = self._get_model_for_agent(agent_id)
             tools = self._get_tools_for_agent(agent_id)
 
+            # Load chat configuration
+            chat_config = config_manager.get_chat_config()
+
             # Determine agent type from config (default to REGULAR)
             agent_type = AgentType.REGULAR
 
             # Create agent instance using existing ID
             if agent_type == AgentType.REACT:
+                react_config = chat_config.agent_types.get("react", chat_config.agent_types["regular"])
+                sampling_params = SamplingParams(
+                    strategy={"type": react_config.sampling_params.strategy},
+                    max_tokens=react_config.sampling_params.max_tokens,
+                )
+                
                 return ExistingReActAgent(
                     self._get_client(),
                     agent_id=agent_id,
@@ -134,25 +144,22 @@ class Chat:
                         "type": "json_schema",
                         "json_schema": ReActOutput.model_json_schema(),
                     },
-                    sampling_params=SamplingParams(
-                        strategy={"type": "greedy"},
-                        max_tokens=512,
-                    ),
+                    sampling_params=sampling_params,
                 )
             else:
+                regular_config = chat_config.agent_types.get("regular", chat_config.agent_types["regular"])
+                sampling_params = SamplingParams(
+                    strategy={"type": regular_config.sampling_params.strategy},
+                    max_tokens=regular_config.sampling_params.max_tokens,
+                )
+                
                 return ExistingAgent(
                     self._get_client(),
                     agent_id=agent_id,
                     model=model,
-                    instructions=(
-                        "You are a helpful assistant. When you use a tool "
-                        "always respond with a summary of the result."
-                    ),
+                    instructions=chat_config.default_instructions,
                     tools=tools,
-                    sampling_params=SamplingParams(
-                        strategy={"type": "greedy"},
-                        max_tokens=512,
-                    ),
+                    sampling_params=sampling_params,
                 )
         except Exception as e:
             self.log.error(f"Error creating agent with ID {agent_id}: {e}")
@@ -223,7 +230,7 @@ class Chat:
                 final_answer = answer
 
             if answer and answer != "null" and answer is not None:
-                yield f"\n\n✅ **Final Answer:**\n{answer}"
+                yield f"\n\n **Final Answer:**\n{answer}"
 
         except json.JSONDecodeError:
             yield (

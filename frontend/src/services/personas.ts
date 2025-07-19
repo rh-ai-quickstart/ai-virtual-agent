@@ -38,6 +38,7 @@ export interface PersonasConfig {
 }
 
 // Default persona configuration (fallback if YAML loading fails)
+// Note: Demo questions are now loaded from template YAML files to avoid hard-coding
 const DEFAULT_PERSONAS_CONFIG: PersonasConfig = {
   personas: {
     compliance_officer: {
@@ -117,51 +118,8 @@ const DEFAULT_PERSONAS_CONFIG: PersonasConfig = {
     avatarIcon: "🤖",
     gradient: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
     borderColor: "#6b7280"
-  },
-  demo_questions: {
-    default: [
-      "What can you help me with today?",
-      "How do I get started with this assistant?",
-      "What are your capabilities?",
-      "Can you explain your role and responsibilities?"
-    ],
-    compliance_officer: [
-      "What are the current BSA/AML reporting requirements for cash transactions over $10,000?",
-      "How do I handle a customer who appears on the OFAC sanctions list?",
-      "What are the CFPB requirements for mortgage loan disclosures?",
-      "What's the process for filing a Suspicious Activity Report (SAR)?"
-    ],
-    relationship_manager: [
-      "What documentation is required for a small business loan application?",
-      "How do I assess credit risk for a new commercial client?",
-      "What are the current FHA loan limits and requirements?",
-      "How do I calculate debt-to-income ratios for loan approval?"
-    ],
-    branch_teller: [
-      "What are the daily withdrawal limits for different account types?",
-      "How do I handle a customer reporting a lost or stolen card?",
-      "What's the process for opening a new business account?",
-      "How do I verify customer identity for large transactions?"
-    ],
-    fraud_analyst: [
-      "What are the red flags for potential money laundering?",
-      "How do I investigate suspicious transaction patterns?",
-      "What's the escalation process for high-risk alerts?",
-      "How do I determine if a transaction requires CTR filing?"
-    ],
-    training_lead: [
-      "What are the latest regulatory changes affecting our operations?",
-      "What certifications are required for compliance officers?",
-      "How do I stay updated on industry best practices?",
-      "What training is required for new AML regulations?"
-    ],
-    it_support: [
-      "How do I reset a user's password in the banking system?",
-      "What's the process for granting system access to new employees?",
-      "How do I troubleshoot login issues with the core banking platform?",
-      "What security protocols should I follow for remote access?"
-    ]
   }
+  // Demo questions removed - now loaded from template YAML files
 };
 
 class PersonaService {
@@ -203,20 +161,12 @@ class PersonaService {
     return this.loaded;
   }
 
-  getDemoQuestions(personaType: string): string[] {
-    try {
-      const personas = this.config.personas as Record<string, any>;
-      const demoQuestions = this.config.demo_questions as Record<string, string[]>;
-      
-      if (demoQuestions && demoQuestions[personaType]) {
-        return demoQuestions[personaType];
-      }
-      
-      return [];
-    } catch (error) {
-      console.error('Error loading demo questions:', error);
-      return [];
-    }
+  getDemoQuestions(_personaType: string): string[] {
+    // Demo questions are now loaded from template YAML files via demoQuestionsService
+    // This method is kept for backward compatibility but returns empty array
+    // Use demoQuestionsService.getQuestionsForTemplateAndPersona() instead
+    console.warn('getDemoQuestions() is deprecated. Use demoQuestionsService instead.');
+    return [];
   }
 }
 

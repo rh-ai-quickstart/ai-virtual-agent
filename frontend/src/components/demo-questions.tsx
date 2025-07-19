@@ -59,7 +59,7 @@ export function DemoQuestions({
           for (const template of templates) {
             if (template.personas) {
               // Look through personas to find the agent by name
-              for (const [personaKey, persona] of Object.entries(template.personas)) {
+              for (const [, persona] of Object.entries(template.personas)) {
                 const agent = persona.agents.find(a => a.name === agentName);
                 if (agent) {
                   // First try agent-specific questions

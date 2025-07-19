@@ -119,7 +119,8 @@ export interface TemplateCategory {
 }
 
 export interface ToolAssociationInfo {
-  tool_id: string;
-  tool_name: string;
-  enabled: boolean;
+  tool_id?: string;
+  tool_name?: string;
+  enabled?: boolean;
+  toolgroup_id: string;
 } 

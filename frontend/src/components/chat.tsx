@@ -29,18 +29,10 @@ import {
   ModalBody,
   ModalFooter,
   Flex,
-  FlexItem,
-  Label,
   Breadcrumb,
   BreadcrumbItem,
 } from '@patternfly/react-core';
 import { 
-  ShieldAltIcon,
-  DollarSignIcon,
-  UserIcon,
-  EyeIcon,
-  BookIcon,
-  CogIcon,
   AngleLeftIcon
 } from '@patternfly/react-icons';
 import { Agent } from '@/routes/config/agents';
@@ -56,96 +48,90 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import botAvatar from "../assets/img/bot-avatar.svg";
 import userAvatar from "../assets/img/user-avatar.svg";
-import { templateService } from '@/services/templates';
+// import { templateService } from '@/services/templates';
 import { DemoQuestions } from '@/components/demo-questions';
+import { personaService } from '@/services/personas';
 
-// Banking persona labels mapping
-const BANKING_PERSONA_LABELS: Record<string, string> = {
-  'compliance_officer': 'Compliance Officer',
-  'relationship_manager': 'Relationship Manager / Loan Officer',
-  'branch_teller': 'Branch Teller / Customer Service Rep',
-  'fraud_analyst': 'Fraud Analyst / AML Specialist',
-  'training_lead': 'Training Lead / Market Analyst',
-  'it_support': 'IT Support / Operations',
-};
+// Persona labels are now loaded from template YAML files via personaService
+// This ensures no hard-coded persona configurations
 
 // NEW: Persona icons mapping
-const PERSONA_ICONS: Record<string, React.ComponentType> = {
-  'compliance_officer': ShieldAltIcon,
-  'relationship_manager': DollarSignIcon,
-  'branch_teller': UserIcon,
-  'fraud_analyst': EyeIcon,
-  'training_lead': BookIcon,
-  'it_support': CogIcon,
-};
+// const PERSONA_ICONS: Record<string, React.ComponentType> = {
+//   'compliance_officer': ShieldAltIcon,
+//   'relationship_manager': DollarSignIcon,
+//   'branch_teller': UserIcon,
+//   'fraud_analyst': EyeIcon,
+//   'training_lead': BookIcon,
+//   'it_support': CogIcon,
+// };
 
 // NEW: Persona colors mapping
-const PERSONA_COLORS: Record<string, 'red' | 'green' | 'blue' | 'orange' | 'purple' | 'grey'> = {
-  'compliance_officer': 'red',
-  'relationship_manager': 'green',
-  'branch_teller': 'blue',
-  'fraud_analyst': 'orange',
-  'training_lead': 'purple',
-  'it_support': 'grey',
-};
+// const PERSONA_COLORS: Record<string, 'red' | 'green' | 'blue' | 'orange' | 'purple' | 'grey'> = {
+//   'compliance_officer': 'red',
+//   'relationship_manager': 'green',
+//   'branch_teller': 'blue',
+//   'fraud_analyst': 'orange',
+//   'training_lead': 'purple',
+//   'it_support': 'grey',
+// };
 
 // Sample questions for each banking persona - ORGANIZED AS CARDS
-const BANKING_SAMPLE_QUESTIONS: Record<string, { title: string; questions: string[] }> = {
-  'compliance_officer': {
-    title: 'Compliance & Regulations',
-    questions: [
-      "What is the CTR threshold according to the BSA?",
-      "What steps do we follow for a potential OFAC match?",
-      "Has the CFPB issued new fair lending guidance this year?",
-      "What are the key requirements for BSA/AML compliance?"
-    ]
-  },
-  'relationship_manager': {
-    title: 'Lending & Credit',
-    questions: [
-      "What's our minimum FICO score for FHA mortgages?",
-      "Which documents are needed for small business loans?",
-      "What's the maximum DTI ratio for conventional loans?",
-      "How do we calculate loan-to-value ratios?"
-    ]
-  },
-  'branch_teller': {
-    title: 'Customer Service & Operations',
-    questions: [
-      "What is the wire transfer fee for consumer checking accounts?",
-      "What's the daily ATM withdrawal limit for our Platinum debit card?",
-      "How many business days for check deposit holds?",
-      "What are our required timelines for Reg E disputes?"
-    ]
-  },
-  'fraud_analyst': {
-    title: 'Fraud Detection & AML',
-    questions: [
-      "Is frequent cash structuring under $10,000 reportable?",
-      "How do I escalate a suspected synthetic identity case?",
-      "What's our procedure for filing a SAR?",
-      "What are the red flags for money laundering?"
-    ]
-  },
-  'training_lead': {
-    title: 'Training & Market Intelligence',
-    questions: [
-      "What are the major updates in the 2024 FFIEC cybersecurity handbook?",
-      "List top US banking certifications for AML professionals",
-      "Summarize the OCC's latest bulletin on overdraft practices",
-      "What training is required for new compliance staff?"
-    ]
-  },
-  'it_support': {
-    title: 'IT Support & Systems',
-    questions: [
-      "How do I reset my password for the core banking platform?",
-      "What's the process for requesting access to customer information systems?",
-      "How do we handle system outages during business hours?",
-      "What are our cybersecurity protocols for remote access?"
-    ]
-  }
-};
+// const BANKING_SAMPLE_QUESTIONS: Record<string, { title: string; questions: string[] }> = {
+//   'compliance_officer': {
+//     title: 'Compliance & Regulations',
+//     questions: [
+//       "What is the CTR threshold according to the BSA?",
+//       "What steps do we follow for a potential OFAC match?",
+//       "Has the CFPB issued new fair lending guidance this year?",
+//       "What are the key requirements for BSA/AML compliance?"
+//     ]
+//   },
+//   'relationship_manager': {
+//     title: 'Lending & Credit',
+//     questions: [
+//       "What's our minimum FICO score for FHA mortgages?",
+//       "Which documents are needed for small business loans?",
+//       "What's the maximum DTI ratio for conventional loans?",
+//       "How do we calculate loan-to-value ratios?"
+//     ]
+//   },
+//   'branch_teller': {
+//     title: 'Customer Service & Operations',
+//     questions: [
+//       "What is the wire transfer fee for consumer checking accounts?",
+//       "What's the daily ATM withdrawal limit for our Platinum debit card?",
+//       "How many business days for check deposit holds?",
+//       "What are our required timelines for Reg E disputes?"
+//     ]
+//   },
+//   'fraud_analyst': {
+//     title: 'Fraud Detection & AML',
+//     questions: [
+//       "Is frequent cash structuring under $10,000 reportable?",
+//       "How do I escalate a suspected synthetic identity case?",
+//       "What's our procedure for filing a SAR?",
+//       "What are the red flags for money laundering?"
+//     ]
+//   },
+//   'training_lead': {
+//     title: 'Training & Market Intelligence',
+//     questions: [
+//       "What are the major updates in the 2024 FFIEC cybersecurity handbook?",
+//       "List top US banking certifications for AML professionals",
+//       "Summarize the OCC's latest bulletin on overdraft practices",
+//       "What training is required for new compliance staff?"
+//     ]
+//   },
+//   'it_support': {
+//     title: 'IT Support & Systems',
+//     questions: [
+//       "How do I reset my password for the core banking platform?",
+//       "What's the process for requesting access to customer information systems?",
+//       "How do we handle system outages during business hours?",
+//       "What are our cybersecurity protocols for remote access?"
+//     ]
+//   }
+// };
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -212,9 +198,9 @@ export function Chat() {
 
   // Add this line to define selectedAgentData
   const selectedAgentData = availableAgents.find((agent) => agent.id === selectedAgent);
-  const selectedAgentPersona = selectedAgent ? personaStorage.getPersona(selectedAgent) : null;
-  const selectedPersonaLabel = selectedAgentPersona ? BANKING_PERSONA_LABELS[selectedAgentPersona] || selectedAgentPersona : null;
-  const currentSampleQuestions = selectedAgentPersona ? BANKING_SAMPLE_QUESTIONS[selectedAgentPersona] : null;
+  // const selectedAgentPersona = selectedAgent ? personaStorage.getPersona(selectedAgent) : null;
+  // const selectedPersonaLabel = selectedAgentPersona ? BANKING_PERSONA_LABELS[selectedAgentPersona] || selectedAgentPersona : null;
+  // const currentSampleQuestions = selectedAgentPersona ? BANKING_SAMPLE_QUESTIONS[selectedAgentPersona] : null;
 
   const messages = React.useMemo(
     () =>
@@ -291,18 +277,18 @@ export function Chat() {
     })();
   };
 
-  const handleSampleQuestionClick = (question: string) => {
-    if (selectedAgent && question.trim()) {
-      append({
-        role: 'user',
-        content: question,
-      });
-    }
-  };
+  // const handleSampleQuestionClick = (question: string) => {
+  //   if (selectedAgent && question.trim()) {
+  //     append({
+  //       role: 'user',
+  //       content: question,
+  //     });
+  //   }
+  // };
 
-  const toggleSampleQuestions = () => {
-    // setShowSampleQuestions(!showSampleQuestions); // This line is removed
-  };
+  // const toggleSampleQuestions = () => {
+  //   // setShowSampleQuestions(!showSampleQuestions); // This line is removed
+  // };
 
   const handleDeleteSession = useCallback((sessionId: string) => {
     console.log('Delete session clicked:', sessionId); // Add this debug line
@@ -316,7 +302,7 @@ export function Chat() {
       console.log('Deleting session:', sessionId, 'for agent:', selectedAgent);
       return deleteChatSession(sessionId, selectedAgent);
     },
-    onSuccess: async (deletedSessionId: string) => {
+    onSuccess: async () => {
       if (!selectedAgent) return;
       console.log('Session deleted successfully, refreshing sessions...');
       setAnnouncement('Session deleted successfully');
@@ -577,7 +563,7 @@ export function Chat() {
                       if (!selectedAgentData) return 'Select Agent';
                       
                       const persona = personaStorage.getPersona(selectedAgentData.id);
-                      const personaLabel = persona ? BANKING_PERSONA_LABELS[persona] : '';
+                      const personaLabel = persona ? personaService.getPersona(persona)?.label || persona : '';
                       
                       return personaLabel 
                         ? `${selectedAgentData.name} (${personaLabel})`
@@ -590,7 +576,7 @@ export function Chat() {
                   <DropdownList>
                     {availableAgents.map((agent) => {
                       const persona = personaStorage.getPersona(agent.id);
-                      const personaLabel = persona ? BANKING_PERSONA_LABELS[persona] : '';
+                      const personaLabel = persona ? personaService.getPersona(persona)?.label || persona : '';
                       const displayText = personaLabel 
                         ? `${agent.name} (${personaLabel})`
                         : agent.name;

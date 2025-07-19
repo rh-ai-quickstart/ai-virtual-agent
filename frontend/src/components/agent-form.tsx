@@ -12,12 +12,11 @@ import {
   TextInput,
   Flex,
   FlexItem,
-  Label,
 } from '@patternfly/react-core';
 import { useForm } from '@tanstack/react-form';
 import { Fragment, useMemo } from 'react';
 import { CustomSelectOptionProps, MultiSelect } from './multi-select';
-import { PaperPlaneIcon, MagicIcon } from '@patternfly/react-icons';
+import { PaperPlaneIcon } from '@patternfly/react-icons';
 
 interface ModelsFieldProps {
   models: Model[];
@@ -299,7 +298,7 @@ export function AgentForm({
       >
         {(field) => (
           <FormGroup label="Agent Name" isRequired fieldId="agent-name">
-            <Flex gap={{ default: 'gapSm' }} alignItems={{ default: 'alignItemsEnd' }}>
+            <Flex gap={{ default: 'gapSm' }} alignItems={{ default: 'alignItemsFlexEnd' }}>
               <FlexItem flex={{ default: 'flex_1' }}>
                 <TextInput
                   isRequired
@@ -410,7 +409,7 @@ export function AgentForm({
           <FormGroup label="Agent Prompt" isRequired fieldId="prompt">
             <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
               <FlexItem>
-                <Flex gap={{ default: 'gapSm' }} alignItems={{ default: 'alignItemsEnd' }}>
+                <Flex gap={{ default: 'gapSm' }} alignItems={{ default: 'alignItemsFlexEnd' }}>
                   <FlexItem flex={{ default: 'flex_1' }}>
                     <TextArea
                       isRequired

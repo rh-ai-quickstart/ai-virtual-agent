@@ -1,0 +1,44 @@
+# Chat Configuration
+chat:
+  # Default sampling parameters for agent creation
+  default_sampling_params:
+    strategy: "greedy"  # or "top_p"
+    max_tokens: 512
+    temperature: 0.0  # Used when strategy is "top_p"
+    top_p: 0.95       # Used when strategy is "top_p"
+  
+  # Default instructions for agents
+  default_instructions: "You are a helpful assistant. When you use a tool always respond with a summary of the result."
+  
+  # Agent type configuration
+  agent_types:
+    react:
+      response_format:
+        type: "json_schema"
+        json_schema: "ReActOutput"  # Reference to schema
+      sampling_params:
+        strategy: "greedy"
+        max_tokens: 512
+    regular:
+      sampling_params:
+        strategy: "greedy"
+        max_tokens: 512
+  
+  # Session configuration
+  session:
+    default_session_name_prefix: "Chat"
+    session_name_length: 4  # Random suffix length
+    session_name_chars: "abcdefghijklmnopqrstuvwxyz0123456789"
+  
+  # Response formatting
+  response_formatting:
+    tool_results_header: "**Here's what I found:**"
+    web_search_tool_name: "web_search"
+    error_prefix: "🚨 Llama Stack server Error:"
+    final_answer_prefix: " **Final Answer:**"
+  
+  # Error handling
+  error_handling:
+    max_retries: 3
+    retry_delay_seconds: 1
+    timeout_seconds: 30 
