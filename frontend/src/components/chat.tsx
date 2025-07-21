@@ -430,7 +430,7 @@ export function Chat() {
     return (
       <div>
         <p>Error loading user: {userError || 'User not found'}</p>
-        <p>Please ensure at least one user exists in the database.</p>
+        <p>Please check your authentication or try logging in again.</p>
         <Button variant="primary" onClick={() => refetchUser()}>
           Retry
         </Button>

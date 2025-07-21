@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import { UserProvider } from '@/contexts/UserContext';
+import { UserProvider, useCurrentUser } from '@/contexts/UserContext';
 
 // Create QueryClient outside component to avoid recreating on every render
 const queryClient = new QueryClient({
@@ -49,14 +49,48 @@ export const Route = createRootRoute({
       </button>
     </div>
   ),
+  notFoundComponent: () => (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2>Page Not Found</h2>
+      <p>The page you're looking for doesn't exist.</p>
+      <button
+        onClick={() => window.location.href = '/'}
+        style={{
+          padding: '10px 20px',
+          backgroundColor: '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+      >
+        Go Home
+      </button>
+    </div>
+  ),
 });
+
+function AppContent() {
+  const { loginHtml } = useCurrentUser();
+
+  // Show openshift login page if authentication is required
+  if (loginHtml) {
+    return <div dangerouslySetInnerHTML={{ __html: loginHtml }} />;
+  }
+
+  return (
+    <>
+      <Outlet />
+      <TanStackRouterDevtools />
+    </>
+  );
+}
 
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
-        <Outlet />
-        <TanStackRouterDevtools />
+        <AppContent />
       </UserProvider>
     </QueryClientProvider>
   );

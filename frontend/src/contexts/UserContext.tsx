@@ -7,7 +7,7 @@ interface UserContextType {
   currentUser: User | null;
   isLoading: boolean;
   error: string | null;
-  refetch: () => void;
+  refetch: () => Promise<any>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
