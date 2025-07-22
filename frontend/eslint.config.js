@@ -11,7 +11,7 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/', 'dist/', '.eslintcache', '*.log'],
+    ignores: ['node_modules/', 'dist/', '.eslintcache', '*.log', 'src/types/index.d.ts'],
   },
 
   {

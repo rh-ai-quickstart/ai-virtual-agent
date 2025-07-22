@@ -14,11 +14,11 @@ export const personaStorage = {
     const current = personaStorage.getAll();
     current[agentId] = { persona, templateId };
     localStorage.setItem(PERSONA_STORAGE_KEY, JSON.stringify(current));
-    
+
     // Update caches
     personaCache.set(agentId, persona);
     templateIdCache.set(agentId, templateId);
-    
+
     console.log(`Saved persona "${persona}" for agent ${agentId} from template ${templateId}`);
   },
 
@@ -28,7 +28,7 @@ export const personaStorage = {
     if (personaCache.has(agentId)) {
       return personaCache.get(agentId) || null;
     }
-    
+
     // Check localStorage
     const current = personaStorage.getAll();
     const data = current[agentId];
@@ -36,7 +36,7 @@ export const personaStorage = {
       personaCache.set(agentId, data.persona);
       return data.persona;
     }
-    
+
     return null;
   },
 
@@ -46,7 +46,7 @@ export const personaStorage = {
     if (templateIdCache.has(agentId)) {
       return templateIdCache.get(agentId) || null;
     }
-    
+
     // Check localStorage
     const current = personaStorage.getAll();
     const data = current[agentId];
@@ -54,7 +54,7 @@ export const personaStorage = {
       templateIdCache.set(agentId, data.templateId);
       return data.templateId;
     }
-    
+
     return null;
   },
 
@@ -62,7 +62,7 @@ export const personaStorage = {
   getAll: (): PersonaMapping => {
     try {
       const stored = localStorage.getItem(PERSONA_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
+      return stored ? (JSON.parse(stored) as PersonaMapping) : {};
     } catch {
       return {};
     }
@@ -73,11 +73,11 @@ export const personaStorage = {
     const current = personaStorage.getAll();
     delete current[agentId];
     localStorage.setItem(PERSONA_STORAGE_KEY, JSON.stringify(current));
-    
+
     // Clear caches
     personaCache.delete(agentId);
     templateIdCache.delete(agentId);
-    
+
     console.log(`Removed persona for agent ${agentId}`);
   },
 
@@ -90,15 +90,13 @@ export const personaStorage = {
   },
 
   // Initialize personas from agent metadata (called after deployment)
-  initializeFromAgents: (agents: Array<{ id: string; metadata?: { template_id?: string; persona?: string } }>) => {
-    agents.forEach(agent => {
+  initializeFromAgents: (
+    agents: Array<{ id: string; metadata?: { template_id?: string; persona?: string } }>
+  ) => {
+    agents.forEach((agent) => {
       if (agent.metadata?.template_id && agent.metadata?.persona) {
-        personaStorage.setPersona(
-          agent.id, 
-          agent.metadata.persona, 
-          agent.metadata.template_id
-        );
+        personaStorage.setPersona(agent.id, agent.metadata.persona, agent.metadata.template_id);
       }
     });
-  }
+  },
 };

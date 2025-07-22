@@ -32,9 +32,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
 } from '@patternfly/react-core';
-import { 
-  AngleLeftIcon
-} from '@patternfly/react-icons';
+import { AngleLeftIcon } from '@patternfly/react-icons';
 import { Agent } from '@/routes/config/agents';
 import { fetchAgents } from '@/services/agents';
 import { personaStorage } from '@/services/persona-storage';
@@ -46,8 +44,8 @@ import {
   ChatSessionSummary,
 } from '@/services/chat-sessions';
 import { useMutation } from '@tanstack/react-query';
-import botAvatar from "../assets/img/bot-avatar.svg";
-import userAvatar from "../assets/img/user-avatar.svg";
+import botAvatar from '../assets/img/bot-avatar.svg';
+import userAvatar from '../assets/img/user-avatar.svg';
 // import { templateService } from '@/services/templates';
 import { DemoQuestions } from '@/components/demo-questions';
 import { personaService } from '@/services/personas';
@@ -306,7 +304,7 @@ export function Chat() {
       if (!selectedAgent) return;
       console.log('Session deleted successfully, refreshing sessions...');
       setAnnouncement('Session deleted successfully');
-      
+
       // Let fetchSessionsData handle the session switching logic
       await fetchSessionsData(selectedAgent);
     },
@@ -324,7 +322,7 @@ export function Chat() {
   const confirmDeleteSession = () => {
     console.log('Confirming delete for session:', sessionToDelete); // Add this debug line
     if (!sessionToDelete) return;
-    deleteSessionMutation.mutate(sessionToDelete);
+    void deleteSessionMutation.mutate(sessionToDelete);
   };
 
   const cancelDeleteSession = () => {
@@ -455,12 +453,12 @@ export function Chat() {
       try {
         const agents = await fetchAgents();
         setAvailableAgents(agents);
-        
+
         // Check if agentId is provided in URL search params
         console.log('Search params:', search);
         console.log('AgentId from URL:', search.agentId);
-        
-        if (search.agentId && agents.some(agent => agent.id === search.agentId)) {
+
+        if (search.agentId && agents.some((agent) => agent.id === search.agentId)) {
           console.log('Setting selected agent from URL:', search.agentId);
           setSelectedAgent(search.agentId);
         } else if (agents.length > 0) {
@@ -474,16 +472,19 @@ export function Chat() {
       }
     };
 
-    void fetchAgentsData();
-  }, [search.agentId]); // Add search.agentId as dependency
+    // Call the async function and handle any errors
+    fetchAgentsData().catch((error) => {
+      console.error('Error in fetchAgentsData:', error);
+    });
+  }, [search]); // Add search as dependency
 
   const handleSendMessage = (message: string | number) => {
     if (typeof message === 'string' && message.trim() && selectedAgent) {
-      append({
+      void append({
         role: 'user',
         content: message.toString(),
       });
-      
+
       // Add a small delay to ensure the message is added to the DOM
       setTimeout(() => {
         if (scrollToBottomRef.current) {
@@ -494,7 +495,7 @@ export function Chat() {
   };
 
   const handleBackToAgents = () => {
-    navigate({ to: '/config/agents', search: { tab: 'my-agents' } });
+    void navigate({ to: '/config/agents', search: { tab: 'my-agents' } });
   };
 
   return (
@@ -541,10 +542,10 @@ export function Chat() {
                           variant="link"
                           icon={<AngleLeftIcon />}
                           onClick={handleBackToAgents}
-                          style={{ 
-                            color: 'var(--text-primary)', 
+                          style={{
+                            color: 'var(--text-primary)',
                             padding: '0',
-                            fontSize: '0.9rem'
+                            fontSize: '0.9rem',
                           }}
                         >
                           Back to Agents
@@ -557,30 +558,34 @@ export function Chat() {
               </ChatbotHeaderMain>
               <ChatbotHeaderActions>
                 <ChatbotHeaderSelectorDropdown
-                  value={
-                    (() => {
-                      const selectedAgentData = availableAgents.find((agent) => agent.id === selectedAgent);
-                      if (!selectedAgentData) return 'Select Agent';
-                      
-                      const persona = personaStorage.getPersona(selectedAgentData.id);
-                      const personaLabel = persona ? personaService.getPersona(persona)?.label || persona : '';
-                      
-                      return personaLabel 
-                        ? `${selectedAgentData.name} (${personaLabel})`
-                        : selectedAgentData.name;
-                    })()
-                  }
+                  value={(() => {
+                    const selectedAgentData = availableAgents.find(
+                      (agent) => agent.id === selectedAgent
+                    );
+                    if (!selectedAgentData) return 'Select Agent';
+
+                    const persona = personaStorage.getPersona(selectedAgentData.id);
+                    const personaLabel = persona
+                      ? personaService.getPersona(persona)?.label || persona
+                      : '';
+
+                    return personaLabel
+                      ? `${selectedAgentData.name} (${personaLabel})`
+                      : selectedAgentData.name;
+                  })()}
                   onSelect={onSelectAgent}
                   tooltipContent="Select Agent"
                 >
                   <DropdownList>
                     {availableAgents.map((agent) => {
                       const persona = personaStorage.getPersona(agent.id);
-                      const personaLabel = persona ? personaService.getPersona(persona)?.label || persona : '';
-                      const displayText = personaLabel 
+                      const personaLabel = persona
+                        ? personaService.getPersona(persona)?.label || persona
+                        : '';
+                      const displayText = personaLabel
                         ? `${agent.name} (${personaLabel})`
                         : agent.name;
-                      
+
                       return (
                         <DropdownItem value={agent.id} key={agent.id}>
                           {displayText}

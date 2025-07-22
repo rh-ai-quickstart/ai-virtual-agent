@@ -23,28 +23,28 @@ export function DemoQuestions({
     const loadDemoQuestions = async () => {
       try {
         setIsLoading(true);
-        
+
         // First, try to get the persona from storage (for deployed agents)
         const persona = personaStorage.getPersona(agentId);
         let foundQuestions: string[] = [];
-        
+
         if (persona) {
           // Agent has a persona assigned, get questions from templates
           const templates = await templateService.getTemplates();
-          
+
           for (const template of templates) {
             if (template.personas && template.personas[persona]) {
               const personaData = template.personas[persona];
-              
+
               // First try to find agent-specific questions
               if (agentName) {
-                const agent = personaData.agents.find(a => a.name === agentName);
+                const agent = personaData.agents.find((a) => a.name === agentName);
                 if (agent && agent.demo_questions) {
                   foundQuestions = agent.demo_questions;
                   break;
                 }
               }
-              
+
               // Fall back to persona-level questions
               if (foundQuestions.length === 0 && personaData.demo_questions) {
                 foundQuestions = personaData.demo_questions;
@@ -55,12 +55,12 @@ export function DemoQuestions({
         } else if (agentName) {
           // No persona assigned, try to find by agent name in templates
           const templates = await templateService.getTemplates();
-          
+
           for (const template of templates) {
             if (template.personas) {
               // Look through personas to find the agent by name
               for (const [, persona] of Object.entries(template.personas)) {
-                const agent = persona.agents.find(a => a.name === agentName);
+                const agent = persona.agents.find((a) => a.name === agentName);
                 if (agent) {
                   // First try agent-specific questions
                   if (agent.demo_questions) {
@@ -75,11 +75,11 @@ export function DemoQuestions({
                 }
               }
             }
-            
+
             if (foundQuestions.length > 0) break;
           }
         }
-        
+
         setDemoQuestions(foundQuestions);
       } catch (error) {
         console.error('Failed to load demo questions:', error);
@@ -89,13 +89,13 @@ export function DemoQuestions({
       }
     };
 
-    loadDemoQuestions();
+    void loadDemoQuestions();
   }, [agentId, agentName]);
 
   if (isLoading) {
     return null;
   }
-  
+
   if (!demoQuestions || demoQuestions.length === 0) {
     return null;
   }
@@ -125,7 +125,7 @@ export function DemoQuestions({
                 display: 'block',
                 color: 'white', // White text
                 transition: 'all 0.2s ease',
-                boxShadow: 'none' // No shadow
+                boxShadow: 'none', // No shadow
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'rgba(148, 163, 184, 0.1)'; // Very subtle background on hover
@@ -145,4 +145,4 @@ export function DemoQuestions({
       </Flex>
     </div>
   );
-} 
+}

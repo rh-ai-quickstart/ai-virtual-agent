@@ -6,15 +6,15 @@
     --oled-border: #1a1a1a;
     --oled-hover: #0f0f0f;
   }
-  
+
   body {
     background-color: var(--oled-black) !important;
   }
-  
+
   .pf-v6-c-page__main {
     background-color: var(--oled-black) !important;
   }
-  
+
   .pf-v6-c-page__main-section {
     background-color: var(--oled-black) !important;
   }
@@ -41,7 +41,11 @@
 .agent-card-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--pf-v6-global--BorderColor--100);
-  background: linear-gradient(135deg, var(--pf-v6-global--BackgroundColor--100) 0%, var(--pf-v6-global--BackgroundColor--200) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--pf-v6-global--BackgroundColor--100) 0%,
+    var(--pf-v6-global--BackgroundColor--200) 100%
+  );
 }
 
 .agent-card-body {
@@ -164,15 +168,15 @@
   .agent-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .agent-card-header {
     padding: 1rem;
   }
-  
+
   .agent-card-body {
     padding: 1rem;
   }
-} 
+}
 
 .demo-question-button:hover {
   color: var(--pf-v6-global--primary-color--100) !important;
@@ -195,4 +199,4 @@
   border-radius: 0.5rem;
   padding: 1rem;
   border: 1px solid var(--pf-v6-global--BorderColor--100);
-} 
+}

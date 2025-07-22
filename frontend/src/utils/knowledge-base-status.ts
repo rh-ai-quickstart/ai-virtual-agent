@@ -17,12 +17,12 @@ function determineStatus(
   llamaStackKb: LlamaStackKnowledgeBase | undefined
 ): KnowledgeBaseStatus {
   if (dbKb) {
-    return dbKb.status
+    return dbKb.status;
   } else if (llamaStackKb) {
-    return 'orphaned'
+    return 'orphaned';
   }
 
-  return 'unknown'
+  return 'unknown';
 }
 
 /**
@@ -31,7 +31,10 @@ function determineStatus(
 function findMatchingKnowledgeBase(
   dbKb: KnowledgeBaseWithStatus | undefined,
   llamaStackKb: LlamaStackKnowledgeBase | undefined
-): { dbMatch: KnowledgeBaseWithStatus | undefined; llamaStackMatch: LlamaStackKnowledgeBase | undefined } {
+): {
+  dbMatch: KnowledgeBaseWithStatus | undefined;
+  llamaStackMatch: LlamaStackKnowledgeBase | undefined;
+} {
   return { dbMatch: dbKb, llamaStackMatch: llamaStackKb };
 }
 

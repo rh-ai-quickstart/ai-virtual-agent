@@ -13,7 +13,7 @@ export interface Template {
   name: string;
   description: string;
   category: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   persona_count: number;
   agent_count: number;
   industry_id: string;
@@ -24,10 +24,10 @@ export interface TemplateSuite {
   name: string;
   description: string;
   category: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   personas: Record<string, TemplatePersona>;
-  industry_id?: string | null;  // Make it optional and allow null
-  agents?: AgentConfig[];  // Add agents array
+  industry_id?: string | null; // Make it optional and allow null
+  agents?: AgentConfig[]; // Add agents array
 }
 
 export interface TemplatePersona {
@@ -74,7 +74,7 @@ export interface TemplateDeployment {
 // Template deployment request
 export interface TemplateDeployRequest {
   selected_agents?: string[];
-  override_settings?: Record<string, any>;
+  override_settings?: Record<string, unknown>;
 }
 
 // Template deployment response
@@ -123,4 +123,4 @@ export interface ToolAssociationInfo {
   tool_name?: string;
   enabled?: boolean;
   toolgroup_id: string;
-} 
+}

@@ -27,12 +27,14 @@ export function AgentList() {
         <p>No agents configured yet.</p>
       )}
       {!isLoadingAgents && !agentsError && agents && agents.length > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '1rem',
-          padding: '1rem 0'
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '1rem',
+            padding: '1rem 0',
+          }}
+        >
           {agents
             .sort((a, b) => {
               // Safe sorting with fallback for missing dates

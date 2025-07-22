@@ -1,9 +1,9 @@
-import { 
-  PageSection, 
-  Title, 
-  Card, 
-  CardBody, 
-  CardHeader, 
+import {
+  PageSection,
+  Title,
+  Card,
+  CardBody,
+  CardHeader,
   CardTitle,
   DescriptionList,
   DescriptionListDescription,
@@ -13,7 +13,7 @@ import {
   Alert,
   Spinner,
   EmptyState,
-  EmptyStateBody
+  EmptyStateBody,
 } from '@patternfly/react-core';
 import { ServerIcon } from '@patternfly/react-icons';
 import { createFileRoute } from '@tanstack/react-router';
@@ -64,7 +64,7 @@ function MCPServers() {
   return (
     <PageSection hasBodyWrapper={false}>
       <Title headingLevel="h1">MCP Servers</Title>
-      
+
       {mcpServers.length === 0 ? (
         <EmptyState>
           <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -96,28 +96,25 @@ function MCPServers() {
                       <code>{server.identifier}</code>
                     </DescriptionListDescription>
                   </DescriptionListGroup>
-                  
+
                   <DescriptionListGroup>
                     <DescriptionListTerm>Provider ID</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {server.provider_id}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>{server.provider_id}</DescriptionListDescription>
                   </DescriptionListGroup>
-                  
+
                   {server.mcp_endpoint && (
                     <DescriptionListGroup>
                       <DescriptionListTerm>MCP Endpoint</DescriptionListTerm>
                       <DescriptionListDescription>
                         <code>
-                          {typeof server.mcp_endpoint === 'string' 
-                            ? server.mcp_endpoint 
-                            : JSON.stringify(server.mcp_endpoint)
-                          }
+                          {typeof server.mcp_endpoint === 'string'
+                            ? server.mcp_endpoint
+                            : JSON.stringify(server.mcp_endpoint)}
                         </code>
                       </DescriptionListDescription>
                     </DescriptionListGroup>
                   )}
-                  
+
                   {server.args && (
                     <DescriptionListGroup>
                       <DescriptionListTerm>Arguments</DescriptionListTerm>

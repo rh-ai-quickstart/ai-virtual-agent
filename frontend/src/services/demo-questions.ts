@@ -43,15 +43,18 @@ class DemoQuestionsService {
    * @param personaKey The persona key
    * @returns Array of demo questions
    */
-  async getQuestionsForTemplateAndPersona(templateId: string, personaKey: string): Promise<string[]> {
+  async getQuestionsForTemplateAndPersona(
+    templateId: string,
+    personaKey: string
+  ): Promise<string[]> {
     try {
       const templates = await templateService.getTemplates();
-      const template = templates.find(t => t.id === templateId);
-      
+      const template = templates.find((t) => t.id === templateId);
+
       if (template?.personas?.[personaKey]?.demo_questions) {
         return template.personas[personaKey].demo_questions;
       }
-      
+
       return [];
     } catch (error) {
       console.error('Error loading demo questions for template and persona:', error);
@@ -67,19 +70,19 @@ class DemoQuestionsService {
   async getAllQuestionsForTemplate(templateId: string): Promise<Record<string, string[]>> {
     try {
       const templates = await templateService.getTemplates();
-      const template = templates.find(t => t.id === templateId);
-      
+      const template = templates.find((t) => t.id === templateId);
+
       if (!template?.personas) {
         return {};
       }
-      
+
       const questions: Record<string, string[]> = {};
       for (const [personaKey, persona] of Object.entries(template.personas)) {
         if (persona.demo_questions) {
           questions[personaKey] = persona.demo_questions;
         }
       }
-      
+
       return questions;
     } catch (error) {
       console.error('Error loading all demo questions for template:', error);
@@ -89,4 +92,4 @@ class DemoQuestionsService {
 }
 
 // Export singleton instance
-export const demoQuestionsService = new DemoQuestionsService(); 
+export const demoQuestionsService = new DemoQuestionsService();

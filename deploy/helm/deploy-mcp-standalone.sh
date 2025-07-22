@@ -6,7 +6,7 @@ echo "🚀 Deploying Standalone MCP Server for Demo..."
 echo "📋 Checking namespace..."
 kubectl get namespace ai-assistant > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    echo "❌ Namespace 'ai-assistant' not found!"
+    echo " Namespace 'ai-assistant' not found!"
     echo "Please create it first: kubectl create namespace ai-assistant"
     exit 1
 fi

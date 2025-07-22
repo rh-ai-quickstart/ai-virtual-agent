@@ -114,7 +114,16 @@ export interface LSKnowledgeBase {
   type: string;
 }
 
-export type KnowledgeBaseStatus = 'idle' | 'processing' | 'ready' | 'error' | 'succeeded' | 'running' | 'failed' | 'orphaned' | 'unknown';
+export type KnowledgeBaseStatus =
+  | 'idle'
+  | 'processing'
+  | 'ready'
+  | 'error'
+  | 'succeeded'
+  | 'running'
+  | 'failed'
+  | 'orphaned'
+  | 'unknown';
 
 // Embedding Model types
 export interface EmbeddingModel {
@@ -134,4 +143,4 @@ export interface Provider {
   api: string;
 }
 
-export type ProviderType = 'openai' | 'anthropic' | 'meta' | 'google' | 'local'; 
+export type ProviderType = 'openai' | 'anthropic' | 'meta' | 'google' | 'local';

@@ -3,12 +3,12 @@ import { TemplateList } from '@/components/template-list';
 import { templateService } from '@/services/templates';
 import { fetchAgents } from '@/services/agents';
 import { ToolAssociationInfo } from '@/types';
-import { 
-  Flex, 
-  FlexItem, 
-  PageSection, 
-  Title, 
-  Button, 
+import {
+  Flex,
+  FlexItem,
+  PageSection,
+  Title,
+  Button,
   Alert,
   Modal,
   ModalHeader,
@@ -17,7 +17,7 @@ import {
   Tabs,
   Tab,
   TabTitleText,
-  AlertActionCloseButton
+  AlertActionCloseButton,
 } from '@patternfly/react-core';
 // import { PlusIcon, BookOpenIcon, UsersIcon } from '@patternfly/react-icons';
 import { createFileRoute } from '@tanstack/react-router';
@@ -75,11 +75,11 @@ export function Agents() {
   const queryClient = useQueryClient();
 
   // Use React Query with better error handling
-  const { 
-    data: templates = [], 
-    isLoading: isLoadingTemplates, 
+  const {
+    data: templates = [],
+    isLoading: isLoadingTemplates,
     error: templatesError,
-    refetch: refetchTemplates 
+    refetch: refetchTemplates,
   } = useQuery({
     queryKey: ['templates'],
     queryFn: async () => {
@@ -101,9 +101,9 @@ export function Agents() {
   });
 
   // Use React Query for categories - commented out as not used
-  // const { 
-  //   data: categories = [], 
-  //   isLoading: isLoadingCategories 
+  // const {
+  //   data: categories = [],
+  //   isLoading: isLoadingCategories
   // } = useQuery({
   //   queryKey: ['template-categories'],
   //   queryFn: async () => {
@@ -114,10 +114,7 @@ export function Agents() {
   // });
 
   // Use React Query for agents
-  const { 
-    data: agents = [], 
-    isLoading: isLoadingAgents 
-  } = useQuery({
+  const { data: agents = [], isLoading: isLoadingAgents } = useQuery({
     queryKey: ['agents'],
     queryFn: fetchAgents,
     staleTime: 10000, // 10 seconds
@@ -139,53 +136,60 @@ export function Agents() {
     } else if ('tab' in search && search.tab === 'new-agent') {
       setActiveTab(1); // Switch to "New Agent" tab
     }
-  }, ['tab' in search ? search.tab : undefined]);
+  }, [search]);
 
   const handleDeploy = async (templateId: string, selectedAgents?: string[]) => {
     try {
       setIsDeploying(true);
       setError(null);
-      
+
       const result = await templateService.deployTemplate(templateId, selectedAgents);
       console.log('Deployment result:', result);
-      
+
       if (result.success) {
         // const agentCount = selectedAgents ? selectedAgents.length : 'all';
-        setSuccess(`Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`);
-        
+        setSuccess(
+          `Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`
+        );
+
         // Auto-dismiss success message after 5 seconds
         setTimeout(() => {
           setSuccess(null);
         }, 5000);
-        
+
         // Save persona mappings for deployed agents
         if (result.deployed_agents) {
           console.log('Deployed agents with metadata:', result.deployed_agents);
-          result.deployed_agents.forEach((agent: any) => {
-            console.log(`Agent ${agent.name} metadata:`, agent.metadata);
-            if (agent.metadata?.persona) {
-              console.log(`Saving persona "${agent.metadata.persona}" for agent ${agent.id} from template ${templateId}`);
-              personaStorage.setPersona(agent.id, agent.metadata.persona, templateId);
-            } else {
-              console.log(`No persona found in metadata for agent ${agent.id}`);
+          result.deployed_agents.forEach(
+            (agent: { id: string; name: string; metadata?: { persona?: string } }) => {
+              console.log(`Agent ${agent.name} metadata:`, agent.metadata);
+              if (agent.metadata?.persona) {
+                console.log(
+                  `Saving persona "${agent.metadata.persona}" for agent ${agent.id} from template ${templateId}`
+                );
+                personaStorage.setPersona(agent.id, agent.metadata.persona, templateId);
+              } else {
+                console.log(`No persona found in metadata for agent ${agent.id}`);
+              }
             }
-          });
+          );
         } else {
           console.log('No deployed_agents in result:', result);
         }
-        
+
         // Refresh both templates and agents
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['templates'] }),
-          queryClient.invalidateQueries({ queryKey: ['agents'] })
+          queryClient.invalidateQueries({ queryKey: ['agents'] }),
         ]);
         // Automatically switch to Agents tab
         setActiveTab(2); // Changed from 0 to 2 for "My Agents" tab
       } else {
         setError(result.error || 'Deployment failed');
       }
-    } catch (err: any) {
-      setError('Deployment failed: ' + (err.message || 'Unknown error'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Deployment failed: ' + errorMessage);
     } finally {
       setIsDeploying(false);
     }
@@ -195,36 +199,42 @@ export function Agents() {
   const createDemoMutation = useMutation({
     mutationFn: async () => {
       setDemoProgress([]);
-      
+
       try {
         // Deploy the demo template instead of creating individual agents
         const result = await templateService.deployTemplate(DEMO_TEMPLATE_ID);
-        
+
         if (result.success) {
-          setDemoProgress(prev => [...prev, ` Deployed ${result.agent_ids?.length || 0} demo agents`]);
-          
+          setDemoProgress((prev) => [
+            ...prev,
+            ` Deployed ${result.agent_ids?.length || 0} demo agents`,
+          ]);
+
           // Save persona mappings for deployed agents
           if (result.deployed_agents) {
-            result.deployed_agents.forEach((agent: any) => {
-              if (agent.metadata?.persona) {
-                personaStorage.setPersona(agent.id, agent.metadata.persona, DEMO_TEMPLATE_ID);
+            result.deployed_agents.forEach(
+              (agent: { id: string; metadata?: { persona?: string } }) => {
+                if (agent.metadata?.persona) {
+                  personaStorage.setPersona(agent.id, agent.metadata.persona, DEMO_TEMPLATE_ID);
+                }
               }
-            });
+            );
           }
-          
+
           return result.deployed_agents || [];
         } else {
           throw new Error(result.error || 'Demo deployment failed');
         }
-              } catch (error: any) {
-          console.error('Demo deployment failed:', error);
-          setDemoProgress(prev => [...prev, `❌ Demo deployment failed: ${error.message || 'Unknown error'}`]);
-          throw error;
-        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Demo deployment failed:', error);
+        setDemoProgress((prev) => [...prev, ` Demo deployment failed: ${errorMessage}`]);
+        throw error;
+      }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
-              setDemoProgress(prev => [...prev, ' Demo agents deployed successfully!']);
+      setDemoProgress((prev) => [...prev, ' Demo agents deployed successfully!']);
       setTimeout(() => {
         setShowDemoModal(false);
         setDemoProgress([]);
@@ -232,8 +242,8 @@ export function Agents() {
     },
     onError: (error) => {
       console.error('Demo creation failed:', error);
-      setDemoProgress(prev => [...prev, '❌ Demo creation failed']);
-    }
+      setDemoProgress((prev) => [...prev, ' Demo creation failed']);
+    },
   });
 
   // const handleCreateDemo = () => {
@@ -255,14 +265,8 @@ export function Agents() {
         </FlexItem>
 
         <FlexItem>
-          <Tabs 
-            activeKey={activeTab} 
-            onSelect={(_, tabIndex) => setActiveTab(tabIndex as number)}
-          >
-            <Tab 
-              eventKey={0} 
-              title={<TabTitleText>Templates</TabTitleText>}
-            >
+          <Tabs activeKey={activeTab} onSelect={(_, tabIndex) => setActiveTab(tabIndex as number)}>
+            <Tab eventKey={0} title={<TabTitleText>Templates</TabTitleText>}>
               <div style={{ padding: '1rem 0' }}>
                 {error && (
                   <Alert
@@ -287,45 +291,49 @@ export function Agents() {
                 )}
 
                 {templatesError && (
-                  <Alert
-                    variant="warning"
-                    title="Warning"
-                    style={{ marginBottom: '1rem' }}
-                  >
-                    Failed to load templates. <Button variant="link" onClick={() => refetchTemplates()}>Retry</Button>
+                  <Alert variant="warning" title="Warning" style={{ marginBottom: '1rem' }}>
+                    Failed to load templates.{' '}
+                    <Button
+                      variant="link"
+                      onClick={() => {
+                        void refetchTemplates().catch((error) => {
+                          console.error('Error refetching templates:', error);
+                        });
+                      }}
+                    >
+                      Retry
+                    </Button>
                   </Alert>
                 )}
 
                 <TemplateList
                   templates={templates}
                   agents={agents || []} // Add agents prop
-                  onDeploy={handleDeploy}
+                  onDeploy={(templateId: string, selectedAgents?: string[]) => {
+                    void handleDeploy(templateId, selectedAgents);
+                  }}
                   isDeploying={isDeploying}
                   isLoading={isLoadingTemplates}
                   selectedCategory=""
                 />
               </div>
             </Tab>
-            
-            <Tab 
-              eventKey={1} 
-              title={<TabTitleText>New Agent</TabTitleText>}
-            >
+
+            <Tab eventKey={1} title={<TabTitleText>New Agent</TabTitleText>}>
               <div style={{ padding: '1rem 0' }}>
                 <NewAgentCard />
               </div>
             </Tab>
-            
-            <Tab 
-              eventKey={2} 
-              title={<TabTitleText>My Agents</TabTitleText>}
-            >
+
+            <Tab eventKey={2} title={<TabTitleText>My Agents</TabTitleText>}>
               <div style={{ padding: '1rem 0' }}>
-                <TemplateAgentList 
-                  agents={agents || []} 
+                <TemplateAgentList
+                  agents={agents || []}
                   templates={templates || []} // Add templates prop
-                  isLoading={isLoadingAgents} 
-                  onSwitchToTemplates={() => setActiveTab(0)} // Add this prop
+                  isLoading={isLoadingAgents}
+                  onSwitchToTemplates={() => {
+                    setActiveTab(0);
+                  }} // Add this prop
                 />
               </div>
             </Tab>
@@ -338,7 +346,11 @@ export function Agents() {
         variant="small"
         title="Deploy Template"
         isOpen={showDemoModal}
-        onClose={() => !createDemoMutation.isPending && setShowDemoModal(false)}
+        onClose={() => {
+          if (!createDemoMutation.isPending) {
+            setShowDemoModal(false);
+          }
+        }}
       >
         <ModalHeader title="Setting Up Agent Templates" />
         <ModalBody>
@@ -348,9 +360,7 @@ export function Agents() {
             </FlexItem>
             {demoProgress.map((progress, index) => (
               <FlexItem key={index}>
-                <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                  {progress}
-                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>{progress}</div>
               </FlexItem>
             ))}
             {createDemoMutation.isPending && demoProgress.length === 0 && (

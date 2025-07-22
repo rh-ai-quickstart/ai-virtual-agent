@@ -493,23 +493,21 @@ export function MultiSelect({
                 value={option.value}
                 isDisabled={option.isDisabled || option.isAriaDisabled}
                 id={
-                  option.id && option.id !== NO_RESULTS_VALUE ? option.id : createItemId(option.value)
+                  option.id && option.id !== NO_RESULTS_VALUE
+                    ? option.id
+                    : createItemId(option.value)
                 }
                 className={option.value === NO_RESULTS_VALUE ? 'no-results-item' : ''}
               >
                 {option.value === NO_RESULTS_VALUE ? (
-                  <div className="no-results-item">
-                    {option.children}
-                  </div>
+                  <div className="no-results-item">{option.children}</div>
                 ) : (
                   <div className="select-option-enhanced">
                     <div className="select-option-icon">
                       {option.value.includes('builtin::') ? '🔧' : '📦'}
                     </div>
                     <div className="select-option-content">
-                      <div className="select-option-name">
-                        {option.children}
-                      </div>
+                      <div className="select-option-name">{option.children}</div>
                     </div>
                   </div>
                 )}

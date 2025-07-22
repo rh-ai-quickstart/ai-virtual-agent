@@ -5,7 +5,7 @@
   --primary-blue-hover: #1d4ed8;
   --primary-blue-light: #3b82f6;
   --primary-blue-dark: #1e40af;
-  
+
   /* Secondary Colors */
   --secondary-purple: #7c3aed;
   --secondary-purple-hover: #6d28d9;
@@ -15,37 +15,37 @@
   --accent-orange-hover: #d97706;
   --accent-red: #ef4444;
   --accent-red-hover: #dc2626;
-  
+
   /* Neutral Colors */
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-tertiary: #334155;
   --bg-elevated: #475569;
   --bg-hover: #64748b;
-  
+
   /* Text Colors */
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-disabled: #64748b;
-  
+
   /* Border Colors */
   --border-primary: #475569;
   --border-secondary: #64748b;
   --border-accent: #3b82f6;
-  
+
   /* Shadow Colors */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-  
+
   /* Gradient Colors */
   --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   --gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  
+
   /* Status Colors */
   --success-light: #d1fae5;
   --success-dark: #065f46;
@@ -65,7 +65,13 @@
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   margin: 0;
   padding: 0;
   line-height: 1.6;
@@ -338,13 +344,25 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideIn {
-  from { transform: translateX(-20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .fade-in {
@@ -360,11 +378,11 @@ body {
   .pf-v6-chatbot {
     border-radius: 0;
   }
-  
+
   .pf-v6-chatbot__conversation-history-nav {
     border-radius: 0;
   }
-  
+
   .demo-questions-container {
     margin: 0.5rem;
     padding: 1rem;
@@ -395,4 +413,4 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-} 
+}

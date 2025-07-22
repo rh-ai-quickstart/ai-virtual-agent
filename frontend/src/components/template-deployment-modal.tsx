@@ -1,19 +1,19 @@
 import { TemplateSuite, TemplateDeployRequest } from '@/types/templates';
-import { 
-  Modal, 
-  ModalHeader, 
-  ModalBody, 
-  ModalFooter, 
-  Button, 
-  Form, 
-  FormGroup, 
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Form,
+  FormGroup,
   FormSection,
   Checkbox,
   TextInput,
   TextArea,
   Flex,
   FlexItem,
-  Label
+  Label,
 } from '@patternfly/react-core';
 import { RocketIcon, UsersIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
@@ -31,7 +31,7 @@ export function TemplateDeploymentModal({
   isOpen,
   onClose,
   onDeploy,
-  isDeploying
+  isDeploying,
 }: TemplateDeploymentModalProps) {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [customName, setCustomName] = useState('');
@@ -44,7 +44,7 @@ export function TemplateDeploymentModal({
     if (checked) {
       setSelectedAgents([...selectedAgents, agentName]);
     } else {
-      setSelectedAgents(selectedAgents.filter(name => name !== agentName));
+      setSelectedAgents(selectedAgents.filter((name) => name !== agentName));
     }
   };
 
@@ -52,7 +52,7 @@ export function TemplateDeploymentModal({
     setDeployAll(checked);
     if (checked) {
       if (template.agents) {
-        setSelectedAgents(template.agents.map(agent => agent.name));
+        setSelectedAgents(template.agents.map((agent) => agent.name));
       }
     } else {
       setSelectedAgents([]);
@@ -64,8 +64,8 @@ export function TemplateDeploymentModal({
       selected_agents: deployAll ? undefined : selectedAgents,
       override_settings: {
         ...(customName && { name: customName }),
-        ...(customDescription && { description: customDescription })
-      }
+        ...(customDescription && { description: customDescription }),
+      },
     };
 
     onDeploy(template.id, deployRequest);
@@ -95,7 +95,7 @@ export function TemplateDeploymentModal({
           <span>Deploy Template: {template.name}</span>
         </Flex>
       </ModalHeader>
-      
+
       <ModalBody>
         <Form>
           <FormSection title="Template Information">
@@ -153,11 +153,19 @@ export function TemplateDeploymentModal({
                     <FlexItem key={index}>
                       <Checkbox
                         label={
-                          <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+                          <Flex
+                            alignItems={{ default: 'alignItemsCenter' }}
+                            gap={{ default: 'gapSm' }}
+                          >
                             <UsersIcon />
                             <span>{agent.name}</span>
                             {agent.description && (
-                              <span style={{ color: 'var(--pf-v6-global--Color--200)', fontSize: '0.875rem' }}>
+                              <span
+                                style={{
+                                  color: 'var(--pf-v6-global--Color--200)',
+                                  fontSize: '0.875rem',
+                                }}
+                              >
                                 - {agent.description}
                               </span>
                             )}
@@ -174,19 +182,25 @@ export function TemplateDeploymentModal({
             )}
           </FormSection>
 
-          {template.metadata?.features && (
-            <FormSection title="Template Features">
-              <Flex gap={{ default: 'gapXs' }}>
-                {template.metadata.features.map((feature: string, index: number) => (
-                  <FlexItem key={index}>
-                    <Label color="green" variant="outline">
-                      {feature}
-                    </Label>
-                  </FlexItem>
-                ))}
-              </Flex>
-            </FormSection>
-          )}
+          {(() => {
+            const features = template.metadata?.features;
+            if (features && Array.isArray(features)) {
+              return (
+                <FormSection title="Template Features">
+                  <Flex gap={{ default: 'gapXs' }}>
+                    {features.map((feature: string, index: number) => (
+                      <FlexItem key={index}>
+                        <Label color="green" variant="outline">
+                          {String(feature)}
+                        </Label>
+                      </FlexItem>
+                    ))}
+                  </Flex>
+                </FormSection>
+              );
+            }
+            return null;
+          })()}
         </Form>
       </ModalBody>
 
@@ -206,4 +220,4 @@ export function TemplateDeploymentModal({
       </ModalFooter>
     </Modal>
   );
-} 
+}

@@ -56,7 +56,7 @@ This guide provides step-by-step instructions for testing the Model Context Prot
 - **Database Queries:** Agent can query database and return results
 - **Response Quality:** Responses include database information
 
-### ❌ Failure Indicators
+###  Failure Indicators
 
 - **MCP Server Status:** Shows as disconnected or error
 - **Agent Creation:** Fails with tool configuration errors

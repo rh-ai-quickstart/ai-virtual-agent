@@ -1,16 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
-import { 
-  Page, 
-  PageSection, 
-  Title, 
-  Flex, 
-  FlexItem, 
+import {
+  Page,
+  PageSection,
+  Title,
+  Flex,
+  FlexItem,
   Button,
   Alert,
   AlertActionCloseButton,
   Label,
-  Spinner
+  Spinner,
 } from '@patternfly/react-core';
 import { SyncIcon } from '@patternfly/react-icons';
 import { TemplateList } from '@/components/template-list';
@@ -34,31 +34,32 @@ export function Templates() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       console.log('Loading templates...');
       console.log('TemplateService available:', !!templateService);
       console.log('getTemplates method available:', !!templateService.getTemplates);
-      
+
       const [templatesData, categoriesData] = await Promise.all([
         templateService.getTemplates(),
-        templateService.getCategories()
+        templateService.getCategories(),
       ]);
-      
+
       console.log('Templates received:', templatesData);
       console.log('Categories received:', categoriesData);
-      
+
       setTemplates(templatesData || []);
       setCategories(categoriesData || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('Failed to load templates:', err);
-      setError('Failed to load templates: ' + (err.message || 'Unknown error'));
+      setError('Failed to load templates: ' + errorMessage);
       setTemplates([]);
       setCategories([]);
     } finally {
@@ -73,12 +74,13 @@ export function Templates() {
         setIsLoading(true);
         // Note: getTemplatesByCategory method doesn't exist, using getTemplates instead
         const allTemplates = await templateService.getTemplates();
-        const categoryTemplates = allTemplates.filter(template => 
-          template.metadata?.category === category || template.category === category
+        const categoryTemplates = allTemplates.filter(
+          (template) => template.metadata?.category === category || template.category === category
         );
         setTemplates(categoryTemplates || []);
-      } catch (err: any) {
-        setError('Failed to load category templates: ' + (err.message || 'Unknown error'));
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError('Failed to load category templates: ' + errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -91,16 +93,19 @@ export function Templates() {
     try {
       setIsDeploying(true);
       setError(null);
-      
+
       const result = await templateService.deployTemplate(templateId);
-      
+
       if (result.success) {
-        setSuccess(`Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`);
+        setSuccess(
+          `Template deployed successfully! Created ${result.agent_ids?.length || 0} agents.`
+        );
       } else {
         setError(result.error || 'Deployment failed');
       }
-    } catch (err: any) {
-      setError('Deployment failed: ' + (err.message || 'Unknown error'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Deployment failed: ' + errorMessage);
     } finally {
       setIsDeploying(false);
     }
@@ -112,8 +117,9 @@ export function Templates() {
       await loadData();
       await loadData();
       setSuccess('Template cache refreshed successfully!');
-    } catch (err: any) {
-      setError('Failed to refresh cache: ' + (err.message || 'Unknown error'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Failed to refresh cache: ' + errorMessage);
     }
   };
 
@@ -122,12 +128,22 @@ export function Templates() {
     setSuccess(null);
   };
 
+  const handleCategoryClickSync = (category: string) => {
+    void handleCategoryClick(category).catch((error) => {
+      console.error('Error handling category click:', error);
+    });
+  };
+
   // Show loading spinner while initializing
   if (isLoading && templates.length === 0) {
     return (
       <Page>
         <PageSection>
-          <Flex justifyContent={{ default: 'justifyContentCenter' }} alignItems={{ default: 'alignItemsCenter' }} style={{ minHeight: '200px' }}>
+          <Flex
+            justifyContent={{ default: 'justifyContentCenter' }}
+            alignItems={{ default: 'alignItemsCenter' }}
+            style={{ minHeight: '200px' }}
+          >
             <FlexItem>
               <Spinner size="lg" />
             </FlexItem>
@@ -140,7 +156,10 @@ export function Templates() {
   return (
     <Page>
       <PageSection>
-        <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+        <Flex
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          alignItems={{ default: 'alignItemsCenter' }}
+        >
           <FlexItem>
             <Title headingLevel="h1" size="2xl">
               Template Catalog
@@ -150,7 +169,11 @@ export function Templates() {
             <Button
               variant="secondary"
               icon={<SyncIcon />}
-              onClick={handleRefresh}
+              onClick={() => {
+                void handleRefresh().catch((error) => {
+                  console.error('Error refreshing cache:', error);
+                });
+              }}
               isDisabled={isLoading}
             >
               Refresh Cache
@@ -185,22 +208,22 @@ export function Templates() {
         {/* Category Filter - Using Labels instead of Select */}
         <Flex style={{ marginBottom: '2rem' }} gap={{ default: 'gapSm' }}>
           <FlexItem>
-            <Label 
-              color={selectedCategory === '' ? 'blue' : 'grey'} 
+            <Label
+              color={selectedCategory === '' ? 'blue' : 'grey'}
               variant="outline"
               style={{ cursor: 'pointer' }}
-              onClick={() => void handleCategoryClick('')}
+              onClick={() => handleCategoryClickSync('')}
             >
               All Categories
             </Label>
           </FlexItem>
           {(categories || []).map((category) => (
             <FlexItem key={category}>
-              <Label 
-                color={selectedCategory === category ? 'blue' : 'grey'} 
+              <Label
+                color={selectedCategory === category ? 'blue' : 'grey'}
                 variant="outline"
                 style={{ cursor: 'pointer' }}
-                onClick={() => void handleCategoryClick(category)}
+                onClick={() => handleCategoryClickSync(category)}
               >
                 {category.replace('_', ' ').toUpperCase()}
               </Label>
@@ -219,4 +242,4 @@ export function Templates() {
       </PageSection>
     </Page>
   );
-} 
+}

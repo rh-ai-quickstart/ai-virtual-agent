@@ -132,22 +132,22 @@ export function AgentForm({
   // NEW: Auto-fill name based on persona selection
   // const handlePersonaChange = (persona: string) => {
   //   form.setFieldValue('persona', persona);
-    
+
   //   // Auto-suggest name if current name is empty or was a previous suggestion
   //   const currentName = form.state.values.name;
   //   const isEmptyOrSuggestion = !currentName || Object.values(PERSONA_NAME_SUGGESTIONS).includes(currentName);
-    
+
   //   if (persona && isEmptyOrSuggestion) {
   //     const suggestedName = PERSONA_NAME_SUGGESTIONS[persona];
   //     if (suggestedName) {
   //       form.setFieldValue('name', suggestedName);
   //     }
   //   }
-    
+
   //   // Auto-suggest prompt if current prompt is empty or was a previous suggestion
   //   const currentPrompt = form.state.values.prompt;
   //   const isEmptyPromptOrSuggestion = !currentPrompt || Object.values(PERSONA_PROMPT_SUGGESTIONS).includes(currentPrompt);
-    
+
   //   if (persona && isEmptyPromptOrSuggestion) {
   //     const suggestedPrompt = PERSONA_PROMPT_SUGGESTIONS[persona];
   //     if (suggestedPrompt) {
@@ -398,7 +398,7 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
-      
+
       <form.Field
         name="prompt"
         validators={{
@@ -452,7 +452,7 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
-      
+
       <form.Field name="tool_ids">
         {(field) => (
           <FormGroup label="Select Tool Groups" fieldId="tools-multiselect">
@@ -473,7 +473,7 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
-      
+
       <form.Subscribe selector={(state) => state.values.tool_ids}>
         {(toolIds) => {
           const hasRAGTool = toolIds?.includes('builtin::rag');
@@ -485,10 +485,7 @@ export function AgentForm({
           return hasRAGTool ? (
             <form.Field name="knowledge_base_ids">
               {(field) => (
-                <FormGroup
-                  label="Select Knowledge Bases"
-                  fieldId="knowledge-bases-multiselect"
-                >
+                <FormGroup label="Select Knowledge Bases" fieldId="knowledge-bases-multiselect">
                   <MultiSelect
                     id="knowledge-bases-multiselect-component"
                     value={field.state.value}
@@ -512,7 +509,7 @@ export function AgentForm({
           ) : null;
         }}
       </form.Subscribe>
-      
+
       <ActionGroup>
         <form.Subscribe
           selector={(state) => [state.canSubmit, state.isSubmitting, state.isPristine]}

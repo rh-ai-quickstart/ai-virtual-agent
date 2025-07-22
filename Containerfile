@@ -16,6 +16,9 @@ COPY frontend/ ./
 # Set node memory limit if needed
 ENV NODE_OPTIONS=--max-old-space-size=512
 
+# Run linting before build
+RUN npm run lint:fix
+RUN npm run format:check
 RUN npm run build
 
 
@@ -38,6 +41,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy built frontend to backend's static files
 COPY --from=frontend-builder /app/frontend/dist ./backend/public/
 
+# Create templates directory with proper permissions for user 1001
+RUN mkdir -p /app/templates && chown -R 1001:1001 /app/templates
+
+# Copy templates directory
+COPY templates/ ./templates/
 
 USER 1001
 # Expose FastAPI port

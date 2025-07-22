@@ -1,18 +1,16 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "debug streamlit",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "/Users/raghurambanda/aaas/ai-virtual-agent/venv/bin/uvicorn",
-            "args": [
-                "backend.main:app"
-            ],
-            "env": {
-                "DATABASE_URL": "postgresql+asyncpg://postgres:rag_password@localhost:15432/ai_virtual_assistant",
-                "LLAMASTACK_URL":"http://localhost:8321"
-            }
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "debug streamlit",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "/Users/raghurambanda/aaas/ai-virtual-agent/venv/bin/uvicorn",
+      "args": ["backend.main:app"],
+      "env": {
+        "DATABASE_URL": "postgresql+asyncpg://postgres:rag_password@localhost:15432/ai_virtual_assistant",
+        "LLAMASTACK_URL": "http://localhost:8321"
+      }
+    }
+  ]
 }

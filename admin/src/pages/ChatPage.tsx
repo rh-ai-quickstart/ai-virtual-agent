@@ -92,7 +92,7 @@ export default function ChatPage(): JSX.Element {
 
     try {
       // Use fetch for streaming
-      const chatResponse = await fetch('http://localhost:8000/llama_stack/chat', {
+      const chatResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : '')}/llama_stack/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

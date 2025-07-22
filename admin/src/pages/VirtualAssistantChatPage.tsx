@@ -60,7 +60,7 @@ export default function VirtualAssistantChatPage(): JSX.Element {
         messages: [...messages, userMessage]
       });
 
-      const response = await fetch('http://localhost:8000/llama_stack/vachat', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8000' : '')}/llama_stack/vachat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -21,14 +21,9 @@ import {
   ModalFooter,
   Badge,
   Breadcrumb,
-  BreadcrumbItem
+  BreadcrumbItem,
 } from '@patternfly/react-core';
-import { 
-  TrashIcon, 
-  UsersIcon,
-  ArrowLeftIcon,
-  BuildingIcon
-} from '@patternfly/react-icons';
+import { TrashIcon, UsersIcon, ArrowLeftIcon, BuildingIcon } from '@patternfly/react-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface TemplateAgentListProps {
@@ -51,11 +46,11 @@ interface TemplateGroup {
   personas: string[];
 }
 
-export function TemplateAgentList({ 
-  agents, 
+export function TemplateAgentList({
+  agents,
   templates, // Add templates parameter
-  isLoading, 
-  onSwitchToTemplates 
+  isLoading,
+  onSwitchToTemplates,
 }: TemplateAgentListProps) {
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -70,20 +65,22 @@ export function TemplateAgentList({
     if (selectedTemplate === 'other') {
       return { templateName: 'Other', templateId: 'other' };
     }
-    return templates.find(t => t.id === selectedTemplate) || null;
+    return templates.find((t) => t.id === selectedTemplate) || null;
   }, [selectedTemplate, templates]);
 
   // One-time initialization of personas for existing agents
   React.useEffect(() => {
     if (!hasInitializedPersonas && agents.length > 0) {
       console.log('Initializing personas for existing agents...');
-      agents.forEach(agent => {
+      agents.forEach((agent) => {
         // Try to find matching template agent by name
         for (const template of templates) {
           if (template.agents) {
             for (const templateAgent of template.agents) {
               if (templateAgent.name === agent.name) {
-                console.log(`Found match: Agent ${agent.name} matches template ${template.id} agent ${templateAgent.name}`);
+                console.log(
+                  `Found match: Agent ${agent.name} matches template ${template.id} agent ${templateAgent.name}`
+                );
                 if (templateAgent.persona) {
                   console.log(`Setting persona "${templateAgent.persona}" for agent ${agent.id}`);
                   personaStorage.setPersona(agent.id, templateAgent.persona, template.id);
@@ -108,23 +105,23 @@ export function TemplateAgentList({
 
     // Group agents by template using metadata
     const templateAgentMap: Record<string, { agents: Agent[]; personas: Set<string> }> = {};
-    
-    agents.forEach(agent => {
+
+    agents.forEach((agent) => {
       const templateId = agent.metadata?.template_id;
       const persona = agent.metadata?.persona;
-      
+
       console.log(`Debug: Agent ${agent.name} (${agent.id}):`, {
         templateId,
         persona,
         hasTemplateId: !!templateId,
-        hasPersona: !!persona
+        hasPersona: !!persona,
       });
-      
+
       if (templateId) {
         if (!templateAgentMap[templateId]) {
           templateAgentMap[templateId] = { agents: [], personas: new Set() };
         }
-        
+
         templateAgentMap[templateId].agents.push(agent);
         if (persona) {
           templateAgentMap[templateId].personas.add(persona);
@@ -133,7 +130,7 @@ export function TemplateAgentList({
         // Fallback: Try to match agent name to template agents
         let matchedTemplateId: string | null = null;
         let matchedPersona: string | null = null;
-        
+
         for (const template of templates) {
           if (template.agents) {
             for (const templateAgent of template.agents) {
@@ -146,13 +143,15 @@ export function TemplateAgentList({
             if (matchedTemplateId) break;
           }
         }
-        
+
         if (matchedTemplateId) {
-          console.log(`Debug: Matched agent ${agent.name} to template ${matchedTemplateId} by name`);
+          console.log(
+            `Debug: Matched agent ${agent.name} to template ${matchedTemplateId} by name`
+          );
           if (!templateAgentMap[matchedTemplateId]) {
             templateAgentMap[matchedTemplateId] = { agents: [], personas: new Set() };
           }
-          
+
           templateAgentMap[matchedTemplateId].agents.push(agent);
           if (matchedPersona) {
             templateAgentMap[matchedTemplateId].personas.add(matchedPersona);
@@ -168,14 +167,14 @@ export function TemplateAgentList({
 
     // Convert to array format
     Object.entries(templateAgentMap).forEach(([templateId, data]) => {
-      const template = templates.find(t => t.id === templateId);
+      const template = templates.find((t) => t.id === templateId);
       console.log(`Debug: Looking for template ${templateId}:`, template);
       if (template) {
         groups.push({
           templateName: template.name,
           templateId: templateId,
           agentCount: data.agents.length,
-          personas: Array.from(data.personas)
+          personas: Array.from(data.personas),
         });
       }
     });
@@ -186,7 +185,7 @@ export function TemplateAgentList({
         templateName: 'Other',
         templateId: 'other',
         agentCount: ungrouped.length,
-        personas: []
+        personas: [],
       });
     }
 
@@ -197,15 +196,15 @@ export function TemplateAgentList({
   // Get agents for selected template
   const selectedTemplateAgents = useMemo(() => {
     if (!selectedTemplate) return [];
-    
+
     if (selectedTemplate === 'other') {
       // Return agents that don't match any template
-      return agents.filter(agent => {
+      return agents.filter((agent) => {
         // Check if agent has metadata
         if (agent.metadata?.template_id) {
           return false; // Has metadata, so not "other"
         }
-        
+
         // Check if agent name matches any template
         for (const template of templates) {
           if (template.agents) {
@@ -216,23 +215,23 @@ export function TemplateAgentList({
             }
           }
         }
-        
+
         return true; // No match found, so it's "other"
       });
     }
 
-    return agents.filter(agent => {
+    return agents.filter((agent) => {
       // Check if agent has metadata indicating it was deployed from this template
       if (agent.metadata?.template_id === selectedTemplate) {
         return true;
       }
-      
+
       // Fallback: Check if agent name matches any agent in this template
-      const template = templates.find(t => t.id === selectedTemplate);
+      const template = templates.find((t) => t.id === selectedTemplate);
       if (template && template.agents) {
-        return template.agents.some(templateAgent => templateAgent.name === agent.name);
+        return template.agents.some((templateAgent) => templateAgent.name === agent.name);
       }
-      
+
       return false;
     });
   }, [agents, selectedTemplate, templates]);
@@ -242,7 +241,7 @@ export function TemplateAgentList({
     if (!selectedTemplate) return [];
 
     const groups: AgentGroup[] = [];
-    
+
     // Special handling for "Other" template
     if (selectedTemplate === 'other') {
       // Create a single group for ungrouped agents
@@ -250,44 +249,44 @@ export function TemplateAgentList({
         groups.push({
           templateName: 'Other',
           personaName: 'Ungrouped Agents',
-          agents: selectedTemplateAgents
+          agents: selectedTemplateAgents,
         });
       }
       return groups;
     }
 
     const personaToTemplate: Record<string, { templateName: string; personaName: string }> = {};
-    
-    templates.forEach(template => {
+
+    templates.forEach((template) => {
       if (template.personas) {
-        Object.keys(template.personas).forEach(personaKey => {
+        Object.keys(template.personas).forEach((personaKey) => {
           personaToTemplate[personaKey] = {
             templateName: template.name,
-            personaName: template.personas[personaKey]?.label || personaKey
+            personaName: template.personas[personaKey]?.label || personaKey,
           };
         });
       }
     });
 
     const personaGroups: Record<string, Agent[]> = {};
-    
-    selectedTemplateAgents.forEach(agent => {
+
+    selectedTemplateAgents.forEach((agent) => {
       let persona: string | null = null;
-      
+
       // First try to get persona from metadata
       if (agent.metadata?.persona) {
         persona = agent.metadata.persona;
       } else {
         // Fallback: Try to match agent name to template agents to get persona
-        const template = templates.find(t => t.id === selectedTemplate);
+        const template = templates.find((t) => t.id === selectedTemplate);
         if (template && template.agents) {
-          const templateAgent = template.agents.find(ta => ta.name === agent.name);
+          const templateAgent = template.agents.find((ta) => ta.name === agent.name);
           if (templateAgent && templateAgent.persona) {
             persona = templateAgent.persona;
           }
         }
       }
-      
+
       if (persona) {
         if (!personaGroups[persona]) {
           personaGroups[persona] = [];
@@ -309,15 +308,15 @@ export function TemplateAgentList({
         groups.push({
           templateName: templateInfo.templateName,
           personaName: templateInfo.personaName,
-          agents: agents
+          agents: agents,
         });
       } else {
         // For agents without a matching persona, create a default group
-        const template = templates.find(t => t.id === selectedTemplate);
+        const template = templates.find((t) => t.id === selectedTemplate);
         groups.push({
           templateName: template?.name || 'Template',
           personaName: persona,
-          agents: agents
+          agents: agents,
         });
       }
     });
@@ -338,7 +337,7 @@ export function TemplateAgentList({
 
   const handleSelectGroup = (group: AgentGroup, checked: boolean) => {
     const newSelected = new Set(selectedAgents);
-    group.agents.forEach(agent => {
+    group.agents.forEach((agent) => {
       if (checked) {
         newSelected.add(agent.id);
       } else {
@@ -350,7 +349,7 @@ export function TemplateAgentList({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allAgentIds = selectedTemplateAgents.map(agent => agent.id);
+      const allAgentIds = selectedTemplateAgents.map((agent) => agent.id);
       setSelectedAgents(new Set(allAgentIds));
     } else {
       setSelectedAgents(new Set());
@@ -359,31 +358,32 @@ export function TemplateAgentList({
 
   // Chat handler
   const handleChatWithAgent = (agentId: string) => {
-    navigate({ to: '/', search: { agentId } });
+    void navigate({ to: '/', search: { agentId } });
   };
 
   // Delete mutation
   const deleteAgentsMutation = useMutation({
     mutationFn: async (agentIds: string[]) => {
-      const promises = agentIds.map(agentId => deleteAgent(agentId));
+      const promises = agentIds.map((agentId) => deleteAgent(agentId));
       await Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      void queryClient.invalidateQueries({ queryKey: ['agents'] });
       setSelectedAgents(new Set());
       setShowDeleteModal(false);
     },
     onError: (error) => {
       console.error('Error deleting agents:', error);
-    }
+    },
   });
 
   const handleBulkDelete = () => {
-    deleteAgentsMutation.mutate(Array.from(selectedAgents));
+    const agentIds = Array.from(selectedAgents);
+    void deleteAgentsMutation.mutate(agentIds);
   };
 
   const isGroupSelected = (group: AgentGroup) => {
-    return group.agents.every(agent => selectedAgents.has(agent.id));
+    return group.agents.every((agent) => selectedAgents.has(agent.id));
   };
 
   if (isLoading) {
@@ -395,34 +395,48 @@ export function TemplateAgentList({
     return (
       <div>
         {/* Header */}
-        <Card style={{ marginBottom: '1rem', backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+        <Card
+          style={{
+            marginBottom: '1rem',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--border-secondary)',
+          }}
+        >
           <CardBody>
             <Title headingLevel="h4" size="md" style={{ color: 'var(--text-primary)' }}>
-              {agents.length === 0 
+              {agents.length === 0
                 ? 'No agents created yet'
                 : templateGroups.length === 0
-                ? `${agents.length} agents available`
-                : `${agents.length} total agent${agents.length > 1 ? 's' : ''} across ${templateGroups.length} template${templateGroups.length > 1 ? 's' : ''}`
-              }
+                  ? `${agents.length} agents available`
+                  : `${agents.length} total agent${agents.length > 1 ? 's' : ''} across ${templateGroups.length} template${templateGroups.length > 1 ? 's' : ''}`}
             </Title>
           </CardBody>
         </Card>
 
         {/* Show message when no agents exist */}
         {agents.length === 0 && (
-          <Card style={{ backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+          <Card
+            style={{ backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}
+          >
             <CardBody>
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                 <UsersIcon style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }} />
-                <Title headingLevel="h3" size="lg" style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                <Title
+                  headingLevel="h3"
+                  size="lg"
+                  style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}
+                >
                   No Agents Created
                 </Title>
                 <p style={{ marginBottom: '1rem' }}>
                   Deploy templates from the Templates tab to create your first agents.
                 </p>
-                <Button 
-                  variant="primary" 
-                  onClick={onSwitchToTemplates || (() => console.log('No template switch function provided'))}
+                <Button
+                  variant="primary"
+                  onClick={
+                    onSwitchToTemplates ||
+                    (() => console.log('No template switch function provided'))
+                  }
                   style={{ marginRight: '0.5rem' }}
                 >
                   Go to Templates
@@ -434,7 +448,9 @@ export function TemplateAgentList({
 
         {/* Show ungrouped agents when no template groups exist */}
         {agents.length > 0 && templateGroups.length === 0 && (
-          <Card style={{ backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+          <Card
+            style={{ backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}
+          >
             <CardHeader>
               <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapMd' }}>
                 <FlexItem>
@@ -443,7 +459,7 @@ export function TemplateAgentList({
                     isChecked={selectedAgents.size === agents.length && agents.length > 0}
                     onChange={(_, checked) => {
                       if (checked) {
-                        setSelectedAgents(new Set(agents.map(agent => agent.id)));
+                        setSelectedAgents(new Set(agents.map((agent) => agent.id)));
                       } else {
                         setSelectedAgents(new Set());
                       }
@@ -470,11 +486,13 @@ export function TemplateAgentList({
               </Flex>
             </CardHeader>
             <CardBody>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '0.5rem'
-              }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '0.5rem',
+                }}
+              >
                 {agents.map((agent) => (
                   <div
                     key={agent.id}
@@ -485,7 +503,7 @@ export function TemplateAgentList({
                       backgroundColor: 'transparent',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem'
+                      gap: '0.5rem',
                     }}
                   >
                     <Checkbox
@@ -526,19 +544,21 @@ export function TemplateAgentList({
 
         {/* Template Cards - only show if there are template groups */}
         {templateGroups.length > 0 && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '1rem'
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '1rem',
+            }}
+          >
             {templateGroups.map((template) => (
-              <Card 
+              <Card
                 key={template.templateId}
-                style={{ 
-                  backgroundColor: 'transparent', 
+                style={{
+                  backgroundColor: 'transparent',
                   border: '1px solid var(--border-secondary)',
                   transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
                 }}
                 onClick={() => setSelectedTemplate(template.templateId)}
               >
@@ -552,36 +572,46 @@ export function TemplateAgentList({
                 </CardHeader>
                 <CardBody>
                   <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                    <div
+                      style={{
+                        fontSize: '0.875rem',
+                        color: 'var(--text-muted)',
+                        marginBottom: '0.5rem',
+                      }}
+                    >
                       {template.agentCount} agent{template.agentCount > 1 ? 's' : ''}
                       {template.personas.length > 0 && (
-                        <span> • {template.personas.length} persona{template.personas.length > 1 ? 's' : ''}</span>
+                        <span>
+                          {' '}
+                          • {template.personas.length} persona
+                          {template.personas.length > 1 ? 's' : ''}
+                        </span>
                       )}
                     </div>
                     {template.personas.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                         {template.personas.slice(0, 3).map((persona, index) => (
-                          <Badge 
-                            key={index} 
-                            isRead 
-                            style={{ 
-                              backgroundColor: 'transparent', 
-                              color: 'var(--text-muted)', 
+                          <Badge
+                            key={index}
+                            isRead
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: 'var(--text-muted)',
                               border: '1px solid var(--border-secondary)',
-                              fontSize: '0.75rem'
+                              fontSize: '0.75rem',
                             }}
                           >
                             {persona}
                           </Badge>
                         ))}
                         {template.personas.length > 3 && (
-                          <Badge 
-                            isRead 
-                            style={{ 
-                              backgroundColor: 'transparent', 
-                              color: 'var(--text-muted)', 
+                          <Badge
+                            isRead
+                            style={{
+                              backgroundColor: 'transparent',
+                              color: 'var(--text-muted)',
                               border: '1px solid var(--border-secondary)',
-                              fontSize: '0.75rem'
+                              fontSize: '0.75rem',
                             }}
                           >
                             +{template.personas.length - 3} more
@@ -612,12 +642,18 @@ export function TemplateAgentList({
   return (
     <div>
       {/* Breadcrumb */}
-      <Card style={{ marginBottom: '1rem', backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+      <Card
+        style={{
+          marginBottom: '1rem',
+          backgroundColor: 'transparent',
+          border: '1px solid var(--border-secondary)',
+        }}
+      >
         <CardBody>
           <Breadcrumb>
             <BreadcrumbItem>
-              <Button 
-                variant="link" 
+              <Button
+                variant="link"
                 onClick={() => setSelectedTemplate(null)}
                 style={{ padding: 0, color: 'var(--text-primary)' }}
               >
@@ -626,30 +662,42 @@ export function TemplateAgentList({
               </Button>
             </BreadcrumbItem>
             <BreadcrumbItem isActive>
-              {selectedTemplateInfo && ('templateName' in selectedTemplateInfo ? selectedTemplateInfo.templateName : selectedTemplateInfo.name) || 'Template'}
+              {(selectedTemplateInfo &&
+                ('templateName' in selectedTemplateInfo
+                  ? selectedTemplateInfo.templateName
+                  : selectedTemplateInfo.name)) ||
+                'Template'}
             </BreadcrumbItem>
           </Breadcrumb>
         </CardBody>
       </Card>
 
       {/* Header with bulk actions */}
-      <Card style={{ marginBottom: '1rem', backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+      <Card
+        style={{
+          marginBottom: '1rem',
+          backgroundColor: 'transparent',
+          border: '1px solid var(--border-secondary)',
+        }}
+      >
         <CardBody>
           <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapMd' }}>
             <FlexItem>
               <Checkbox
                 id="select-all-agents"
-                isChecked={selectedAgents.size === selectedTemplateAgents.length && selectedTemplateAgents.length > 0}
+                isChecked={
+                  selectedAgents.size === selectedTemplateAgents.length &&
+                  selectedTemplateAgents.length > 0
+                }
                 onChange={(_, checked) => handleSelectAll(checked)}
                 aria-label="Select all agents"
               />
             </FlexItem>
             <FlexItem>
               <Title headingLevel="h4" size="md" style={{ color: 'var(--text-primary)' }}>
-                {selectedAgents.size > 0 
+                {selectedAgents.size > 0
                   ? `${selectedAgents.size} agent${selectedAgents.size > 1 ? 's' : ''} selected`
-                  : `${selectedTemplateAgents.length} agents in ${selectedTemplateInfo && ('templateName' in selectedTemplateInfo ? selectedTemplateInfo.templateName : selectedTemplateInfo.name) || 'template'}`
-                }
+                  : `${selectedTemplateAgents.length} agents in ${(selectedTemplateInfo && ('templateName' in selectedTemplateInfo ? selectedTemplateInfo.templateName : selectedTemplateInfo.name)) || 'template'}`}
               </Title>
             </FlexItem>
             {selectedAgents.size > 0 && (
@@ -669,7 +717,14 @@ export function TemplateAgentList({
 
       {/* Agent Groups */}
       {selectedTemplateAgentGroups.map((group, groupIndex) => (
-        <Card key={`${group.templateName}-${group.personaName}`} style={{ marginBottom: '1rem', backgroundColor: 'transparent', border: '1px solid var(--border-secondary)' }}>
+        <Card
+          key={`${group.templateName}-${group.personaName}`}
+          style={{
+            marginBottom: '1rem',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--border-secondary)',
+          }}
+        >
           <CardHeader>
             <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapMd' }}>
               <Checkbox
@@ -683,7 +738,14 @@ export function TemplateAgentList({
                   <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
                     <UsersIcon style={{ color: 'var(--text-primary)' }} />
                     <span style={{ color: 'var(--text-primary)' }}>{group.personaName}</span>
-                    <Badge isRead style={{ backgroundColor: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-secondary)' }}>
+                    <Badge
+                      isRead
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-secondary)',
+                      }}
+                    >
                       {group.agents.length}
                     </Badge>
                   </Flex>
@@ -692,11 +754,13 @@ export function TemplateAgentList({
             </Flex>
           </CardHeader>
           <CardBody>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '0.5rem'
-            }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '0.5rem',
+              }}
+            >
               {group.agents.map((agent) => (
                 <div
                   key={agent.id}
@@ -707,7 +771,7 @@ export function TemplateAgentList({
                     backgroundColor: 'transparent',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
                   }}
                 >
                   <Checkbox
@@ -747,12 +811,9 @@ export function TemplateAgentList({
       >
         <ModalHeader title="Confirm Deletion" />
         <ModalBody>
-          <Alert
-            variant="warning"
-            isInline
-            title="Warning"
-          >
-            Are you sure you want to delete {selectedAgents.size} selected agent{selectedAgents.size > 1 ? 's' : ''}? This action cannot be undone.
+          <Alert variant="warning" isInline title="Warning">
+            Are you sure you want to delete {selectedAgents.size} selected agent
+            {selectedAgents.size > 1 ? 's' : ''}? This action cannot be undone.
           </Alert>
         </ModalBody>
         <ModalFooter>
