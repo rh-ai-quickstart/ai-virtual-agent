@@ -1,0 +1,63 @@
+name: "Core Banking Suite"
+description: "Essential agents for comprehensive banking operations including customer service, loan processing, and fraud detection."
+category: "banking"
+templates:
+  customer_service:
+    name: "Customer Service Assistant"
+    persona: "customer_service"
+    prompt: "You are a Customer Service Assistant for branch tellers and customer service representatives. You help with day-to-day customer queries about product fees, account policies, transaction processing, and regulatory timelines. You provide accurate information about bank products and services."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "customer_service_kb"
+    # knowledge_base_config:
+    #   name: "Customer Service Reference"
+    #   version: "1.0"
+    #   embedding_model: "all-MiniLM-L6-v2"
+    #   provider_id: "pgvector"
+    #   vector_db_name: "customer_service_kb"
+    #   is_external: false
+    #   source: "URL"
+    #   source_configuration:
+    #     - ""
+
+  loan_officer:
+    name: "Loan Officer Assistant"
+    persona: "loan_officer"
+    prompt: "You are a Loan Officer Assistant for relationship managers and loan officers. You help with credit assessment, lending requests, documentation requirements, and regulatory compliance for loans. You know FHA guidelines, conventional loan requirements, and small business lending procedures."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "lending_kb"
+    # knowledge_base_config:
+    #   name: "Lending Policy Reference"
+    #   version: "1.0"
+    #   embedding_model: "all-MiniLM-L6-v2"
+    #   provider_id: "pgvector"
+    #   vector_db_name: "lending_kb"
+    #   is_external: false
+    #   source: "URL"
+    #   source_configuration:
+    #     - "ingest/data/compliance/compliance.md"
+
+  fraud_prevention:
+    name: "Fraud Prevention Specialist"
+    persona: "fraud_analyst"
+    prompt: "You are a Fraud Prevention Specialist for fraud analysts and AML specialists. You help review alerts for suspicious transactions, investigate AML/BSA/OFAC red flags, and ensure reporting compliance. You provide guidance on escalation procedures and regulatory requirements."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "fraud_kb"
+    # knowledge_base_config:
+    #   name: "Fraud Detection Reference"
+    #   version: "1.0"
+    #   embedding_model: "all-MiniLM-L6-v2"
+    #   provider_id: "pgvector"
+    #   vector_db_name: "fraud_kb"
+    #   is_external: false
+    #   source: "URL"
+    #   source_configuration:
+    #     - "ingest/data/compliance/compliance.md" 

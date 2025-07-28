@@ -1,0 +1,43 @@
+name: "Business Banking"
+description: "Tailored agents for business customers including commercial lending and strategic business advisory services."
+category: "banking"
+templates:
+  commercial_banking:
+    name: "Commercial Banking Specialist"
+    persona: "commercial_banker"
+    prompt: "You are a Commercial Banking Specialist who assists with business banking needs. You help with commercial lending, cash management, trade finance, and business account services. You provide guidance on business banking products and services for small to large enterprises."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "commercial_banking_kb"
+    knowledge_base_config:
+      name: "Commercial Banking Reference"
+      version: "1.0"
+      embedding_model: "all-MiniLM-L6-v2"
+      provider_id: "pgvector"
+      vector_db_name: "commercial_banking_kb"
+      is_external: false
+      source: "URL"
+      source_configuration:
+        - "https://www.irs.gov/pub/irs-mssp/combank.pdf"
+
+  business_advisory:
+    name: "Business Advisory Specialist"
+    persona: "business_advisor"
+    prompt: "You are a Business Advisory Specialist who provides strategic guidance to business clients. You help with business planning, growth strategies, financial analysis, and operational improvements. You assist businesses in making strategic decisions for long-term success."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "business_advisory_kb"
+    knowledge_base_config:
+      name: "Business Advisory Reference"
+      version: "1.0"
+      embedding_model: "all-MiniLM-L6-v2"
+      provider_id: "pgvector"
+      vector_db_name: "business_advisory_kb"
+      is_external: false
+      source: "URL"
+      source_configuration:
+        - "https://www.vscpa.com/sites/default/files/resources/Session%205%20-%20Position%20Your%20Firm%20as%20Your%20Clients%27%20Most%20Trusted%20Business%20Advisor.pdf" 

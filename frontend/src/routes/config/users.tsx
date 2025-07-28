@@ -100,6 +100,8 @@ function Users() {
       queryClient.invalidateQueries({ queryKey: ['user', userId] });
       // Invalidate users list to update agent counts on the users list page
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      // Invalidate current user if they are the same user being updated
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
     onError: (error) => {
       console.error('Error adding agent:', error);
@@ -116,6 +118,8 @@ function Users() {
       queryClient.invalidateQueries({ queryKey: ['user', userId] });
       // Invalidate users list to update agent counts on the users list page
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      // Invalidate current user if they are the same user being updated
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
     onError: (error) => {
       console.error('Error removing agent:', error);

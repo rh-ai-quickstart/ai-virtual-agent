@@ -20,6 +20,21 @@ export const fetchUsers = async (): Promise<User[]> => {
   return data as User[];
 };
 
+export const fetchCurrentUser = async (): Promise<User> => {
+  const response = await fetch(`${USERS_API_ENDPOINT}profile/`);
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('User not authenticated');
+    }
+    if (response.status === 403) {
+      throw new Error('User not found');
+    }
+    throw new Error('Failed to fetch current user');
+  }
+  const data: unknown = await response.json();
+  return data as User;
+};
+
 export const fetchUserById = async (userId: string): Promise<User> => {
   const response = await fetch(`${USERS_API_ENDPOINT}${userId}`);
   if (!response.ok) {

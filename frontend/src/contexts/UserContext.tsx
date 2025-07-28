@@ -1,6 +1,6 @@
-import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUsers, User } from '@/services/users';
+import { fetchCurrentUser, User } from '@/services/users';
 
 interface UserContextType {
   currentUser: User | null;
@@ -17,31 +17,28 @@ interface UserProviderProps {
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const {
-    data: users,
+    data: currentUser,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on authentication errors
+      if (error.message === 'User not authenticated' || error.message === 'User not found') {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
-  const currentUser = useMemo(() => {
-    // TODO: Replace this with actual authentication logic
-    // For now, we default to the first user in the database
-    if (users && users.length > 0) {
-      console.log('Defaulting to first user:', users[0]);
-      return users[0];
-    }
-    return null;
-  }, [users]);
-
   const value: UserContextType = {
-    currentUser,
+    currentUser: currentUser || null,
     isLoading,
-    error: error?.message || (users?.length === 0 ? 'No users found in database' : null),
+    error: error?.message || null,
     refetch,
   };
 
@@ -55,19 +52,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 /**
  * Custom hook to access the current user
  *
- * Uses React Query for efficient data fetching with caching and invalidation.
+ * Uses React Query to fetch the current authenticated user from the /profile endpoint.
+ * The backend determines the current user based on authentication headers.
  *
- * TODO: This currently defaults to the first user in the database.
- * Replace with proper authentication logic that:
- * 1. Checks for stored auth tokens/session
- * 2. Validates user session with backend
- * 3. Handles login/logout flows
- * 4. Redirects to login if not authenticated
+ * TODO: Handle authentication flow properly:
+ * 1. Redirect to login page when user is not authenticated (401/403 errors), this
+ *    might be default behavior when using oauth-proxy.
+ * 2. Implement proper login/logout flows, need to determine oauth-proxy logout flow
+ * 3. Handle token refresh and session management this may not be needed as oauth-proxy
+ *    will handle this in our current implementation.
  *
  * @returns {UserContextType} Object containing:
- *   - currentUser: The current user object or null
+ *   - currentUser: The current authenticated user object or null
  *   - isLoading: Loading state from React Query
- *   - error: Error message if any
+ *   - error: Error message if any (including authentication errors)
  *   - refetch: Function to manually refetch user data
  */
 export const useCurrentUser = (): UserContextType => {

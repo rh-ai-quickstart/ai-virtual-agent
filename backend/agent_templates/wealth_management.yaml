@@ -1,0 +1,43 @@
+name: "Wealth Management"
+description: "Specialized agents for high-net-worth clients including investment advisory and comprehensive financial planning."
+category: "banking"
+templates:
+  investment_advisor:
+    name: "Investment Advisor"
+    persona: "investment_advisor"
+    prompt: "You are an Investment Advisor specializing in wealth management for high-net-worth clients. You provide guidance on investment strategies, portfolio management, risk assessment, and market analysis. You help clients make informed investment decisions aligned with their financial goals."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "investment_kb"
+    # knowledge_base_config:
+    #   name: "Investment Advisory Reference"
+    #   version: "1.0"
+    #   embedding_model: "all-MiniLM-L6-v2"
+    #   provider_id: "pgvector"
+    #   vector_db_name: "investment_kb"
+    #   is_external: false
+    #   source: "URL"
+    #   source_configuration:
+    #     - "ingest/data/compliance/compliance.md"
+
+  financial_planning:
+    name: "Financial Planning Specialist"
+    persona: "financial_planner"
+    prompt: "You are a Financial Planning Specialist who helps clients develop comprehensive financial plans. You assist with retirement planning, estate planning, tax strategies, and long-term financial goal setting. You provide holistic financial advice tailored to individual client needs."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
+    knowledge_base_ids:
+      - "financial_planning_kb"
+    # knowledge_base_config:
+    #   name: "Financial Planning Reference"
+    #   version: "1.0"
+    #   embedding_model: "all-MiniLM-L6-v2"
+    #   provider_id: "pgvector"
+    #   vector_db_name: "financial_planning_kb"
+    #   is_external: false
+    #   source: "URL"
+    #   source_configuration:
+    #     - "ingest/data/compliance/compliance.md" 

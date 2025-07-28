@@ -33,6 +33,7 @@ from .routes import (
     users,
     validate,
     virtual_assistants,
+    agent_templates,
 )
 from .utils.logging_config import get_logger, setup_logging
 
@@ -178,6 +179,7 @@ app.include_router(guardrails.router, prefix="/api")
 app.include_router(model_servers.router, prefix="/api")
 app.include_router(llama_stack.router, prefix="/api")
 app.include_router(chat_sessions.router, prefix="/api")
+app.include_router(agent_templates.router, prefix="/api")
 
 
 class SPAStaticFiles(StaticFiles):

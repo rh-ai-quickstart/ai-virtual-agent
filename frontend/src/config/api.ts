@@ -9,6 +9,7 @@ export const KNOWLEDGE_BASES_API_ENDPOINT = '/api/knowledge_bases/';
 export const LLAMA_STACK_KNOWLEDGE_BASES_API_ENDPOINT = '/api/llama_stack/knowledge_bases';
 export const LLAMA_STACK_TOOLS_API_ENDPOINT = '/api/llama_stack/tools';
 export const TOOLS_API_ENDPOINT = '/api/tools/';
+export const MCP_SERVERS_API_ENDPOINT = '/api/mcp_servers/';  // Added this line
 export const AGENTS_API_ENDPOINT = '/api/virtual_assistants/';
 export const CHAT_API_ENDPOINT = '/api/llama_stack/chat';
 export const CHAT_SESSIONS_API_ENDPOINT = '/api/chat_sessions/';
