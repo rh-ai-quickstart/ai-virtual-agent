@@ -1,9 +1,9 @@
 import { Chat } from '@/components/chat';
 import { Page, PageSection } from '@patternfly/react-core';
 import { createFileRoute } from '@tanstack/react-router';
-import { Masthead } from '../components/masthead';
+import { Masthead } from '../../components/masthead';
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_protected/')({
   component: ChatPage,
 });
 

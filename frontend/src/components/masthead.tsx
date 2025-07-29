@@ -22,6 +22,7 @@ import React from 'react';
 
 import { Link, useLocation } from '@tanstack/react-router';
 import { BarsIcon, SunIcon, MoonIcon, ChatIcon, CogIcon } from '@patternfly/react-icons';
+import { useCurrentUser } from '@/contexts/UserContext';
 
 export const themeStorageKey = 'app-theme';
 
@@ -37,6 +38,7 @@ export function Masthead({
   onSidebarToggle,
 }: MastheadProps) {
   const location = useLocation();
+  const { currentUser } = useCurrentUser();
   const [isDarkTheme, setIsDarkTheme] = React.useState(false);
 
   // Load preferred theme from localstorage
@@ -85,25 +87,28 @@ export function Masthead({
             </Flex>
           </Link>
         </NavItem>
-        <NavItem
-          icon={<CogIcon />}
-          itemId={1}
-          isActive={location.pathname.startsWith('/config/')}
-          to="#"
-        >
-          <Link to="/config/agents">
-            <Flex
-              direction={{ default: 'row' }}
-              alignItems={{ default: 'alignItemsCenter' }}
-              gap={{ default: 'gapSm' }}
-            >
-              <FlexItem>
-                <CogIcon />
-              </FlexItem>
-              <FlexItem>Config</FlexItem>
-            </Flex>
-          </Link>
-        </NavItem>
+        {/* Only show Config navigation for admin users */}
+        {currentUser?.role === 'admin' && (
+          <NavItem
+            icon={<CogIcon />}
+            itemId={1}
+            isActive={location.pathname.startsWith('/config/')}
+            to="#"
+          >
+            <Link to="/config/agents">
+              <Flex
+                direction={{ default: 'row' }}
+                alignItems={{ default: 'alignItemsCenter' }}
+                gap={{ default: 'gapSm' }}
+              >
+                <FlexItem>
+                  <CogIcon />
+                </FlexItem>
+                <FlexItem>Config</FlexItem>
+              </Flex>
+            </Link>
+          </NavItem>
+        )}
       </NavList>
     </Nav>
   );

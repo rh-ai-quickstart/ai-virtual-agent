@@ -1,9 +1,9 @@
 import { Nav, NavItem, NavList, Page, PageSidebar, PageSidebarBody } from '@patternfly/react-core';
 import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router';
 import React from 'react';
-import { Masthead } from '../../components/masthead';
+import { Masthead } from '../../../../components/masthead';
 
-export const Route = createFileRoute('/config')({
+export const Route = createFileRoute('/_protected/_admin/config')({
   component: ConfigLayout,
 });
 

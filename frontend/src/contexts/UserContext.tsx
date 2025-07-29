@@ -27,9 +27,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: (failureCount, error) => {
+    retry: (failureCount, error: any) => {
       // Don't retry on authentication errors
-      if (error.message === 'User not authenticated' || error.message === 'User not found') {
+      if (
+        error.message === 'User not authenticated' ||
+        error.message === 'User not found'
+      ) {
         return false;
       }
       return failureCount < 3;
@@ -40,7 +43,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     currentUser: currentUser || null,
     isLoading,
     error: error?.message || null,
-    refetch: () => void refetch(),
+    refetch,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
@@ -50,14 +53,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
  * Custom hook to access the current user
  *
  * Uses React Query to fetch the current authenticated user from the /profile endpoint.
- * The backend determines the current user based on authentication headers.
+ * The backend determines the current user based on OAuth proxy authentication headers.
  *
- * TODO: Handle authentication flow properly:
- * 1. Redirect to login page when user is not authenticated (401/403 errors), this
- *    might be default behavior when using oauth-proxy.
- * 2. Implement proper login/logout flows, need to determine oauth-proxy logout flow
- * 3. Handle token refresh and session management this may not be needed as oauth-proxy
- *    will handle this in our current implementation.
+ * Authentication flow:
+ * - If user is not authenticated (401/403), protected routes will redirect to /oauth/sign_in
+ * - OAuth proxy handles session management and token refresh automatically
+ * - Users are auto-created in the database on first successful authentication
  *
  * @returns {UserContextType} Object containing:
  *   - currentUser: The current authenticated user object or null

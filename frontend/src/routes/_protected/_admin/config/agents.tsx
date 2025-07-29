@@ -27,7 +27,7 @@ import {
   getCategoriesInfo,
 } from '@/services/agent-templates';
 
-export const Route = createFileRoute('/config/agents')({
+export const Route = createFileRoute('/_protected/_admin/config/agents')({
   component: Agents,
 });
 

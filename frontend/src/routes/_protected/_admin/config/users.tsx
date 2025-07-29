@@ -42,7 +42,7 @@ import { ArrowLeftIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
 import type { Ref } from 'react';
 
-export const Route = createFileRoute('/config/users')({
+export const Route = createFileRoute('/_protected/_admin/config/users')({
   component: Users,
   validateSearch: (search: Record<string, unknown>) => {
     return {
