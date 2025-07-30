@@ -1,0 +1,72 @@
+[build-system]
+requires = [
+    "setuptools>=68",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-virtual-agent"
+version = "0.1.0"
+description = "AI Virtual Agent application (backend + frontend tooling)"
+authors = [
+    { name = "AI Virtual Agent Team" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.setuptools]
+# Treat repository root as source tree; include backend, mcpservers, etc.
+package-dir = { "" = "." }
+
+[tool.setuptools.packages.find]
+include = [
+    "backend*",
+    "mcpservers*",
+]
+
+# Formatting / linting tools (mirrors backend/pyproject.toml for convenience)
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+include = '\\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+skip_glob = ["migrations/*"]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+# Only collect unit tests by default (integration tests run via ./run_tests.sh)
+testpaths = [
+    "tests/unit",
+]
+addopts = "-ra --cov=backend --cov-report=term-missing --cov-branch"
+filterwarnings = [
+    "ignore::DeprecationWarning:_pytest.assertion.rewrite*",
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::UserWarning:pydantic.*",
+]
