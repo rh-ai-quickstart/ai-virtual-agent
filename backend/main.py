@@ -27,6 +27,7 @@ from .database import AsyncSessionLocal
 from .routes import (
     agent_templates,
     chat_sessions,
+    debug,
     guardrails,
     knowledge_bases,
     llama_stack,
@@ -171,6 +172,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(debug.router, prefix="/api")
 app.include_router(validate.router)
 app.include_router(users.router, prefix="/api")
 app.include_router(mcp_servers.router, prefix="/api")

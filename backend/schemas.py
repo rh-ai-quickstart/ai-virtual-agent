@@ -40,7 +40,7 @@ class UserRead(UserBase):
     updated_at: Any
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserAgentAssignment(BaseModel):
@@ -104,7 +104,7 @@ class KnowledgeBaseRead(KnowledgeBaseBase):
     status: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Tool Association Info for VirtualAssistant
@@ -160,7 +160,7 @@ class VirtualAssistantRead(VirtualAssistantBase):
     id: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class GuardrailBase(BaseModel):
@@ -179,7 +179,7 @@ class GuardrailRead(GuardrailBase):
     updated_at: Any
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ModelServer Schemas (These seemed largely okay with your models.py)
@@ -207,4 +207,4 @@ class ModelServerRead(ModelServerBase):
     id: UUID4
 
     class Config:
-        orm_mode = True
+        from_attributes = True

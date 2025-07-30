@@ -15,5 +15,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Example backend service configuration for local development
+  # backend:
+  #   build: .
+  #   container_name: ai-va-backend
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://admin:password@db:5432/ai_virtual_assistant
+  #     LOCAL_DEV_ENV_MODE: true  # Enable auth bypass for local development
+  #   ports:
+  #     - '8080:8080'
+  #   depends_on:
+  #     - db
+
 volumes:
   pgdata:
