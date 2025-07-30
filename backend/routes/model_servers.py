@@ -220,14 +220,14 @@ async def sync_model_servers(db: AsyncSession):
             response = await sync_client.models.list()
 
             if isinstance(response, list):
-                models = [item.__dict__ for item in response]
+                modelList = [item.__dict__ for item in response]
             elif isinstance(response, dict):
-                models = response.get("data", [])
+                modelList = response.get("data", [])
             elif hasattr(response, "data"):
-                models = response.data
+                modelList = response.data
             else:
                 logger.warning(f"Unexpected response type: {type(response)}")
-                models = []
+                modelList = []
 
         except Exception as e:
             raise Exception(f"Failed to fetch models from LlamaStack: {str(e)}")
@@ -243,7 +243,7 @@ async def sync_model_servers(db: AsyncSession):
         synced_servers = []
 
         logger.debug("Processing models...")
-        for model in models:
+        for model in modelList:
             try:
                 if not model.get("name"):
                     logger.debug(f"Skipping model without name: {model}")
@@ -280,7 +280,7 @@ async def sync_model_servers(db: AsyncSession):
 
         logger.debug("Checking for model servers to remove...")
         for server_name, server in existing_servers.items():
-            if not any(m.get("name") == server_name for m in models):
+            if not any(m.get("name") == server_name for m in modelList):
                 logger.debug(
                     f"Removing model server that no longer exists: {server_name}"
                 )

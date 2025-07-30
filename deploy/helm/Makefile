@@ -120,7 +120,7 @@ install: namespace depend
 		$(SEED_ADMIN_USER_ARGS) \
 		$(EXTRA_HELM_ARGS)
 	@echo "Waiting for model services and llamastack to deploy. It may take around 10-15 minutes depending on the size of the model..."
-	@oc rollout status deploy/llamastack -n $(NAMESPACE)
+	@oc rollout status deploy/ai-virtual-assistant -n $(NAMESPACE)
 	@echo "$(AI_VIRTUAL_ASSISTANT_CHART) installed successfully"
 
 # Uninstall the deployment and clean up

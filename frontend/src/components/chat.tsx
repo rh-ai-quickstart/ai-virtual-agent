@@ -81,6 +81,10 @@ export function Chat() {
   // Get current user context
   const { currentUser, isLoading: isUserLoading, error: userError, refetch: refetchUser } = useCurrentUser();
 
+  // Get the agent type for the selected agent
+  const selectedAgentObj = availableAgents.find(agent => agent.id === selectedAgent);
+  const agentType = selectedAgentObj?.agent_type === 'ReAct' ? 'ReAct' : 'Regular';
+
   // Use our custom hook for chat functionality - only when we have a valid agent
   const {
     messages: chatMessages,
@@ -90,7 +94,7 @@ export function Chat() {
     isLoading,
     loadSession,
     sessionId,
-  } = useChat(selectedAgent || 'default', {
+  } = useChat(selectedAgent || 'default', agentType, {
     onError: (error: Error) => {
       console.error('Chat error:', error);
       setAnnouncement(`Error: ${error.message}`);

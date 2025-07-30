@@ -97,3 +97,19 @@ class ModelServer(Base):
     model_name = Column(String(255), nullable=False)
     endpoint_url = Column(String(255), nullable=False)
     token = Column(String(255), nullable=True)
+
+
+class AgentTypeEnum(enum.Enum):
+    REGULAR = "Regular"
+    REACT = "ReAct"
+
+
+class AgentType(Base):
+    __tablename__ = "agent_types"
+    
+    agent_id = Column(String(255), primary_key=True)
+    agent_type = Column(Enum(AgentTypeEnum, name="agent_type_enum"), nullable=False, default=AgentTypeEnum.REACT)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

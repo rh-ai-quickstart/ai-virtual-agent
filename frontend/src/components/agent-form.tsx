@@ -8,6 +8,7 @@ import {
   FormHelperText,
   FormSelect,
   FormSelectOption,
+  Switch,
   TextArea,
   TextInput,
   Accordion,
@@ -15,7 +16,6 @@ import {
   AccordionToggle,
   AccordionContent,
   Tooltip,
-  SliderOnChangeEvent,
 } from '@patternfly/react-core';
 import { useForm } from '@tanstack/react-form';
 import { Fragment, useMemo, useState } from 'react';
@@ -63,6 +63,7 @@ interface AgentFormProps {
 // Form interface for internal form state (user-friendly)
 interface AgentFormData {
   name: string;
+  agent_type: string;
   model_name: string;
   prompt: string;
   knowledge_base_ids: string[];
@@ -83,16 +84,17 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
   if (!agent) {
     return {
       name: '',
+      agent_type: 'ReAct', // Default to ReAct
       model_name: '',
-      prompt: '',
+      prompt: 'You are a helpful assistant. Provide clear, concise responses without repetition.',
       knowledge_base_ids: [],
       tool_ids: [],
       sampling_strategy: 'greedy',
-      temperature: 0.1,
+      temperature: 0.0,
       top_p: 0.95,
       top_k: 40,
       max_tokens: 512,
-      repetition_penalty: 0.0,
+      repetition_penalty: 1.0, // XXX: this is specific to vllm, and doesn't work with openai's API in llamastack
       samplingAccordionExpanded: false, // Initialize accordion state
       input_shields: '',
       output_shields: '',
@@ -104,6 +106,7 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
 
   return {
     name: agent.name,
+    agent_type: agent.agent_type || 'ReAct', // Default to ReAct if not specified
     model_name: agent.model_name,
     prompt: agent.prompt,
     knowledge_base_ids: agent.knowledge_base_ids,
@@ -113,7 +116,7 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
     top_p: agent.top_p ?? 0.95,
     top_k: agent.top_k ?? 40,
     max_tokens: agent.max_tokens ?? 512,
-    repetition_penalty: agent.repetition_penalty ?? 0.0,
+    repetition_penalty: agent.repetition_penalty ?? 1.0,
     samplingAccordionExpanded: false, // Initialize accordion state
     input_shields: agent.input_shields?.[0] || '', // Take first shield or empty string
     output_shields: agent.output_shields?.[0] || '', // Take first shield or empty string
@@ -138,6 +141,7 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
 
   return {
     name: formData.name,
+    agent_type: formData.agent_type,
     model_name: formData.model_name,
     prompt: formData.prompt,
     knowledge_base_ids,
@@ -185,7 +189,7 @@ export function AgentForm({
   };
 
   const handleSliderChange = (
-    event: SliderOnChangeEvent,
+    event: any,
     field: any,
     sliderValue: number,
     inputValue: number | undefined,
@@ -343,6 +347,19 @@ export function AgentForm({
                 {field.state.meta.errors.join(', ')}
               </FormHelperText>
             )}
+          </FormGroup>
+        )}
+      </form.Field>
+      <form.Field name="agent_type">
+        {(field) => (
+          <FormGroup label="Agent Type" fieldId="agent-type">
+            <Switch
+              id="agent-type"
+              label="ReAct Agent (ON) / Regular Agent (OFF)"
+              isChecked={field.state.value === 'ReAct'}
+              onChange={(_event, checked) => field.handleChange(checked ? 'ReAct' : 'Regular')}
+              ouiaId="BasicSwitch"
+            />
           </FormGroup>
         )}
       </form.Field>

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 until nc -z "${DB_HOST}" "${DB_PORT}"; do
   echo "Waiting for PostgreSQL to be reachable..."
@@ -7,9 +7,8 @@ done
 
 echo "PostgreSQL is reachable!"
 
-
 cd backend && \
 alembic upgrade head && \
 cd ..
 
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
+uvicorn --log-level=debug backend.main:app --host 0.0.0.0 --port 8000

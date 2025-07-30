@@ -12,6 +12,7 @@ import { getSuitesByCategory, getSuiteDetails as getSuiteDetailsApi, initializeS
 export interface Agent {
   id: string;
   name: string;
+  agent_type?: string;
   model_name: string;
   prompt: string;
   tools: ToolAssociationInfo[];
@@ -32,6 +33,7 @@ export interface Agent {
 // Type def for creating agents
 export interface NewAgent {
   name: string;
+  agent_type?: string;
   model_name: string;
   prompt: string;
   tools: ToolAssociationInfo[];

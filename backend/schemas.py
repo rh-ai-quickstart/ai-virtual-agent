@@ -127,13 +127,15 @@ class ToolAssociationInfo(BaseModel):
 # VirtualAssistant Schemas
 class VirtualAssistantBase(BaseModel):
     name: str
+    agent_type: Optional[str] = "ReAct"
     prompt: Optional[str] = None
     model_name: Optional[str] = None
     input_shields: Optional[List[str]] = []
     output_shields: Optional[List[str]] = []
-    temperature: Optional[float] = 0.1
-    repetition_penalty: Optional[float] = 1.0
-    max_tokens: Optional[int] = 4096
+    temperature: Optional[float] = 0.0
+    repetition_penalty: Optional[float] = 1.5
+    stop_sequences: Optional[List[str]] = ["\n\n", "Thank you", "I hope this helps", "Let me know if you have any other questions"]
+    max_tokens: Optional[int] = 512
     top_p: Optional[float] = 0.95
     top_k: Optional[int] = 40
     sampling_strategy: Optional[str] = "greedy"

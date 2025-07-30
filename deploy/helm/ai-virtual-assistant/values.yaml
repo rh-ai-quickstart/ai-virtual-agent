@@ -75,10 +75,10 @@ livenessProbe:
   httpGet:
     path: /
     port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
+readinessProbe: {}
+#  httpGet:
+#    path: /
+#    port: http
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -148,7 +148,8 @@ minio:
 
 llama-stack:
   auth:
-    custom:
+    provider_config:
+      type: "custom"
       endpoint: http://ai-virtual-assistant:8887/validate
     access_policy:
     - permit:
@@ -176,6 +177,11 @@ llama-stack:
         resource: vector_db::*
       when: user with admin in roles
       description: users with the admin role can create, update or delete vector_dbs
+    - permit:
+        actions: [create, update, delete]
+        resource: tool_group::*
+      when: user with admin in roles
+      description: users with the admin role can create, update or delete tool_groups
     - forbid:
         actions: [create, update, delete]
       unless: user with admin in roles

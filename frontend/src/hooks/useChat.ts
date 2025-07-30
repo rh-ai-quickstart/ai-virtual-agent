@@ -3,6 +3,48 @@ import { LlamaStackParser, extractSessionId } from '../adapters/llamaStackAdapte
 import { CHAT_API_ENDPOINT } from '../config/api';
 import { fetchChatSession } from '@/services/chat-sessions';
 
+// Function for processing streaming ReAct responses (when user types question)
+export const processStreamingReActResponse = (content: string): string => {
+  if (content.trim().startsWith('{')) {
+    try {
+      const jsonData = JSON.parse(content.trim());
+      if (jsonData.thought) {
+        const thought = String(jsonData.thought);
+        const answer = jsonData.answer ? String(jsonData.answer) : "";
+        if (answer) {
+          return `🤔 **Thinking:** ${thought}\n\n${answer}`;
+        } else {
+          return `🤔 **Thinking:** ${thought}`;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse streaming ReAct JSON:', content, e);
+    }
+  }
+  return content;
+};
+
+// Function for processing stored ReAct responses (page refresh) - IDENTICAL to streaming
+const processStoredReActResponse = (content: string): string => {
+  if (content.trim().startsWith('{')) {
+    try {
+      const jsonData = JSON.parse(content.trim());
+      if (jsonData.thought) {
+        const thought = String(jsonData.thought);
+        const answer = jsonData.answer ? String(jsonData.answer) : "";
+        if (answer) {
+          return `🤔 **Thinking:** ${thought}\n\n${answer}`;
+        } else {
+          return `🤔 **Thinking:** ${thought}`;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse stored ReAct JSON:', content, e);
+    }
+  }
+  return content;
+};
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -18,7 +60,7 @@ export interface UseLlamaChatOptions {
 /**
  * Simple chat hook that directly handles LlamaStack without the AI SDK overhead
  */
-export function useChat(agentId: string, options?: UseLlamaChatOptions) {
+export function useChat(agentId: string, agentType: 'Regular' | 'ReAct' = 'Regular', options?: UseLlamaChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,12 +92,21 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
 
         // Convert messages to our format
         const convertedMessages: ChatMessage[] = sessionDetail.messages.map(
-          (msg: SessionMessage, index: number) => ({
-            id: `${msg.role}-${sessionId}-${index}`,
-            role: msg.role,
-            content: msg.content,
-            timestamp: new Date(),
-          })
+          (msg: SessionMessage, index: number) => {
+            let processedContent = msg.content;
+            
+            // Process assistant messages that might contain raw JSON
+            if (msg.role === 'assistant') {
+              processedContent = processStoredReActResponse(msg.content);
+            }
+            
+            return {
+              id: `${msg.role}-${sessionId}-${index}`,
+              role: msg.role,
+              content: processedContent,
+              timestamp: new Date(),
+            };
+          }
         );
 
         setMessages(convertedMessages);
@@ -127,6 +178,8 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
 
         setMessages((prev) => [...prev, assistantMessage]);
 
+
+
         // Process stream
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -165,13 +218,22 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
               }
 
               // Parse content
-              const parsed = LlamaStackParser.parse(data);
+              const parsed = LlamaStackParser.parse(data, agentType);
               if (parsed) {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastMsg = updated[updated.length - 1];
                   if (lastMsg && lastMsg.role === 'assistant') {
-                    lastMsg.content += parsed;
+                    // For regular agents, accumulate content (same as ReAct but without special handling)
+                    if (agentType === 'Regular') {
+                      lastMsg.content += parsed;
+                    } else if (parsed.includes('🤔 **Thinking:**')) {
+                      // For ReAct agents, replace content for complete responses
+                      lastMsg.content = parsed;
+                    } else {
+                      // For ReAct agents, append for streaming responses
+                      lastMsg.content += parsed;
+                    }
                   }
                   return updated;
                 });
@@ -190,7 +252,7 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
         setIsLoading(false);
       }
     },
-    [agentId, messages, sessionId, isLoading, options]
+    [agentId, messages, sessionId, isLoading, options, agentType]
   );
 
   const handleSubmit = useCallback(
