@@ -87,13 +87,16 @@ lint-frontend: ## Run frontend linters (eslint & prettier)
 
 lint: lint-backend lint-frontend ## Run all linters
 
-test-unit: ## Run backend unit tests
-	pytest -q
+test-unit: ## Run unit tests only
+	./scripts/ci/run_tests.sh --unit
 
-test-int: ## Run integration tests (tavern)
-	./scripts/ci/run_tests.sh
+test-int: ## Run integration tests only
+	./scripts/ci/run_tests.sh --integration
 
-test: lint test-unit test-int ## Run full test & lint suite
+test-all: ## Run all tests (unit + integration)
+	./scripts/ci/run_tests.sh --all
+
+test: lint test-all ## Run full test & lint suite
 
 # -----------------------------------------------------------------------------
 # Container / Compose helpers

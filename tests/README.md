@@ -18,11 +18,32 @@ This directory contains both unit and integration tests for the AI Virtual Agent
 
 ## Quick Start
 
+### Using Makefile Commands (Recommended)
+
+The easiest way to run tests is through the Makefile from the project root:
+
+```bash
+# Run unit tests only
+make test-unit
+
+# Run integration tests only
+make test-int
+
+# Run all tests (unit + integration)
+make test-all
+
+# Run linters and all tests
+make test
+```
+
 ### Unit Tests Only
 
 ```bash
 # Run unit tests (no services required)
 ./run_tests.sh --unit
+
+# Or using Makefile
+make test-unit
 ```
 
 ### 1. Start Services Manually
@@ -39,6 +60,9 @@ Once services are running:
 ```bash
 # Run only integration tests
 ./run_tests.sh --integration
+
+# Or using Makefile
+make test-int
 
 # Run specific test file
 ./run_tests.sh tests/integration/test_chat_pipeline.tavern.yaml
@@ -58,6 +82,12 @@ TEST_FRONTEND_URL="http://localhost:3000" ./run_tests.sh --integration
 
 # Or explicitly
 ./run_tests.sh --all
+
+# Or using Makefile
+make test-all
+
+# Run all tests with linting
+make test
 ```
 
 ## Test Configuration
@@ -147,6 +177,20 @@ TEST_FRONTEND_URL="http://localhost:3000" ./run_tests.sh --integration
 ./run_tests.sh tests/unit/test_specific.py  # Run specific test file
 ```
 
+### Makefile Commands
+
+From the project root directory:
+
+```bash
+make test-unit    # Run only unit tests
+make test-int     # Run only integration tests
+make test-all     # Run all tests (unit + integration)
+make test         # Run linters and all tests
+make lint         # Run all linters
+make lint-backend # Run backend linters only
+make lint-frontend # Run frontend linters only
+```
+
 ## Service Management
 
 ### Unit Tests
@@ -227,6 +271,8 @@ before_script:
   - sleep 30  # Wait for services to start
 script:
   - ./run_tests.sh --all
+  # Or using Makefile
+  - make test-all
 
 # GitHub Actions example
 - name: Start Services
@@ -235,6 +281,8 @@ script:
   run: sleep 30
 - name: Run All Tests
   run: ./run_tests.sh --all
+  # Or using Makefile
+  # run: make test-all
 ```
 
 For CI environments that want to run tests separately:
@@ -243,14 +291,18 @@ For CI environments that want to run tests separately:
 # Run unit tests first (fast, no services needed)
 - name: Run Unit Tests
   run: ./run_tests.sh --unit
+  # Or using Makefile
+  # run: make test-unit
 
 # Then start services and run integration tests
 - name: Start Services
-  run: ./local_dev/run_local.sh &
+  run: ./scripts/dev/run_local.sh &
 - name: Wait for Services
   run: sleep 30
 - name: Run Integration Tests
   run: ./run_tests.sh --integration
+  # Or using Makefile
+  # run: make test-int
 ```
 
 For more detailed configuration options, see [Config](CONFIG.md).
