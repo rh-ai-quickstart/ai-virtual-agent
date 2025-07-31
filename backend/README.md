@@ -1,6 +1,6 @@
-# Backend Technical Reference
+# Backend
 
-FastAPI backend for the AI Virtual Assistant project. For complete setup instructions, see the [Contributing Guide](../CONTRIBUTING.md).
+FastAPI backend for the AI Virtual Agent Kickstart project. For complete setup instructions, see the [Contributing Guide](../CONTRIBUTING.md).
 
 ## Quick API Access
 
@@ -34,7 +34,7 @@ backend/
 ### Database User Creation (PostgreSQL CLI)
 ```sql
 CREATE ROLE myuser WITH LOGIN PASSWORD 'mypassword';
-GRANT ALL PRIVILEGES ON DATABASE ai_virtual_assistant TO myuser;
+GRANT ALL PRIVILEGES ON DATABASE ai_virtual_agent TO myuser;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
 ```

@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - endpoints
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "ai-virtual-agent.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "ai-virtual-agent.serviceAccountName" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: proxy-can-create-token-reviews-{{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: {{ include "ai-virtual-agent.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+

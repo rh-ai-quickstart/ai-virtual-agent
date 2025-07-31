@@ -9,7 +9,7 @@ Key Features:
 - Direct LlamaStack toolgroups API integration
 - Create, read, and delete MCP server configurations
 - No local database storage - all data managed by LlamaStack
-- Integration with virtual assistants for enhanced capabilities
+- Integration with virtual agents for enhanced capabilities
 """
 
 from typing import List

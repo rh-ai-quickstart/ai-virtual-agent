@@ -23,7 +23,15 @@ export const Route = createRootRoute({
   errorComponent: ({ error }) => (
     <div style={{ padding: '20px', textAlign: 'center' }}>
       <h2>Something went wrong!</h2>
-      <pre style={{ color: 'red', textAlign: 'left', background: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
+      <pre
+        style={{
+          color: 'red',
+          textAlign: 'left',
+          background: '#f5f5f5',
+          padding: '10px',
+          borderRadius: '4px',
+        }}
+      >
         {error.message}
       </pre>
       <button
@@ -34,7 +42,7 @@ export const Route = createRootRoute({
           color: 'white',
           border: 'none',
           borderRadius: '4px',
-          cursor: 'pointer'
+          cursor: 'pointer',
         }}
       >
         Reload Page

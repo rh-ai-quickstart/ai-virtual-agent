@@ -1,5 +1,4 @@
-import { EmbeddingModel, KnowledgeBase, Provider } from '@/types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { KnowledgeBase } from '@/types';
 import {
   Card,
   CardBody,
@@ -14,66 +13,39 @@ import {
 import { PlusIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
 import { KnowledgeBaseForm } from './knowledge-base-form';
-import { fetchEmbeddingModels, fetchProviders } from '@/services/models';
-import { createKnowledgeBase } from '@/services/knowledge-bases';
+import { useModels, useKnowledgeBases } from '@/hooks';
 
 export function NewKnowledgeBaseCard() {
   const [isOpen, setIsOpen] = useState(false);
-  const queryClient = useQueryClient();
 
+  // Use custom hooks
   const {
-    data: embeddingModels,
-    isLoading: isLoadingModels,
-    error: modelsError,
-  } = useQuery<EmbeddingModel[], Error>({
-    queryKey: ['models'],
-    queryFn: fetchEmbeddingModels,
-  });
-
-  const {
-    data: providers,
-    isLoading: isLoadingProviders,
-    error: providersError,
-  } = useQuery<Provider[], Error>({
-    queryKey: ['providers'],
-    queryFn: fetchProviders,
-  });
-
-  const kbMutation = useMutation<
-    KnowledgeBase,
-    Error,
-    Omit<KnowledgeBase, 'created_at' | 'updated_at'>
-  >({
-    mutationFn: createKnowledgeBase,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['knowledgeBases'] });
-      setIsOpen(false);
-      console.log('Knowledge base created successfully');
-    },
-    onError: (error) => {
-      console.error('Error creating knowledge base:', error);
-    },
-  });
+    embeddingModels,
+    isLoadingEmbeddingModels,
+    embeddingModelsError,
+    providers,
+    isLoadingProviders,
+    providersError,
+  } = useModels();
+  const { createKnowledgeBase, isCreating, createError } = useKnowledgeBases();
 
   const handleCreateKb = (values: KnowledgeBase) => {
     // Strip out fields that shouldn't be sent to the API
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { created_at, updated_at, ...createPayload } = values;
-    kbMutation.mutate(createPayload);
+    void (async () => {
+      try {
+        await createKnowledgeBase(createPayload);
+        setIsOpen(false);
+        console.log('Knowledge base created successfully');
+      } catch (error) {
+        console.error('Error creating knowledge base:', error);
+      }
+    })();
   };
 
   return (
     <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
-      {kbMutation.isSuccess && (
-        <FlexItem>
-          <Alert
-            timeout={5000}
-            variant="success"
-            title="Knowledge base created successfully!"
-            className="pf-v6-u-mb-sm"
-          />
-        </FlexItem>
-      )}
       <FlexItem>
         <Card isExpanded={isOpen} isClickable={!isOpen}>
           <CardHeader
@@ -104,28 +76,28 @@ export function NewKnowledgeBaseCard() {
                   <KnowledgeBaseForm
                     embeddingModelProps={{
                       models: embeddingModels ?? [],
-                      isLoadingModels,
-                      modelsError,
+                      isLoadingModels: isLoadingEmbeddingModels,
+                      modelsError: embeddingModelsError,
                     }}
                     providersProps={{
                       providers: providers ?? [],
                       isLoadingProviders,
                       providersError,
                     }}
-                    isSubmitting={kbMutation.isPending}
+                    isSubmitting={isCreating}
                     onSubmit={handleCreateKb}
                     onCancel={() => setIsOpen(false)}
-                    error={kbMutation.isError ? kbMutation.error : null}
+                    error={createError}
                   />
                 </FlexItem>
-                {kbMutation.isError && (
+                {createError && (
                   <FlexItem>
                     <Alert
                       variant="danger"
                       title="Failed to create knowledge base"
                       className="pf-v6-u-mt-md"
                     >
-                      {kbMutation.error?.message || 'An unexpected error occurred.'}
+                      {createError?.message || 'An unexpected error occurred.'}
                     </Alert>
                   </FlexItem>
                 )}

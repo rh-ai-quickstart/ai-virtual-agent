@@ -1,10 +1,12 @@
 """
-FastAPI main application module for AI Virtual Assistant.
+FastAPI main application module for AI Virtual Agent Kickstart.
 
-This module initializes the FastAPI application, configures middleware,
-registers API routes, and handles static file serving for the frontend.
-The app provides a complete REST API for managing virtual assistants,
-knowledge bases, tools, and chat interactions.
+This module initializes and configures the FastAPI application, including
+middleware, routes, database connections, and API documentation. It serves as
+the entry point for the backend API.
+
+The app provides a complete REST API for managing virtual agents,
+knowledge bases, chat sessions, and integration with LlamaStack for AI capabilities.
 """
 
 import asyncio
@@ -23,6 +25,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import AsyncSessionLocal
 from .routes import (
+    agent_templates,
     chat_sessions,
     guardrails,
     knowledge_bases,
@@ -33,7 +36,6 @@ from .routes import (
     users,
     validate,
     virtual_assistants,
-    agent_templates,
 )
 from .utils.logging_config import get_logger, setup_logging
 
@@ -74,8 +76,8 @@ def wait_for_service_ready(
                 for subset in endpoints.subsets:
                     if subset.addresses:
                         logger.info(
-                            f"Service '{service_name}' in namespace \
-                                '{namespace}' is ready."
+                            f"Service '{service_name}' in namespace "
+                            f"'{namespace}' is ready."
                         )
                         return True
 
@@ -84,8 +86,8 @@ def wait_for_service_ready(
                 logger.error(f"Error checking endpoints: {e}")
 
         logger.info(
-            f"Waiting for service '{service_name}' in namespace \
-                '{namespace}' to be ready..."
+            f"Waiting for service '{service_name}' in namespace "
+            f"'{namespace}' to be ready..."
         )
         time.sleep(interval_seconds)
 
@@ -115,7 +117,7 @@ async def startup_tasks():
     """Run all startup tasks after the server is ready."""
     logger.info("Starting post-startup tasks...")
 
-    service_name = "ai-virtual-assistant"
+    service_name = "ai-virtual-agent"
     namespace = get_incluster_namespace()
 
     if wait_for_service_ready(service_name, namespace):

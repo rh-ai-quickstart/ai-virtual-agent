@@ -28,7 +28,7 @@ import {
   ModalBody,
   ModalFooter,
 } from '@patternfly/react-core';
-import { Agent } from '@/routes/config/agents';
+import { Agent } from '@/types/agent';
 import { fetchUserAgents } from '@/services/agents';
 import { useChat } from '@/hooks/useChat';
 import { useCurrentUser } from '@/contexts/UserContext';
@@ -39,8 +39,8 @@ import {
   ChatSessionSummary,
 } from '@/services/chat-sessions';
 import { useMutation } from '@tanstack/react-query';
-import botAvatar from "../assets/img/bot-avatar.svg";
-import userAvatar from "../assets/img/user-avatar.svg";
+import botAvatar from '../assets/img/bot-avatar.svg';
+import userAvatar from '../assets/img/user-avatar.svg';
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -79,10 +79,15 @@ export function Chat() {
   const historyRef = React.useRef<HTMLButtonElement>(null);
 
   // Get current user context
-  const { currentUser, isLoading: isUserLoading, error: userError, refetch: refetchUser } = useCurrentUser();
+  const {
+    currentUser,
+    isLoading: isUserLoading,
+    error: userError,
+    refetch: refetchUser,
+  } = useCurrentUser();
 
   // Get the agent type for the selected agent
-  const selectedAgentObj = availableAgents.find(agent => agent.id === selectedAgent);
+  const selectedAgentObj = availableAgents.find((agent) => agent.id === selectedAgent);
   const agentType = selectedAgentObj?.agent_type === 'ReAct' ? 'ReAct' : 'Regular';
 
   // Use our custom hook for chat functionality - only when we have a valid agent

@@ -223,14 +223,14 @@ The test runner is designed to work in CI/CD environments where services are pre
 ```bash
 # GitLab CI example
 before_script:
-  - ./local_dev/run_local.sh &
+  - ./scripts/dev/run_local.sh &
   - sleep 30  # Wait for services to start
 script:
   - ./run_tests.sh --all
 
 # GitHub Actions example
 - name: Start Services
-  run: ./local_dev/run_local.sh &
+  run: ./scripts/dev/run_local.sh &
 - name: Wait for Services
   run: sleep 30
 - name: Run All Tests

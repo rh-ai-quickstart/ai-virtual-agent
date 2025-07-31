@@ -46,13 +46,15 @@ export function MCPServerForm({
     defaultValues: initialData,
     onSubmit: ({ value }) => {
       // Convert configuration from string to object if needed
-      let finalValue = { ...value };
-      
+      const finalValue = { ...value };
+
       // If configuration is a string, try to parse it as JSON
       if (typeof value.configuration === 'string') {
         try {
-          finalValue.configuration = value.configuration ? JSON.parse(value.configuration) : {};
-        } catch (e) {
+          finalValue.configuration = value.configuration
+            ? (JSON.parse(value.configuration) as Record<string, unknown>)
+            : {};
+        } catch (_e) {
           // If parsing fails, keep it as empty object
           finalValue.configuration = {};
         }
@@ -71,12 +73,12 @@ export function MCPServerForm({
       }}
     >
       {error && <Alert variant="danger" title={error.message} />}
-      
+
       {/* NEW: Toolgroup ID field */}
       <form.Field
         name="toolgroup_id"
-        validators={{ 
-          onChange: ({ value }) => (!value ? 'Toolgroup ID is required' : undefined) 
+        validators={{
+          onChange: ({ value }) => (!value ? 'Toolgroup ID is required' : undefined),
         }}
       >
         {(field) => (
@@ -107,11 +109,11 @@ export function MCPServerForm({
           </FormGroup>
         )}
       </form.Field>
-      
+
       <form.Field
         name="name"
-        validators={{ 
-          onChange: ({ value }) => (!value ? 'Name is required' : undefined) 
+        validators={{
+          onChange: ({ value }) => (!value ? 'Name is required' : undefined),
         }}
       >
         {(field) => (
@@ -142,8 +144,8 @@ export function MCPServerForm({
       {/* Description now required in the new schema */}
       <form.Field
         name="description"
-        validators={{ 
-          onChange: ({ value }) => (!value ? 'Description is required' : undefined) 
+        validators={{
+          onChange: ({ value }) => (!value ? 'Description is required' : undefined),
         }}
       >
         {(field) => (
@@ -173,7 +175,7 @@ export function MCPServerForm({
 
       <form.Field
         name="endpoint_url"
-        validators={{ 
+        validators={{
           onChange: ({ value }) => {
             if (!value) return 'Endpoint URL is required';
             try {
@@ -182,7 +184,7 @@ export function MCPServerForm({
             } catch {
               return 'Please enter a valid URL';
             }
-          }
+          },
         }}
       >
         {(field) => (
@@ -222,7 +224,7 @@ export function MCPServerForm({
             } catch {
               return 'Invalid JSON format';
             }
-          }
+          },
         }}
       >
         {(field) => (
@@ -230,11 +232,11 @@ export function MCPServerForm({
             <TextArea
               id="mcp-form-config"
               value={
-                typeof field.state.value === 'string' 
-                  ? field.state.value 
+                typeof field.state.value === 'string'
+                  ? field.state.value
                   : JSON.stringify(field.state.value || {}, null, 2)
               }
-              onChange={(_e, v) => field.handleChange(v as any)}
+              onChange={(_e, v) => field.handleChange(v as unknown as Record<string, unknown>)}
               validated={
                 !field.state.meta.isTouched
                   ? 'default'
@@ -257,27 +259,26 @@ export function MCPServerForm({
       <ActionGroup>
         <form.Subscribe
           selector={(state) => [
-            state.isSubmitting, 
+            state.isSubmitting,
             state.values.toolgroup_id,
             state.values.name,
             state.values.description,
             state.values.endpoint_url,
-            state.errors
+            state.errors,
           ]}
         >
           {([isSubmittingForm, toolgroup_id, name, description, endpoint_url, errors]) => {
             // Check if all required fields are filled
-            const hasRequiredFields = Boolean(toolgroup_id) && 
-                                    Boolean(name) && 
-                                    Boolean(description) && 
-                                    Boolean(endpoint_url);
-            
+            const hasRequiredFields =
+              Boolean(toolgroup_id) &&
+              Boolean(name) &&
+              Boolean(description) &&
+              Boolean(endpoint_url);
+
             // Check if there are any validation errors
             const hasErrors = Array.isArray(errors) && errors.length > 0;
-            
-            const shouldDisable = Boolean(isSubmittingForm) || 
-                                !hasRequiredFields ||
-                                hasErrors;
+
+            const shouldDisable = Boolean(isSubmittingForm) || !hasRequiredFields || hasErrors;
 
             return (
               <Button

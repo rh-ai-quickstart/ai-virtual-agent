@@ -1,14 +1,16 @@
 """
-SQLAlchemy database models for the AI Virtual Assistant application.
+SQLAlchemy database models for the AI Virtual Agent Kickstart application.
 
 This module defines the database schema and relationships for:
-- Users and role-based access control
-- Knowledge bases for RAG functionality
-- Virtual assistants and chat sessions
-- Guardrails for AI safety
-- Model servers for LLM providers
+- Users and authentication
+- Chat sessions and conversation history
+- Knowledge bases and document storage
+- Virtual agents and chat sessions
+- MCP servers and tool configurations
+- Agent templates and configurations
 
-Note: MCP servers are now managed directly through LlamaStack without local storage.
+All models use async SQLAlchemy with PostgreSQL and include
+appropriate indexes and relationships for optimal performance.
 """
 
 import enum

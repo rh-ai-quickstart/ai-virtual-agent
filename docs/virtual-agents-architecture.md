@@ -9,7 +9,7 @@
   - [Agent Management Flow (CRUD Operations)](#agent-management-flow-crud-operations)
   - [Chat System](#chat-system)
 - [API Endpoints](#api-endpoints)
-  - [Backend Virtual Assistant Routes (`/backend/routes/virtual_assistants.py`)](#backend-virtual-assistant-routes-backendroutesvirtual_assistantspy)
+  - [Backend Virtual Agent Routes (`/backend/routes/virtual_assistants.py`)](#backend-virtual-agent-routes-backendroutesvirtual_assistantspy)
   - [Chat Integration Routes (`/backend/routes/chat.py`)](#chat-integration-routes-backendrouteschatpy)
 - [Frontend Implementation](#frontend-implementation)
   - [Chat Implementation Details](#chat-implementation-details)
@@ -28,7 +28,7 @@
 
 ## Overview
 
-This guide explains how virtual agents (AI assistants) work in the AI Virtual Assistant application, covering the complete data flow from creation to deletion, the integration between frontend and backend systems, and the relationship with LlamaStack for agent management.
+This guide explains how virtual agents (AI assistants) work in the AI Virtual Agent Kickstart application, covering the complete data flow from creation to deletion, the integration between frontend and backend systems, and the relationship with LlamaStack for agent management.
 
 ## System Architecture
 
@@ -227,7 +227,7 @@ sequenceDiagram
 
 ## API Endpoints
 
-### Backend Virtual Assistant Routes (`/backend/routes/virtual_assistants.py`)
+### Backend Virtual Agent Routes (`/backend/routes/virtual_assistants.py`)
 
 | Method | Endpoint | Description | Integration |
 |--------|----------|-------------|-------------|

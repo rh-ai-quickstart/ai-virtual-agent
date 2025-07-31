@@ -57,12 +57,7 @@ export function MCPServerCard({
 
   const dropdownItems = (
     <>
-      <DropdownItem
-        icon={<EditIcon />}
-        value={0}
-        key="edit"
-        onClick={handleEditServer}
-      >
+      <DropdownItem icon={<EditIcon />} value={0} key="edit" onClick={handleEditServer}>
         Edit
       </DropdownItem>
       <DropdownItem

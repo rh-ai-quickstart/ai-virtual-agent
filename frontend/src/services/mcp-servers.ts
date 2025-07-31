@@ -10,9 +10,7 @@ export const fetchMCPServers = async (): Promise<MCPServer[]> => {
   return data as MCPServer[];
 };
 
-export const createMCPServer = async (
-  newServer: MCPServerCreate
-): Promise<MCPServer> => {
+export const createMCPServer = async (newServer: MCPServerCreate): Promise<MCPServer> => {
   const response = await fetch(MCP_SERVERS_API_ENDPOINT, {
     method: 'POST',
     headers: {

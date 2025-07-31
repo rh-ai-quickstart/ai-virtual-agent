@@ -1,15 +1,8 @@
 import { USERS_API_ENDPOINT } from '@/config/api';
+import { User } from '@/types/auth';
 
-export interface User {
-  id: string;
-  email: string;
-  username: string;
-  role?: string;
-  agent_ids?: string[];
-  created_at: string;
-  updated_at: string;
-  // Add other relevant user properties that might be returned by the API
-}
+// Re-export types for backward compatibility
+export type { User } from '@/types/auth';
 
 export const fetchUsers = async (): Promise<User[]> => {
   const response = await fetch(USERS_API_ENDPOINT);

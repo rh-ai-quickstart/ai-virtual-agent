@@ -1,8 +1,9 @@
 """
-Centralized logging configuration for the AI Virtual Assistant backend.
+Centralized logging configuration for the AI Virtual Agent Kickstart backend.
 
-This module provides a consistent logging setup across all backend components,
-with proper formatting, levels, and optional file output configuration.
+This module provides consistent logging setup across all backend components,
+including structured logging, log levels, and formatting for production
+and development environments.
 """
 
 import logging

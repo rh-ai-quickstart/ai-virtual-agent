@@ -1,25 +1,8 @@
 import { CHAT_SESSIONS_API_ENDPOINT } from '@/config/api';
+import { ChatSessionSummary, ChatSessionDetail } from '@/types/chat';
 
-export interface ChatSessionSummary {
-  id: string;
-  title: string;
-  agent_name: string;
-  updated_at: string;
-  created_at: string;
-}
-
-export interface ChatSessionDetail {
-  id: string;
-  title: string;
-  agent_name: string;
-  agent_id: string;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export types for backward compatibility
+export type { ChatSessionSummary, ChatSessionDetail } from '@/types/chat';
 
 export async function fetchChatSessions(agentId?: string): Promise<ChatSessionSummary[]> {
   const url = agentId

@@ -1,11 +1,4 @@
-import { Agent, NewAgent } from '@/routes/config/agents';
-import { createAgent } from '@/services/agents';
-import { fetchLlamaStackKnowledgeBases } from '@/services/knowledge-bases';
-import { fetchModels } from '@/services/models';
-import { fetchShields } from '@/services/shields';
-import { fetchTools } from '@/services/tools';
-import { LSKnowledgeBase, Model, ToolGroup } from '@/types';
-import { Shield } from '@/services/shields';
+import { NewAgent } from '@/types/agent';
 import {
   Alert,
   Card,
@@ -18,83 +11,30 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { PlusIcon } from '@patternfly/react-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAgents } from '@/hooks';
 import { useState } from 'react';
 import { AgentForm } from './agent-form';
 
 export function NewAgentCard() {
   const [isOpen, setIsOpen] = useState(false);
-  // Or whatever name fits your routing setup e.g. ConfigAgents
-  const queryClient = useQueryClient();
 
-  // Query for AI Models
-  const {
-    data: models,
-    isLoading: isLoadingModels,
-    error: modelsError,
-  } = useQuery<Model[], Error>({
-    queryKey: ['models'],
-    queryFn: fetchModels,
-  });
-  // Query for Knowledge bases
-  const {
-    data: knowledgeBases,
-    isLoading: isLoadingKnowledgeBases,
-    error: knowledgeBasesError,
-  } = useQuery<LSKnowledgeBase[], Error>({
-    queryKey: ['knowledgeBases'],
-    queryFn: fetchLlamaStackKnowledgeBases,
-  });
-  // Query for tools
-  const {
-    data: tools,
-    isLoading: isLoadingTools,
-    error: toolsError,
-  } = useQuery<ToolGroup[], Error>({
-    queryKey: ['tools'],
-    queryFn: fetchTools,
-  });
-
-  // Query for shields
-  const {
-    data: shields,
-    isLoading: isLoadingShields,
-    error: shieldsError,
-  } = useQuery<Shield[], Error>({
-    queryKey: ['shields'],
-    queryFn: fetchShields,
-  });
-
-  // Mutation for creating an Agent
-  const agentMutation = useMutation<Agent, Error, NewAgent>({
-    mutationFn: createAgent,
-    onSuccess: async (newAgentData) => {
-      await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      setIsOpen(false);
-      console.log('Agent created successfully:', newAgentData);
-    },
-    onError: (error) => {
-      console.error('Error creating agent:', error);
-      // Show an error message
-    },
-  });
+  // Use agents hook for creating agents
+  const { createAgent, isCreating, createError } = useAgents();
 
   const handleCreateAgent = (values: NewAgent) => {
-    agentMutation.mutate(values);
+    void (async () => {
+      try {
+        await createAgent(values);
+        setIsOpen(false);
+        console.log('Agent created successfully');
+      } catch (error) {
+        console.error('Error creating agent:', error);
+      }
+    })();
   };
 
   return (
     <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
-      {agentMutation.isSuccess && (
-        <FlexItem>
-          <Alert
-            timeout={5000}
-            variant="success"
-            title="Agent created successfully!"
-            className="pf-v6-u-mb-sm"
-          />
-        </FlexItem>
-      )}
       <FlexItem>
         <Card isExpanded={isOpen} isClickable={!isOpen}>
           <CardHeader
@@ -123,39 +63,19 @@ export function NewAgentCard() {
               <Flex direction={{ default: 'column' }} gap={{ default: 'gapLg' }}>
                 <FlexItem>
                   <AgentForm
-                    modelsProps={{
-                      models: models || [],
-                      isLoadingModels,
-                      modelsError,
-                    }}
-                    knowledgeBasesProps={{
-                      knowledgeBases: knowledgeBases || [],
-                      isLoadingKnowledgeBases,
-                      knowledgeBasesError,
-                    }}
-                    toolsProps={{
-                      tools: tools || [],
-                      isLoadingTools,
-                      toolsError,
-                    }}
-                    shieldsProps={{
-                      shields: shields || [],
-                      isLoadingShields,
-                      shieldsError,
-                    }}
                     onSubmit={handleCreateAgent}
-                    isSubmitting={agentMutation.isPending}
+                    isSubmitting={isCreating}
                     onCancel={() => setIsOpen(false)}
                   />
                 </FlexItem>
-                {agentMutation.isError && (
+                {createError && (
                   <FlexItem>
                     <Alert
                       variant="danger"
                       title="Failed to create agent"
                       className="pf-v6-u-mt-md"
                     >
-                      {agentMutation.error?.message || 'An unexpected error occurred.'}
+                      {createError?.message || 'An unexpected error occurred.'}
                     </Alert>
                   </FlexItem>
                 )}

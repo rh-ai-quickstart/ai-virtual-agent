@@ -1,27 +1,29 @@
-import { fetchMCPServers, deleteMCPServer } from '@/services/mcp-servers';
 import { MCPServer } from '@/types';
 import { Alert, Button, Flex, FlexItem, Spinner, Title } from '@patternfly/react-core';
 import { SyncIcon } from '@patternfly/react-icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMCPServers } from '@/hooks';
 import React, { useState } from 'react';
 import { NewMCPServerCard } from '@/components/NewMCPServerCard';
 import { MCPServerCard } from '@/components/MCPServerCard';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function MCPServerList() {
   const queryClient = useQueryClient();
   const [lastFetchTime, setLastFetchTime] = useState<string>('');
   const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
 
-  // Query for MCP Servers
+  // Use custom MCP servers hook
   const {
-    data: mcpServers,
+    mcpServers,
     isLoading: isLoadingServers,
     error: serversError,
-    dataUpdatedAt,
-  } = useQuery<MCPServer[], Error>({
-    queryKey: ['mcpServers'],
-    queryFn: fetchMCPServers,
-  });
+    deleteMCPServer,
+    isDeleting,
+    refreshMCPServers,
+  } = useMCPServers();
+
+  // Get dataUpdatedAt from the underlying query for timestamp tracking
+  const { dataUpdatedAt } = queryClient.getQueryState(['mcpServers']) || {};
 
   // Update timestamp when data is fetched
   React.useEffect(() => {
@@ -30,20 +32,15 @@ export function MCPServerList() {
     }
   }, [dataUpdatedAt]);
 
-  // Delete MCP server mutation
-  const deleteMCPServerMutation = useMutation({
-    mutationFn: deleteMCPServer,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['mcpServers'] });
-      console.log('MCP server deleted successfully');
-    },
-    onError: (error) => {
-      console.error('Error deleting MCP server:', error);
-    },
-  });
-
   const handleDeleteServer = (toolgroup_id: string) => {
-    deleteMCPServerMutation.mutate(toolgroup_id);
+    void (async () => {
+      try {
+        await deleteMCPServer(toolgroup_id);
+        console.log('MCP server deleted successfully');
+      } catch (error) {
+        console.error('Error deleting MCP server:', error);
+      }
+    })();
   };
 
   const handleEditServer = (server: MCPServer) => {
@@ -51,7 +48,7 @@ export function MCPServerList() {
   };
 
   const handleRefresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ['mcpServers'] });
+    refreshMCPServers();
   };
 
   return (
@@ -98,7 +95,7 @@ export function MCPServerList() {
       )}
       <Flex direction={{ default: 'column' }}>
         <FlexItem>
-          <NewMCPServerCard 
+          <NewMCPServerCard
             editingServer={editingServer}
             onEditComplete={() => setEditingServer(null)}
           />
@@ -115,13 +112,12 @@ export function MCPServerList() {
                 mcpServer={server}
                 onDelete={handleDeleteServer}
                 onEdit={handleEditServer}
-                isDeleting={deleteMCPServerMutation.isPending}
+                isDeleting={isDeleting}
               />
             ))}
-        {!isLoadingServers &&
-          !serversError &&
-          mcpServers &&
-          mcpServers.length === 0 && <p>No MCP servers configured yet.</p>}
+        {!isLoadingServers && !serversError && mcpServers && mcpServers.length === 0 && (
+          <p>No MCP servers configured yet.</p>
+        )}
       </Flex>
     </div>
   );

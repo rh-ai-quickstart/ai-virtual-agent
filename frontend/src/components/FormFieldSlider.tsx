@@ -1,23 +1,6 @@
 import React from 'react';
 import { FormGroup, FormHelperText, Slider } from '@patternfly/react-core';
-
-interface FormFieldSliderProps {
-  form: any;
-  name: string;
-  label: string;
-  helperText: string;
-  min: number;
-  max: number;
-  step: number;
-  handleSliderChange: (
-    event: any,
-    field: any,
-    sliderValue: number,
-    inputValue: number | undefined,
-    range: { min: number; max: number; step: number },
-    setLocalInputValue?: React.Dispatch<React.SetStateAction<number>>
-  ) => void;
-}
+import { FormFieldProps, FormFieldSliderProps } from '@/types/forms';
 
 const FormFieldSlider: React.FC<FormFieldSliderProps> = ({
   form,
@@ -30,7 +13,7 @@ const FormFieldSlider: React.FC<FormFieldSliderProps> = ({
   handleSliderChange,
 }) => (
   <form.Field name={name}>
-    {(field: any) => (
+    {(field: FormFieldProps) => (
       <FormGroup
         label={label}
         fieldId={name}

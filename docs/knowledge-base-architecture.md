@@ -20,7 +20,7 @@
 - [Integration Points](#integration-points)
   - [Database ↔ LlamaStack Synchronization](#database--llamastack-synchronization)
   - [Frontend ↔ Backend Communication](#frontend--backend-communication)
-  - [Knowledge Base Usage in Virtual Assistants](#knowledge-base-usage-in-virtual-assistants)
+  - [Knowledge Base Usage in Virtual Agents](#knowledge-base-usage-in-virtual-agents)
 - [Developer Guide](#developer-guide)
   - [Key Implementation Files](#key-implementation-files)
   - [Configuration Patterns](#configuration-patterns)
@@ -29,7 +29,7 @@
 
 ## Overview
 
-This guide explains how knowledge bases work in the AI Virtual Assistant application, covering the complete data flow from creation to deletion, the integration between frontend and backend systems, and the relationship with LlamaStack for vector database management.
+This guide explains how knowledge bases work in the AI Virtual Agent Kickstart application, covering the complete data flow from creation to deletion, the integration between frontend and backend systems, and the relationship with LlamaStack for vector database management.
 
 ## System Architecture
 
@@ -466,17 +466,17 @@ export const fetchKnowledgeBasesWithStatus = async (): Promise<KnowledgeBaseWith
 };
 ```
 
-### Knowledge Base Usage in Virtual Assistants
+### Knowledge Base Usage in Virtual Agents
 
 **Integration with LlamaStack Agents:**
 Knowledge bases are used for RAG (Retrieval-Augmented Generation) through the LlamaStack agent system. The process works as follows:
 
-1. **Agent Configuration**: Knowledge bases are attached to virtual assistants during agent creation
+1. **Agent Configuration**: Knowledge bases are attached to virtual agents during agent creation
 2. **Built-in RAG Tool**: LlamaStack agents use built-in tools that automatically query attached knowledge bases
 3. **Automatic Retrieval**: When users ask questions, the agent automatically searches relevant knowledge bases
 
 ```typescript
-// Virtual Assistant creation with knowledge bases
+// Virtual Agent creation with knowledge bases
 const virtualAssistant = {
   name: "Product Support Assistant",
   model: "llama3.1-8b",

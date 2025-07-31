@@ -9,7 +9,7 @@ Key Features:
 - List available LLM models from LlamaStack
 - Stream chat responses with session management
 - Automatic session metadata storage for UI persistence
-- Integration with virtual assistant configurations
+- Integration with virtual agent configurations
 - Background task processing for database operations
 
 The module handles real-time streaming chat interactions while maintaining
@@ -51,7 +51,7 @@ class Message(BaseModel):
 
 class VAChatMessage(BaseModel):
     """
-    Extended chat message format for Virtual Assistant interface compatibility.
+    Extended chat message format for Virtual Agent interface compatibility.
 
     This format extends the basic Message format to include additional fields
     required by frontend chat interfaces and streaming implementations.
@@ -144,7 +144,7 @@ async def get_knowledge_bases(request: Request):
 
     Fetches the complete list of vector databases available in LlamaStack,
     which represent knowledge bases that can be used for RAG (Retrieval
-    Augmented Generation) operations with virtual assistants.
+    Augmented Generation) operations with virtual agents.
 
     Returns:
         List of dictionaries containing knowledge base information:
@@ -178,7 +178,7 @@ async def get_tools(request: Request):
 
     Fetches tool groups that represent MCP servers configured in LlamaStack.
     These servers provide external tools and capabilities that can be used
-    by virtual assistants during conversations.
+    by virtual agents during conversations.
 
     Returns:
         List of dictionaries containing MCP server information:
@@ -349,11 +349,11 @@ class ChatRequest(BaseModel):
     Request model for LlamaStack chat interactions.
 
     Defines the structure for chat requests sent to the LlamaStack chat endpoint.
-    Includes virtual assistant selection, conversation history, streaming preferences,
+    Includes virtual agent selection, conversation history, streaming preferences,
     and session management.
 
     Attributes:
-        virtualAssistantId: The ID of the virtual assistant/agent to use for chat
+        virtualAssistantId: The ID of the virtual agent to use for chat
         messages: List of conversation messages (user, assistant, system)
         stream: Whether to stream the response (default: False)
         sessionId: Optional session ID for conversation continuity
@@ -395,7 +395,7 @@ async def chat(
     agents while maintaining session state. Automatically saves session metadata
     to the database for UI features like conversation history sidebars.
 
-    The endpoint validates the virtual assistant exists, requires a session ID,
+    The endpoint validates the virtual agent exists, requires a session ID,
     and streams responses in Server-Sent Events format. Session metadata is
     saved asynchronously to avoid blocking the chat response.
 
@@ -409,7 +409,7 @@ async def chat(
 
     Raises:
         HTTPException:
-            - 404 if virtual assistant not found in LlamaStack
+            - 404 if virtual agent not found in LlamaStack
             - 400 if session ID is missing
             - 500 for internal server errors during chat processing
     """
@@ -430,7 +430,7 @@ async def chat(
             )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Virtual assistant {chatRequest.virtualAssistantId} not found",
+                detail=f"Virtual agent {chatRequest.virtualAssistantId} not found",
             )
 
         # Use the agent_id directly from LlamaStack
@@ -510,7 +510,7 @@ async def save_session_metadata(
     Args:
         db: Database session for executing queries
         session_id: Unique identifier for the chat session
-        agent_id: ID of the virtual assistant/agent used in the session
+        agent_id: ID of the virtual agent used in the session
         messages: List of conversation messages for title generation
 
     Note:

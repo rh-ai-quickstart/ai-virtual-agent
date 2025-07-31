@@ -1,4 +1,6 @@
-export const parameterFields = [
+import { ParameterField } from '@/types/forms';
+
+export const parameterFields: ParameterField[] = [
   {
     name: 'temperature',
     label: 'Temperature',

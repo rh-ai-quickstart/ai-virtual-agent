@@ -1,26 +1,27 @@
 import { KnowledgeBaseCard } from '@/components/knowledge-base-card';
-import { fetchKnowledgeBasesWithStatus, deleteKnowledgeBase } from '@/services/knowledge-bases';
-import { KnowledgeBaseWithStatus } from '@/types';
 import { Alert, Button, Flex, FlexItem, Spinner, Title } from '@patternfly/react-core';
 import { SyncIcon } from '@patternfly/react-icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useKnowledgeBases } from '@/hooks';
 import React, { useState } from 'react';
 import { NewKnowledgeBaseCard } from './new-knowledge-base-card';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function KnowledgeBaseList() {
   const queryClient = useQueryClient();
   const [lastFetchTime, setLastFetchTime] = useState<string>('');
 
-  // Query for Knowledge Bases with status
+  // Use custom knowledge bases hook
   const {
-    data: knowledgeBases,
+    knowledgeBases,
     isLoading: isLoadingKnowledgeBases,
     error: knowledgeBasesError,
-    dataUpdatedAt,
-  } = useQuery<KnowledgeBaseWithStatus[], Error>({
-    queryKey: ['knowledgeBases'],
-    queryFn: fetchKnowledgeBasesWithStatus,
-  });
+    deleteKnowledgeBase,
+    isDeleting,
+    refreshKnowledgeBases,
+  } = useKnowledgeBases();
+
+  // Get dataUpdatedAt from the underlying query for timestamp tracking
+  const { dataUpdatedAt } = queryClient.getQueryState(['knowledgeBases']) || {};
 
   // Update timestamp when data is fetched
   React.useEffect(() => {
@@ -29,24 +30,19 @@ export function KnowledgeBaseList() {
     }
   }, [dataUpdatedAt]);
 
-  // Delete knowledge base mutation
-  const deleteKnowledgeBaseMutation = useMutation({
-    mutationFn: deleteKnowledgeBase,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['knowledgeBases'] });
-      console.log('Knowledge base deleted successfully');
-    },
-    onError: (error) => {
-      console.error('Error deleting knowledge base:', error);
-    },
-  });
-
   const handleDeleteKb = (vectorDbName: string) => {
-    deleteKnowledgeBaseMutation.mutate(vectorDbName);
+    void (async () => {
+      try {
+        await deleteKnowledgeBase(vectorDbName);
+        console.log('Knowledge base deleted successfully');
+      } catch (error) {
+        console.error('Error deleting knowledge base:', error);
+      }
+    })();
   };
 
   const handleRefresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ['knowledgeBases'] });
+    refreshKnowledgeBases();
   };
 
   return (
@@ -106,7 +102,7 @@ export function KnowledgeBaseList() {
                 key={knowledgeBase.vector_db_name}
                 knowledgeBase={knowledgeBase}
                 onDelete={handleDeleteKb}
-                isDeleting={deleteKnowledgeBaseMutation.isPending}
+                isDeleting={isDeleting}
               />
             ))}
         {!isLoadingKnowledgeBases &&

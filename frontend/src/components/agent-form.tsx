@@ -1,5 +1,5 @@
-import { Agent, NewAgent } from '@/routes/config/agents';
-import { Model, ToolGroup, ToolAssociationInfo, LSKnowledgeBase, samplingStrategy } from '@/types';
+import { Agent, NewAgent } from '@/types/agent';
+import { ToolGroup, ToolAssociationInfo, SamplingStrategy } from '@/types';
 import {
   ActionGroup,
   Button,
@@ -24,37 +24,10 @@ import { PaperPlaneIcon } from '@patternfly/react-icons';
 import React from 'react';
 import FormFieldSlider from './FormFieldSlider';
 import { parameterFields } from '../config/samplingParametersConfig';
-
-interface ModelsFieldProps {
-  models: Model[];
-  isLoadingModels: boolean;
-  modelsError: Error | null;
-}
-
-interface KnowledgeBasesFieldProps {
-  knowledgeBases: LSKnowledgeBase[];
-  isLoadingKnowledgeBases: boolean;
-  knowledgeBasesError: Error | null;
-}
-
-interface ToolsFieldProps {
-  tools: ToolGroup[];
-  isLoadingTools: boolean;
-  toolsError: Error | null;
-}
-
-interface ShieldsFieldProps {
-  shields: Array<{ identifier: string; name?: string }>;
-  isLoadingShields: boolean;
-  shieldsError: Error | null;
-}
+import { useModels, useKnowledgeBases, useTools, useShields } from '@/hooks';
 
 interface AgentFormProps {
   defaultAgentProps?: Agent | undefined;
-  modelsProps: ModelsFieldProps;
-  knowledgeBasesProps: KnowledgeBasesFieldProps;
-  toolsProps: ToolsFieldProps;
-  shieldsProps: ShieldsFieldProps;
   onSubmit: (values: NewAgent) => void;
   isSubmitting: boolean;
   onCancel: () => void;
@@ -68,7 +41,7 @@ interface AgentFormData {
   prompt: string;
   knowledge_base_ids: string[];
   tool_ids: string[]; // Internal form uses tool IDs for easier UI handling
-  sampling_strategy: samplingStrategy;
+  sampling_strategy: SamplingStrategy;
   temperature: number;
   top_p: number;
   top_k: number;
@@ -157,20 +130,16 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
   };
 };
 
-export function AgentForm({
-  defaultAgentProps,
-  modelsProps,
-  knowledgeBasesProps,
-  toolsProps,
-  shieldsProps,
-  onSubmit,
-  isSubmitting,
-  onCancel,
-}: AgentFormProps) {
-  const { models, isLoadingModels, modelsError } = modelsProps;
-  const { knowledgeBases, isLoadingKnowledgeBases, knowledgeBasesError } = knowledgeBasesProps;
-  const { tools, isLoadingTools, toolsError } = toolsProps;
-  const { shields, isLoadingShields, shieldsError } = shieldsProps;
+export function AgentForm({ defaultAgentProps, onSubmit, isSubmitting, onCancel }: AgentFormProps) {
+  // Use custom hooks to get data
+  const { models, isLoadingModels, modelsError } = useModels();
+  const {
+    llamaStackKnowledgeBases: knowledgeBases,
+    isLoadingLlamaStack: isLoadingKnowledgeBases,
+    llamaStackError: knowledgeBasesError,
+  } = useKnowledgeBases();
+  const { tools, isLoading: isLoadingTools, error: toolsError } = useTools();
+  const { shields, isLoading: isLoadingShields, error: shieldsError } = useShields();
 
   const initialAgentData: AgentFormData = convertAgentToFormData(defaultAgentProps);
 
@@ -178,7 +147,7 @@ export function AgentForm({
     defaultValues: initialAgentData,
     onSubmit: ({ value }) => {
       console.log('Test');
-      const convertedAgent = convertFormDataToAgent(value, tools);
+      const convertedAgent = convertFormDataToAgent(value, tools || []);
       onSubmit(convertedAgent);
     },
   });
@@ -189,8 +158,8 @@ export function AgentForm({
   };
 
   const handleSliderChange = (
-    event: any,
-    field: any,
+    event: unknown,
+    field: { handleChange: (value: number) => void },
     sliderValue: number,
     inputValue: number | undefined,
     { min, max, step }: { min: number; max: number; step: number },
@@ -208,7 +177,9 @@ export function AgentForm({
     setLocalInputValue?.(finalValue);
 
     // Only update the field if the event is not a 'change' event (to avoid double updates)
-    if (event.type !== 'change') {
+    if (event && typeof event === 'object' && 'type' in event && event.type !== 'change') {
+      field.handleChange(finalValue);
+    } else if (!event || typeof event !== 'object' || !('type' in event)) {
       field.handleChange(finalValue);
     }
   };
@@ -300,12 +271,13 @@ export function AgentForm({
     if (!shields || shields.length === 0) {
       return [{ value: '', label: 'No shields available', disabled: true }];
     }
-    return [{ value: '', label: 'No shield selected', disabled: false }]
-      .concat(shields.map(shield => ({
+    return [{ value: '', label: 'No shield selected', disabled: false }].concat(
+      shields.map((shield) => ({
         value: shield.identifier,
         label: shield.name || shield.identifier,
         disabled: false,
-      })));
+      }))
+    );
   }, [shields, isLoadingShields, shieldsError]);
 
   return (
@@ -394,7 +366,7 @@ export function AgentForm({
               ) : (
                 <Fragment>
                   <FormSelectOption key="placeholder" value="" label="Select a model" isDisabled />
-                  {models.map((model) => (
+                  {(models || []).map((model) => (
                     <FormSelectOption
                       key={model.model_name}
                       value={model.model_name}
@@ -584,7 +556,7 @@ export function AgentForm({
                       name={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(_event, value) => field.handleChange(value as samplingStrategy)}
+                      onChange={(_event, value) => field.handleChange(value as SamplingStrategy)}
                     >
                       <FormSelectOption value="greedy" label="Greedy" />
                       <FormSelectOption value="top-p" label="Top-P" />

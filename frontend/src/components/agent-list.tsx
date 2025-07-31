@@ -1,19 +1,10 @@
 import { AgentCard } from '@/components/agent-card';
-import { Agent } from '@/routes/config/agents';
-import { fetchAgents } from '@/services/agents';
 import { Alert, Flex, Spinner } from '@patternfly/react-core';
-import { useQuery } from '@tanstack/react-query';
+import { useAgents } from '@/hooks';
 
 export function AgentList() {
-  // Query for Agents
-  const {
-    data: agents,
-    isLoading: isLoadingAgents,
-    error: agentsError,
-  } = useQuery<Agent[], Error>({
-    queryKey: ['agents'],
-    queryFn: fetchAgents,
-  });
+  // Use custom agents hook
+  const { agents, isLoading: isLoadingAgents, error: agentsError } = useAgents();
 
   return (
     <div>

@@ -1,0 +1,176 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" version="27.0.9">
+  <diagram name="Page-1" id="QMRZXy_Fa4SiW-KNj1Yw">
+    <mxGraphModel dx="1435" dy="906" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- User Icon -->
+        <UserObject label="👤 User" id="user-icon">
+          <mxCell style="text;whiteSpace=wrap;html=1;fontSize=16;" vertex="1" parent="1">
+            <mxGeometry x="135" y="125" width="85" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+
+        <!-- Authentication -->
+        <mxCell id="auth" value="OpenShift / Keycloak&#xa;Identity Broker" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="140" y="300" width="100" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- Frontend UI -->
+        <mxCell id="frontend" value="React Frontend&#xa;PatternFly UI" style="whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="135" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Backend -->
+        <mxCell id="backend" value="FastAPI Backend&#xa;PostgreSQL + SQLAlchemy" style="whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="480" y="135" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- LlamaStack -->
+        <mxCell id="llamastack" value="LlamaStack APIs&#xa;Agent Management&#xa;Model Inference" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="720" y="125" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- MCP Servers -->
+        <mxCell id="mcp" value="MCP Servers" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="897.75" y="120" width="100" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- Model Servers -->
+        <mxCell id="models" value="Model Servers&#xa;vLLM&#xa;RHOAI&#xa;Ollama" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="897.75" y="250" width="100" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Vector DB -->
+        <mxCell id="vectordb" value="Vector Database&#xa;pgvector" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="897.75" y="390" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Knowledge Base Storage -->
+        <mxCell id="knowledge" value="Knowledge Bases&#xa;Document Storage" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="500" y="280" width="100" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Document Processing Pipeline -->
+        <mxCell id="pipeline-box" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="250" y="500" width="400" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pipeline-label" value="Document Processing Pipeline" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="350" y="510" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3storage" value="S3 Storage&#xa;Raw Documents" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="270" y="550" width="80" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="kubeflow" value="Kubeflow Pipelines&#xa;Document Ingestion" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="550" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="docling" value="Docling Libraries&#xa;Text Extraction" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF0000;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="510" y="550" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Connections -->
+        <!-- User to Auth -->
+        <mxCell id="user-auth" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="185" y="190" as="sourcePoint" />
+            <mxPoint x="185" y="295" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- User to Frontend -->
+        <mxCell id="user-frontend" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="220" y="165" as="sourcePoint" />
+            <mxPoint x="300" y="165" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Frontend to Backend -->
+        <mxCell id="frontend-backend" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="420" y="175" as="sourcePoint" />
+            <mxPoint x="480" y="175" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Backend to LlamaStack -->
+        <mxCell id="backend-llama" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="175" as="sourcePoint" />
+            <mxPoint x="720" y="175" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- LlamaStack to MCP -->
+        <mxCell id="llama-mcp" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="150" as="sourcePoint" />
+            <mxPoint x="897" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- LlamaStack to Models -->
+        <mxCell id="llama-models" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="200" as="sourcePoint" />
+            <mxPoint x="897" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- LlamaStack to Vector DB -->
+        <mxCell id="llama-vector" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="820" y="225" as="sourcePoint" />
+            <mxPoint x="900" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Backend to Knowledge -->
+        <mxCell id="backend-knowledge" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;startArrow=classic;startFill=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="550" y="215" as="sourcePoint" />
+            <mxPoint x="550" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Knowledge to Pipeline -->
+        <mxCell id="knowledge-pipeline" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="520" y="360" as="sourcePoint" />
+            <mxPoint x="450" y="550" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- S3 to Kubeflow -->
+        <mxCell id="s3-kubeflow" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="350" y="580" as="sourcePoint" />
+            <mxPoint x="380" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Kubeflow to Docling -->
+        <mxCell id="kubeflow-docling" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="580" as="sourcePoint" />
+            <mxPoint x="510" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Docling to Vector DB -->
+        <mxCell id="docling-vector" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF0000;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="610" y="560" as="sourcePoint" />
+            <mxPoint x="900" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

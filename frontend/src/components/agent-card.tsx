@@ -1,5 +1,4 @@
-import { Agent } from '@/routes/config/agents';
-import { deleteAgent } from '@/services/agents';
+import { Agent } from '@/types/agent';
 import {
   Button,
   Card,
@@ -23,10 +22,8 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { EllipsisVIcon, TrashIcon } from '@patternfly/react-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAgents, useTools } from '@/hooks';
 import { Fragment, useState } from 'react';
-import { fetchTools } from '@/services/tools';
-import { ToolGroup } from '@/types';
 
 interface AgentCardProps {
   agent: Agent;
@@ -37,31 +34,20 @@ export function AgentCard({ agent }: AgentCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const queryClient = useQueryClient();
-
-  // Query for tools
-  const { data: tools } = useQuery<ToolGroup[], Error>({
-    queryKey: ['tools'],
-    queryFn: fetchTools,
-  });
-
-  // Mutation for deleting an Agent
-  const deleteAgentMutation = useMutation<void, Error, string>({
-    mutationFn: deleteAgent,
-    onSuccess: () => {
-      // Invalidate and refetch the agents list to show the new agent
-      void queryClient.invalidateQueries({ queryKey: ['agents'] });
-      setModalOpen(false);
-      console.log('Agent deleted successfully');
-    },
-    onError: (error) => {
-      console.error('Error deleting agent:', error);
-      // Optionally show an error message
-    },
-  });
+  // Use custom hooks
+  const { tools } = useTools();
+  const { deleteAgent, isDeleting } = useAgents();
 
   const handleDeleteAgent = () => {
-    deleteAgentMutation.mutate(agent.id);
+    void (async () => {
+      try {
+        await deleteAgent(agent.id);
+        setModalOpen(false);
+        console.log('Agent deleted successfully');
+      } catch (error) {
+        console.error('Error deleting agent:', error);
+      }
+    })();
   };
 
   const toggleModal = () => {
@@ -130,11 +116,7 @@ export function AgentCard({ agent }: AgentCardProps) {
           <Button variant="link" onClick={toggleModal}>
             Cancel
           </Button>
-          <Button
-            isLoading={deleteAgentMutation.isPending}
-            onClick={handleDeleteAgent}
-            variant="danger"
-          >
+          <Button isLoading={isDeleting} onClick={handleDeleteAgent} variant="danger">
             Delete
           </Button>
         </ModalFooter>

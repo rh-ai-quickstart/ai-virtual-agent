@@ -1,8 +1,8 @@
 """
-Virtual Assistants API endpoints for managing AI agents through LlamaStack.
+Virtual Agents API endpoints for managing AI agents through LlamaStack.
 
-This module provides CRUD operations for virtual assistants (AI agents) that are
-managed through the LlamaStack platform. Virtual assistants can be configured with
+This module provides CRUD operations for virtual agents (AI agents) that are
+managed through the LlamaStack platform. Virtual agents can be configured with
 different models, tools, knowledge bases, and safety shields.
 """
 
@@ -122,13 +122,13 @@ async def create_virtual_assistant(
     va: schemas.VirtualAssistantCreate, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
-    Create a new virtual assistant agent in LlamaStack.
+    Create a new virtual agent in LlamaStack.
 
     Args:
-        va: Virtual assistant configuration including model, tools, and settings
+        va: Virtual agent configuration including model, tools, and settings
 
     Returns:
-        The created virtual assistant with generated ID
+        The created virtual agent with generated ID
 
     Raises:
         HTTPException: If creation fails
@@ -269,10 +269,10 @@ def to_va_response(agent: VirtualAgent, agent_type: str = "ReAct"):
 @router.get("/", response_model=List[schemas.VirtualAssistantRead])
 async def get_virtual_assistants(request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Retrieve all virtual assistants from LlamaStack.
+    Retrieve all virtual agents from LlamaStack.
 
     Returns:
-        List of all virtual assistants configured in the system
+        List of all virtual agents configured in the system
     """
     # get all virtual assitants or agents from llama stack
     client = get_client_from_request(request)
@@ -296,16 +296,16 @@ async def get_virtual_assistants(request: Request, db: AsyncSession = Depends(ge
 @router.get("/{va_id}", response_model=schemas.VirtualAssistantRead)
 async def read_virtual_assistant(va_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     """
-    Retrieve a specific virtual assistant by ID.
+    Retrieve a specific virtual agent by ID.
 
     Args:
-        va_id: The unique identifier of the virtual assistant
+        va_id: The unique identifier of the virtual agent
 
     Returns:
-        The virtual assistant configuration and metadata
+        The virtual agent configuration and metadata
 
     Raises:
-        HTTPException: If virtual assistant not found
+        HTTPException: If virtual agent not found
     """
     client = get_client_from_request(request)
     agent = await client.agents.retrieve(agent_id=va_id)
@@ -332,10 +332,10 @@ async def read_virtual_assistant(va_id: str, request: Request, db: AsyncSession 
 @router.delete("/{va_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_virtual_assistant(va_id: str, request: Request):
     """
-    Delete a virtual assistant from LlamaStack.
+    Delete a virtual agent from LlamaStack.
 
     Args:
-        va_id: The unique identifier of the virtual assistant to delete
+        va_id: The unique identifier of the virtual agent to delete
 
     Returns:
         None (204 No Content status)

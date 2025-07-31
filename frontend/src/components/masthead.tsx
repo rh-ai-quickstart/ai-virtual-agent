@@ -163,7 +163,7 @@ export function Masthead({
       <MastheadMain>
         {showSidebarToggle && <MastheadToggle>{toggle}</MastheadToggle>}
         <MastheadBrand data-codemods>
-          <Title headingLevel="h1">Virtual Assistant</Title>
+          <Title headingLevel="h1">AI Virtual Agent</Title>
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent>{toolbar}</MastheadContent>

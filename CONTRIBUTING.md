@@ -1,38 +1,47 @@
-# Contributing to AI Virtual Agent
+<!-- omit from toc -->
+# Contributing to AI Virtual Agent Kickstart
 
-Thank you for your interest in contributing to the AI Virtual Agent platform! This guide will help you get set up for development and understand our contribution process.
+Thank you for your interest in contributing to the AI Virtual Agent Kickstart! This guide will help you get set up for development and understand our contribution process.
 
+<!-- omit from toc -->
 ## Table of Contents
-
-- [Contributing to AI Virtual Agent](#contributing-to-ai-virtual-agent)
-  - [Table of Contents](#table-of-contents)
-  - [Development Setup](#development-setup)
-    - [Prerequisites](#prerequisites)
-    - [Clone the Repository](#clone-the-repository)
-    - [Database Setup](#database-setup)
-    - [Backend Setup](#backend-setup)
-    - [Frontend Setup](#frontend-setup)
-  - [Container Deployment](#container-deployment)
-    - [Building Container Images](#building-container-images)
-    - [Running Container Images](#running-container-images)
-  - [Development Workflow](#development-workflow)
-    - [Making Changes](#making-changes)
-    - [Testing](#testing)
-      - [Backend Testing](#backend-testing)
-      - [Frontend Testing](#frontend-testing)
-      - [Integration Testing](#integration-testing)
-      - [Code Quality Checks](#code-quality-checks)
-    - [Code Style](#code-style)
-      - [Python (Backend)](#python-backend)
-      - [TypeScript (Frontend)](#typescript-frontend)
-  - [Architecture \& Documentation](#architecture--documentation)
-    - [Key Concepts](#key-concepts)
-  - [Troubleshooting](#troubleshooting)
-    - [Common Issues](#common-issues)
-    - [Getting Logs](#getting-logs)
-  - [Getting Help](#getting-help)
-  - [Environment Variables](#environment-variables)
-  - [Contributing Guidelines](#contributing-guidelines)
+- [Development Setup](#development-setup)
+  - [Prerequisites](#prerequisites)
+  - [Clone the Repository](#clone-the-repository)
+  - [Local Development Setup](#local-development-setup)
+    - [1. Database Setup](#1-database-setup)
+    - [2. Backend Setup](#2-backend-setup)
+    - [3. Frontend Setup](#3-frontend-setup)
+    - [4. LlamaStack Setup (Optional)](#4-llamastack-setup-optional)
+  - [Container Development Setup](#container-development-setup)
+    - [Build Application Container](#build-application-container)
+    - [Docker Compose Development](#docker-compose-development)
+    - [Container Commands](#container-commands)
+    - [Run Containerized Application](#run-containerized-application)
+- [Development Environments](#development-environments)
+  - [Local Services](#local-services)
+  - [Container Development](#container-development)
+  - [Service URLs](#service-urls)
+- [Development Workflow](#development-workflow)
+  - [Making Changes](#making-changes)
+  - [Testing](#testing)
+    - [Backend Testing](#backend-testing)
+    - [Frontend Testing](#frontend-testing)
+    - [Integration Testing](#integration-testing)
+    - [Code Quality Checks](#code-quality-checks)
+  - [Code Style](#code-style)
+    - [Python (Backend)](#python-backend)
+    - [TypeScript (Frontend)](#typescript-frontend)
+- [Architecture \& Documentation](#architecture--documentation)
+  - [Key Concepts](#key-concepts)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Getting Logs](#getting-logs)
+- [Environment Variables](#environment-variables)
+  - [Development Environment Variables](#development-environment-variables)
+  - [Container Environment Variables](#container-environment-variables)
+- [Contributing Guidelines](#contributing-guidelines)
+- [Getting Help](#getting-help)
 
 ## Development Setup
 
@@ -42,9 +51,9 @@ Before you begin, ensure you have the following installed:
 
 - **Python 3.12+** - Backend development
 - **Node.js 18+** - Frontend development
-- **PostgreSQL 14+** - Database
-- **Podman or Docker** - Containerization
-- **LlamaStack** - AI platform (see [LlamaStack docs](https://github.com/meta-llama/llama-stack))
+- **PostgreSQL 14+** - Database (or use Docker/Podman)
+- **Docker/Podman** - Containerization and services
+- **LlamaStack** - AI platform (optional for development, see [LlamaStack docs](https://github.com/meta-llama/llama-stack))
 
 ### Clone the Repository
 
@@ -52,33 +61,36 @@ Before you begin, ensure you have the following installed:
 2. Clone your fork locally:
 
    ```bash
-   git clone https://github.com/YOUR-USERNAME/ai-virtual-assistant
-   cd ai-virtual-assistant
+   git clone https://github.com/YOUR-USERNAME/ai-virtual-agent
+   cd ai-virtual-agent
    ```
 
 3. Add the upstream remote:
 
    ```bash
-   git remote add upstream https://github.com/RHEcosystemAppEng/ai-virtual-assistant
+   git remote add upstream https://github.com/rh-ai-kickstart/ai-virtual-agent
    ```
 
-### Database Setup
+### Local Development Setup
 
-1. Start PostgreSQL using Docker Compose:
+This is the recommended setup for active development with fast iteration cycles.
 
-   ```bash
-   podman compose --file compose.yaml up --detach
-   ```
+#### 1. Database Setup
 
-2. **Optional**: Reset the database if needed:
+Start PostgreSQL and MinIO using Docker Compose:
 
-   ```bash
-   podman volume ls
-   podman compose down && podman volume rm ai-virtual-assistant_pgdata
-   podman compose --file compose.yaml up --detach
-   ```
+```bash
+podman compose --file compose.yaml up --detach
+```
 
-### Backend Setup
+**Optional**: Reset the database if needed:
+```bash
+podman volume ls
+podman compose down && podman volume rm ai-virtual-agent_pgdata
+podman compose --file compose.yaml up --detach
+```
+
+#### 2. Backend Setup
 
 1. Create and activate a Python virtual environment:
 
@@ -90,7 +102,7 @@ Before you begin, ensure you have the following installed:
 2. Install Python dependencies:
 
    ```bash
-   pip3 install -r backend/requirements.txt
+   pip install -r backend/requirements.txt
    ```
 
 3. Set up pre-commit hooks for code quality:
@@ -100,8 +112,6 @@ Before you begin, ensure you have the following installed:
    pre-commit install
    cd ..
    ```
-
-   This enables automatic code formatting and linting on each commit.
 
 4. Initialize the database:
 
@@ -117,22 +127,7 @@ Before you begin, ensure you have the following installed:
    ./venv/bin/uvicorn backend.main:app --reload
    ```
 
-   The backend will be available at `http://localhost:8000`
-
-   - API documentation: `http://localhost:8000/docs`
-   - Alternative docs: `http://localhost:8000/redoc`
-
-6. Start Local LLamaStack Server:
-
-   This step is optional, use it if you don't have an active llamastack server.
-   Open a new terminal:
-   ```bash
-   cd local_dev/local_llamastack_server/
-   chmod +x activate_llama_server.sh
-   bash activate_llama_server.sh
-   ```
-
-### Frontend Setup
+#### 3. Frontend Setup
 
 1. In a new terminal, navigate to the frontend directory:
 
@@ -152,38 +147,162 @@ Before you begin, ensure you have the following installed:
    npm run prepare
    ```
 
-   This enables automatic formatting and linting on each commit via Husky.
-
 4. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-   The frontend will be available at `http://localhost:5173`
+#### 4. LlamaStack Setup (Optional)
 
-## Container Deployment
-
-### Building Container Images
-
-Build the application container:
+For local AI functionality, start a local LlamaStack server:
 
 ```bash
-podman build --platform linux/amd64 -t quay.io/ecosystem-appeng/ai-virtual-assistant:1.1.0 .
+cd scripts/dev/local_llamastack_server/
+chmod +x activate_llama_server.sh
+bash activate_llama_server.sh
 ```
 
-### Running Container Images
+### Container Development Setup
 
-1. Ensure PostgreSQL is running (see [Database Setup](#database-setup))
+Use this setup for testing containerized deployment or when you prefer isolated environments.
 
-2. Run the containerized application:
+#### Build Application Container
 
-   ```bash
-   podman run --platform linux/amd64 --rm -p 8000:8000 \
-     -e DATABASE_URL=postgresql+asyncpg://admin:password@host.containers.internal:5432/ai_virtual_assistant \
-     -e LLAMASTACK_URL=http://host.containers.internal:8321 \
-     quay.io/ecosystem-appeng/ai-virtual-assistant:1.1.0
-   ```
+```bash
+podman build --platform linux/amd64 -t ai-virtual-agent:dev .
+```
+
+#### Docker Compose Development
+
+Create `docker-compose.dev.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ai_virtual_agent
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Containerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://admin:password@postgres:5432/ai_virtual_agent
+      LLAMASTACK_URL: http://llamastack:8321
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app/backend:ro  # Mount for development
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_ENVIRONMENT: development
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src:ro  # Mount for development
+
+  llamastack:
+    image: llamastack/llamastack:latest
+    ports:
+      - "8321:8321"
+    volumes:
+      - llamastack_data:/app/data
+
+volumes:
+  postgres_data:
+  minio_data:
+  llamastack_data:
+```
+
+#### Container Commands
+
+```bash
+# Start all services
+docker-compose -f docker-compose.dev.yml up -d
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f backend
+
+# Stop services
+docker-compose -f docker-compose.dev.yml down
+
+# Rebuild and restart
+docker-compose -f docker-compose.dev.yml up --build -d
+```
+
+#### Run Containerized Application
+
+For testing the built container:
+
+```bash
+podman run --platform linux/amd64 --rm -p 8000:8000 \
+  -e DATABASE_URL=postgresql+asyncpg://admin:password@host.containers.internal:5432/ai_virtual_agent \
+  -e LLAMASTACK_URL=http://host.containers.internal:8321 \
+  ai-virtual-agent:dev
+```
+
+## Development Environments
+
+### Local Services
+
+When running locally, services are available at:
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **LlamaStack**: http://localhost:8321 (if running locally)
+- **PostgreSQL**: localhost:5432
+- **MinIO Console**: http://localhost:9001 (admin/minioadmin123)
+- **MinIO S3**: http://localhost:9000
+
+### Container Development
+
+When using Docker Compose, services use internal networking but expose the same ports to your host.
+
+### Service URLs
+
+The development setup provides these endpoints:
+
+| Service | Local | Container | Purpose |
+|---------|-------|-----------|---------|
+| Frontend | http://localhost:5173 | http://frontend:5173 | React development server |
+| Backend | http://localhost:8000 | http://backend:8000 | FastAPI application |
+| Database | localhost:5432 | postgres:5432 | PostgreSQL + pgvector |
+| Object Storage | localhost:9000 | minio:9000 | MinIO S3-compatible storage |
+| LlamaStack | localhost:8321 | llamastack:8321 | AI model serving |
 
 ## Development Workflow
 
@@ -197,7 +316,7 @@ podman build --platform linux/amd64 -t quay.io/ecosystem-appeng/ai-virtual-assis
 
 2. Make your changes following our coding standards
 
-3. Test your changes thoroughly
+3. Test your changes thoroughly (see [Testing](#testing))
 
 4. Commit your changes with descriptive messages:
 
@@ -216,20 +335,47 @@ podman build --platform linux/amd64 -t quay.io/ecosystem-appeng/ai-virtual-assis
 
 #### Backend Testing
 
-TODO
+```bash
+cd backend
+
+# Run unit tests (when available)
+pytest
+
+# Test API endpoints manually
+curl http://localhost:8000/health
+curl http://localhost:8000/docs
+
+# Test database connection
+python -c "import asyncio; from backend.database import engine; print('DB OK')"
+```
 
 #### Frontend Testing
 
-TODO
+```bash
+cd frontend
+
+# Run unit tests (when available)
+npm test
+
+# Build check
+npm run build
+
+# Type checking
+npm run type-check
+```
 
 #### Integration Testing
 
-Test the full application stack by running both backend and frontend and verifying:
+Test the full application stack:
 
-- Agent creation and management
-- Knowledge base upload and processing
-- Chat functionality with streaming responses
-- Session management
+1. Start all services (local or container)
+2. Verify each component:
+   - ✅ Database connectivity
+   - ✅ API health endpoints
+   - ✅ Frontend loads and connects to backend
+   - ✅ Agent creation and management
+   - ✅ Knowledge base operations (if LlamaStack available)
+   - ✅ Chat functionality (if LlamaStack available)
 
 #### Code Quality Checks
 
@@ -263,10 +409,6 @@ npm run build
 # Or run all checks together
 npm run format:check && npm run lint && npm run build
 ```
-
-**Both Will Run Automatically:**
-- Backend pre-commit hooks run on `git commit` for Python files
-- Frontend pre-commit hooks run on `git commit` for JS/TS files via Husky + lint-staged
 
 ### Code Style
 
@@ -305,20 +447,17 @@ isort --check --diff .
 pre-commit run --all-files
 ```
 
-The pre-commit hooks will automatically run on each commit and include:
-- `black` - Code formatting with 88-character line length
-- `isort` - Import sorting (configured for black compatibility)
-- `flake8` - Linting (E203, W503 ignored for black compatibility)
-- `vulture` - Dead code detection (80% confidence threshold)
+The pre-commit hooks include:
+- `black` - Code formatting (88-character line length)
+- `isort` - Import sorting (black compatible)
+- `flake8` - Linting (E203, W503 ignored for black)
+- `vulture` - Dead code detection (80% confidence)
 - `trailing-whitespace` - Remove trailing whitespace
 - `end-of-file-fixer` - Ensure files end with newline
 - `check-yaml` - Validate YAML files
 - `check-added-large-files` - Prevent large file commits
 - `check-merge-conflict` - Detect merge conflict markers
 - `debug-statements` - Detect debug statements
-
-> [!NOTE]
-> Migration files in `migrations/` are excluded from most hooks to preserve auto-generated code.
 
 #### TypeScript (Frontend)
 
@@ -329,8 +468,6 @@ The pre-commit hooks will automatically run on each commit and include:
 - Lint code with ESLint (includes React, TypeScript, and accessibility rules)
 
 **Pre-commit Hooks Setup:**
-
-The frontend uses Husky and lint-staged for pre-commit hooks. Set them up once:
 
 ```bash
 cd frontend
@@ -357,21 +494,9 @@ npm run lint:fix
 npm run build
 ```
 
-**Code Style Configuration:**
-
-- **Prettier**: Configured for 100-character line width, 2-space indentation, single quotes
-- **ESLint**: Includes TypeScript, React, React Hooks, and JSX accessibility rules
-- **TypeScript**: Strict mode enabled with comprehensive type checking
-
-The pre-commit hooks (via Husky + lint-staged) will automatically run on each commit and include:
-- `prettier --write` - Auto-format all supported file types (JS, TS, JSON, CSS, MD, YAML)
-- `eslint --fix` - Auto-fix linting issues in JavaScript/TypeScript files
-
-**Supported File Types for Auto-formatting:**
-- JavaScript/TypeScript: `.js`, `.jsx`, `.ts`, `.tsx`
-- Styling: `.css`, `.scss`
-- Data: `.json`, `.yaml`, `.yml`
-- Documentation: `.md`
+The pre-commit hooks include:
+- `prettier --write` - Auto-format all supported files
+- `eslint --fix` - Auto-fix linting issues
 
 ## Architecture & Documentation
 
@@ -379,7 +504,8 @@ Before making significant changes, familiarize yourself with the system architec
 
 - **[Virtual Agents Architecture](docs/virtual-agents-architecture.md)** - Understanding agent lifecycle and chat system
 - **[Knowledge Base Architecture](docs/knowledge-base-architecture.md)** - Document processing and RAG implementation
-- **[Backend README](backend/README.md)** - API structure and database models
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Installation Guide](INSTALLING.md)** - Production deployment guide
 
 ### Key Concepts
 
@@ -387,6 +513,7 @@ Before making significant changes, familiarize yourself with the system architec
 - **Knowledge Bases**: Document collections processed for RAG
 - **Sessions**: Persistent chat conversations with context
 - **Tools**: Built-in and external capabilities (RAG, web search, MCP servers)
+- **LlamaStack Integration**: Core AI platform for model serving and agent management
 
 ## Troubleshooting
 
@@ -394,30 +521,40 @@ Before making significant changes, familiarize yourself with the system architec
 
 **Backend won't start:**
 - Check Python version (requires 3.12+)
-- Verify PostgreSQL is running and accessible
-   use:
+- Verify PostgreSQL is running and accessible:
    ```bash
-   podman ps # see that docker.io/library/postgres:15 is up
-
-   # Log in to the DB:
-   psql -h localhost -p 5432 -U admin -d ai_virtual_assistant
+   podman ps  # Check that postgres container is up
+   psql -h localhost -p 5432 -U admin -d ai_virtual_agent
    ```
 - Ensure all environment variables are set
+- Check database migrations: `alembic upgrade head`
 
 **Frontend build fails:**
 - Check Node.js version (requires 18+)
 - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
 - Verify backend is running on the expected port
+- Check for TypeScript errors: `npm run build`
 
 **Database connection errors:**
 - Verify PostgreSQL container is running: `podman ps`
 - Check connection string in environment variables
 - Ensure database is initialized: `alembic upgrade head`
+- Test connection manually:
+  ```bash
+  psql -h localhost -p 5432 -U admin -d ai_virtual_agent -c "SELECT 1;"
+  ```
 
-**LlamaStack integration issues:**
+**LlamaStack integration issues (optional for development):**
 - Verify LlamaStack is running and accessible
 - Check LLAMASTACK_URL environment variable
 - Review LlamaStack logs for errors
+- Test endpoint: `curl http://localhost:8321/health`
+
+**Container issues:**
+- Check Docker/Podman is running
+- Verify port conflicts: `podman ps` or `docker ps`
+- Check container logs: `podman logs <container-name>`
+- For networking issues, use `host.containers.internal` instead of `localhost`
 
 **Pre-commit hooks failing:**
 
@@ -426,7 +563,7 @@ Before making significant changes, familiarize yourself with the system architec
 - Install requirements: `pip install -r requirements.txt`
 - For black/isort conflicts, run both tools: `black . && isort .`
 - For flake8 issues, fix manually or use `autopep8` for simple fixes
-- For vulture false positives, add `# noqa: vulture` comment or configure `.vulture.toml`
+- For vulture false positives, add `# noqa: vulture` comment
 
 *Frontend (TypeScript):*
 - Ensure you're in the frontend directory
@@ -434,66 +571,106 @@ Before making significant changes, familiarize yourself with the system architec
 - For Prettier issues, run: `npm run format`
 - For ESLint issues, try auto-fix first: `npm run lint:fix`
 - For TypeScript errors, run: `npm run build` and fix compilation issues
-- For React hooks dependencies, follow the ESLint suggestions or use `useCallback`/`useMemo`
-
-**Git commit blocked by hooks:**
-```bash
-# Skip hooks temporarily (not recommended for main branches)
-git commit --no-verify -m "your message"
-
-# Or fix the issues and try again
-git add .
-git commit -m "your message"
-```
 
 ### Getting Logs
 
-**Backend logs:**
+**Local Development:**
 ```bash
-# Development server logs are shown in terminal
-# For container logs:
-podman logs <container-id>
+# Backend logs are shown in terminal
+# Frontend logs are shown in terminal and browser console
+
+# Database logs
+podman logs ai-virtual-agent-postgres-1
+
+# MinIO logs
+podman logs ai-virtual-agent-minio-1
 ```
 
-**Frontend logs:**
+**Container Development:**
 ```bash
-# Check browser developer console
-# Development server logs are shown in terminal
+# All service logs
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Specific service logs
+docker-compose -f docker-compose.dev.yml logs -f backend
+docker-compose -f docker-compose.dev.yml logs -f frontend
 ```
-
-**Database logs:**
-```bash
-podman logs ai-virtual-assistant-postgres-1
-```
-
-## Getting Help
-
-- **Documentation**: Check the architecture guides in the `docs/` directory
-- **Issues**: Search existing [GitHub Issues](https://github.com/RHEcosystemAppEng/ai-virtual-assistant/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/RHEcosystemAppEng/ai-virtual-assistant/discussions)
-- **Code Review**: Ask questions in pull request comments
 
 ## Environment Variables
 
-Create a `.env` file in the backend directory for local development:
+### Development Environment Variables
+
+Create a `.env` file in the backend directory:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://admin:password@localhost:5432/ai_virtual_assistant
+# Database
+DATABASE_URL=postgresql+asyncpg://admin:password@localhost:5432/ai_virtual_agent
+
+# LlamaStack (optional for development)
 LLAMASTACK_URL=http://localhost:8321
+
+# Application
+LOG_LEVEL=DEBUG
+SECRET_KEY=dev-secret-key
+CORS_ORIGINS=["http://localhost:5173"]
+
+# Object Storage (for knowledge base features)
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
 ```
+
+Frontend environment (`.env.local`):
+```env
+VITE_API_BASE_URL=http://localhost:8000
+VITE_ENVIRONMENT=development
+```
+
+### Container Environment Variables
+
+When using Docker Compose, environment variables are configured in the compose file with service networking.
 
 ## Contributing Guidelines
 
 1. **Follow the code style** guidelines for your language
    - Backend: PEP 8, black formatting, proper type hints
    - Frontend: Prettier formatting, ESLint rules, TypeScript strict mode
-2. **Use pre-commit hooks** - Both backend and frontend have automated code quality checks
-3. **Write tests** for new functionality
-4. **Update documentation** when adding features or changing behavior
-5. **Keep commits focused** - one logical change per commit
-6. **Write clear commit messages** following conventional commit format
-7. **Update CHANGELOG** for user-facing changes
-8. **Ensure all CI checks pass** - linting, formatting, type checking, and builds
-9. **Review code quality** - run `pre-commit run --all-files` (backend) and `npm run lint && npm run format:check` (frontend) before submitting PRs
 
-Thank you for contributing to AI Virtual Agent! 🚀
+2. **Use pre-commit hooks** - Both backend and frontend have automated code quality checks
+
+3. **Write tests** for new functionality (test frameworks are being established)
+
+4. **Update documentation** when adding features or changing behavior
+   - Update API docs for backend changes
+   - Update architecture docs for significant changes
+   - Update this contributing guide for workflow changes
+
+5. **Keep commits focused** - one logical change per commit
+
+6. **Write clear commit messages** following conventional commit format:
+   - `feat:` for new features
+   - `fix:` for bug fixes
+   - `docs:` for documentation changes
+   - `style:` for formatting changes
+   - `refactor:` for code refactoring
+   - `test:` for adding tests
+   - `chore:` for maintenance tasks
+
+7. **Ensure all checks pass** - linting, formatting, type checking, and builds
+
+8. **Test your changes** in both local and container environments when possible
+
+9. **Review your own PR** before requesting review from others
+
+10. **Be responsive** to feedback and update your PR as needed
+
+## Getting Help
+
+- **Documentation**: Check the architecture guides in the `docs/` directory
+- **Documentation**: Check the project documentation in the `docs/` folder
+- **Discussions**: Join [GitHub Discussions](https://github.com/rh-ai-kickstart/ai-virtual-agent/discussions)
+- **Code Review**: Ask questions in pull request comments
+- **Local Setup**: Use this guide's troubleshooting section
+- **Production Deployment**: See [INSTALLING.md](INSTALLING.md)
+
+Thank you for contributing to AI Virtual Agent Kickstart! 🚀

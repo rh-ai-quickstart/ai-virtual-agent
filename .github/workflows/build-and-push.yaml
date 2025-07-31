@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: ai-virtual-assistant
+          - name: ai-virtual-agent
             context: .
-            chart: deploy/helm/ai-virtual-assistant/Chart.yaml
+            chart: deploy/helm/ai-virtual-agent/Chart.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v4

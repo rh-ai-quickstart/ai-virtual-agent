@@ -1,22 +1,12 @@
 """
-Pydantic schemas for API request/response validation and serialization.
+Pydantic models for request/response validation and serialization.
 
-This module defines all Pydantic models used for data validation, serialization,
-and API documentation generation throughout the AI Virtual Assistant application.
-Each schema group corresponds to a specific domain:
+This module defines all data schemas used for API request validation,
+response serialization, database model conversion, and OpenAPI documentation
+and API documentation generation throughout the AI Virtual Agent Kickstart application.
 
-- User schemas: Authentication and user management
-- MCPServer schemas: Model Context Protocol server configurations
-- KnowledgeBase schemas: Vector database and knowledge base management
-- VirtualAssistant schemas: AI agent configuration and management
-- Guardrail schemas: Safety and content filtering rules
-- ModelServer schemas: External model service configurations
-
-The schemas follow a standard pattern:
-- Base: Common fields for creation and updates
-- Create: Fields required for resource creation
-- Read: Fields returned in API responses (includes metadata)
-- Update: Optional fields for resource updates
+The schemas ensure type safety, data validation, and consistent API contracts
+across all endpoints and integrations.
 """
 
 import enum

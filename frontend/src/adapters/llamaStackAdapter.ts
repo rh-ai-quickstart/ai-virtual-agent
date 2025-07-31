@@ -1,21 +1,5 @@
+import type { LlamaStackParser as LlamaStackParserType, LlamaStackResponse } from '@/types/api';
 import { processStreamingReActResponse } from '../hooks/useChat';
-
-// Define our custom parser type
-type LlamaStackParser = {
-  parse(text: string, agentType?: 'Regular' | 'ReAct'): string | null;
-};
-
-interface LlamaStackResponse {
-  type: string;
-  content: string;
-  sessionId?: string;
-  tool?: {
-    name: string;
-    params?: Record<string, unknown>;
-  };
-  thought?: string;
-  answer?: string;
-}
 
 /**
  * LlamaStackParser - Transforms the Llama Stack API response format into
@@ -24,7 +8,7 @@ interface LlamaStackResponse {
  * Handles different response types (text, tool, reasoning, error) and properly
  * processes the session ID from the stream.
  */
-export const LlamaStackParser: LlamaStackParser = {
+export const LlamaStackParser: LlamaStackParserType = {
   parse(line: string, agentType: 'Regular' | 'ReAct' = 'Regular'): string | null {
     // Skip [DONE] events (empty lines)
     if (!line || line === '[DONE]') {
@@ -34,7 +18,7 @@ export const LlamaStackParser: LlamaStackParser = {
     // Try to parse the response
     try {
       const json = JSON.parse(line) as LlamaStackResponse;
-      
+
       // Debug: Log what we're receiving
       console.log('🔧 ADAPTER: Received type:', json.type, 'content length:', json.content?.length);
 
@@ -72,7 +56,7 @@ export const LlamaStackParser: LlamaStackParser = {
         // The react_unified type contains thought and answer directly
         if (json.thought) {
           const thought = String(json.thought);
-          const answer = json.answer ? String(json.answer) : "";
+          const answer = json.answer ? String(json.answer) : '';
           if (answer) {
             return `🤔 **Thinking:** ${thought}\n\n${answer}`;
           } else {

@@ -2,7 +2,7 @@
 Chat History API endpoints for managing conversation records.
 
 This module provides CRUD operations for chat history records, storing
-conversation data between users and virtual assistants. It maintains
+conversation data between users and virtual agents. It maintains
 persistent records of chat interactions for audit trails and conversation
 continuity.
 

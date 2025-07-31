@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchCurrentUser, User } from '@/services/users';
+import { fetchCurrentUser } from '@/services/users';
+import { User } from '@/types/auth';
 
 interface UserContextType {
   currentUser: User | null;
@@ -39,14 +40,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     currentUser: currentUser || null,
     isLoading,
     error: error?.message || null,
-    refetch,
+    refetch: () => void refetch(),
   };
 
-  return (
-    <UserContext.Provider value={value}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
 /**

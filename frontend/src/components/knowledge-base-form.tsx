@@ -477,9 +477,7 @@ export function KnowledgeBaseForm({
           </FormGroup>
         )}
       </form.Field>
-      <form.Field
-        name="vector_db_name"
-      >
+      <form.Field name="vector_db_name">
         {(field) => (
           <FormGroup label="Vector DB Name" fieldId="kb-form-vector-db-name">
             <TextInput

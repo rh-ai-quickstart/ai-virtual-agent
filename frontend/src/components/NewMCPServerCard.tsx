@@ -1,5 +1,4 @@
 import { MCPServer, MCPServerCreate } from '@/types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardBody,
@@ -14,19 +13,19 @@ import {
 import { PlusIcon } from '@patternfly/react-icons';
 import { useState, useEffect } from 'react';
 import { MCPServerForm } from './MCPServerForm';
-import { createMCPServer, updateMCPServer } from '@/services/mcp-servers';
+import { useMCPServers } from '@/hooks';
 
 interface NewMCPServerCardProps {
   editingServer?: MCPServer | null;
   onEditComplete?: () => void;
 }
 
-export function NewMCPServerCard({ 
-  editingServer, 
-  onEditComplete 
-}: NewMCPServerCardProps) {
+export function NewMCPServerCard({ editingServer, onEditComplete }: NewMCPServerCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const queryClient = useQueryClient();
+
+  // Use custom hook
+  const { createMCPServer, updateMCPServer, isCreating, isUpdating, createError, updateError } =
+    useMCPServers();
 
   // Open card when editing server is set
   useEffect(() => {
@@ -35,79 +34,36 @@ export function NewMCPServerCard({
     }
   }, [editingServer]);
 
-  // Create MCP server mutation
-  const createMutation = useMutation<MCPServer, Error, MCPServerCreate>({
-    mutationFn: createMCPServer,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['mcpServers'] });
-      setIsOpen(false);
-      console.log('MCP server created successfully');
-    },
-    onError: (error) => {
-      console.error('Error creating MCP server:', error);
-    },
-  });
-
-  // Update MCP server mutation
-  const updateMutation = useMutation<
-    MCPServer, 
-    Error, 
-    { toolgroup_id: string; serverUpdate: MCPServerCreate }
-  >({
-    mutationFn: ({ toolgroup_id, serverUpdate }) => 
-      updateMCPServer(toolgroup_id, serverUpdate),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['mcpServers'] });
-      setIsOpen(false);
-      onEditComplete?.();
-      console.log('MCP server updated successfully');
-    },
-    onError: (error) => {
-      console.error('Error updating MCP server:', error);
-    },
-  });
-
   const handleSubmit = (values: MCPServerCreate) => {
-    if (editingServer) {
-      // Update existing server
-      updateMutation.mutate({
-        toolgroup_id: editingServer.toolgroup_id,
-        serverUpdate: values,
-      });
-    } else {
-      // Create new server
-      createMutation.mutate(values);
-    }
+    void (async () => {
+      try {
+        if (editingServer) {
+          // Update existing server
+          await updateMCPServer(editingServer.toolgroup_id, values);
+          console.log('MCP server updated successfully');
+          onEditComplete?.();
+        } else {
+          // Create new server
+          await createMCPServer(values);
+          console.log('MCP server created successfully');
+        }
+        setIsOpen(false);
+      } catch (error) {
+        console.error('Error with MCP server operation:', error);
+      }
+    })();
   };
 
   const handleCancel = () => {
     setIsOpen(false);
     onEditComplete?.();
-    // Reset mutations
-    createMutation.reset();
-    updateMutation.reset();
   };
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
-  const error = createMutation.error || updateMutation.error;
-  const isSuccess = createMutation.isSuccess || updateMutation.isSuccess;
+  const isSubmitting = isCreating || isUpdating;
+  const error = createError || updateError;
 
   return (
     <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
-      {isSuccess && (
-        <FlexItem>
-          <Alert
-            timeout={5000}
-            variant="success"
-            title={
-              editingServer 
-                ? "MCP server updated successfully!" 
-                : "MCP server created successfully!"
-            }
-            className="pf-v6-u-mb-sm"
-          />
-        </FlexItem>
-      )}
       <FlexItem>
         <Card isExpanded={isOpen} isClickable={!isOpen}>
           <CardHeader
@@ -152,9 +108,9 @@ export function NewMCPServerCard({
                     <Alert
                       variant="danger"
                       title={
-                        editingServer 
-                          ? "Failed to update MCP server" 
-                          : "Failed to create MCP server"
+                        editingServer
+                          ? 'Failed to update MCP server'
+                          : 'Failed to create MCP server'
                       }
                       className="pf-v6-u-mt-md"
                     >

@@ -1,8 +1,10 @@
 """
-Database configuration and session management for PostgreSQL with SQLAlchemy async.
+Database configuration and session management
+for the AI Virtual Agent Kickstart application.
 
-This module sets up the async database engine and provides session management
-for the AI Virtual Assistant application.
+This module sets up SQLAlchemy with async PostgreSQL support,
+configures the database connection, and provides utilities
+for managing database sessions and transactions.
 """
 
 import os

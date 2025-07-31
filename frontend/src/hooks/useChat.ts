@@ -2,15 +2,30 @@ import { useState, useCallback, useEffect } from 'react';
 import { LlamaStackParser, extractSessionId } from '../adapters/llamaStackAdapter';
 import { CHAT_API_ENDPOINT } from '../config/api';
 import { fetchChatSession } from '@/services/chat-sessions';
+import { ChatMessage, UseLlamaChatOptions } from '@/types/chat';
+
+// Re-export types for backward compatibility
+export type { ChatMessage, UseLlamaChatOptions } from '@/types/chat';
+
+// Interface for ReAct response structure
+interface ReActResponse {
+  thought?: string;
+  answer?: string;
+}
+
+// Type guard to check if an object has ReAct properties
+function isReActResponse(obj: unknown): obj is ReActResponse {
+  return typeof obj === 'object' && obj !== null && 'thought' in obj;
+}
 
 // Function for processing streaming ReAct responses (when user types question)
 export const processStreamingReActResponse = (content: string): string => {
   if (content.trim().startsWith('{')) {
     try {
-      const jsonData = JSON.parse(content.trim());
-      if (jsonData.thought) {
+      const jsonData: unknown = JSON.parse(content.trim());
+      if (isReActResponse(jsonData) && jsonData.thought) {
         const thought = String(jsonData.thought);
-        const answer = jsonData.answer ? String(jsonData.answer) : "";
+        const answer = jsonData.answer ? String(jsonData.answer) : '';
         if (answer) {
           return `🤔 **Thinking:** ${thought}\n\n${answer}`;
         } else {
@@ -28,10 +43,10 @@ export const processStreamingReActResponse = (content: string): string => {
 const processStoredReActResponse = (content: string): string => {
   if (content.trim().startsWith('{')) {
     try {
-      const jsonData = JSON.parse(content.trim());
-      if (jsonData.thought) {
+      const jsonData: unknown = JSON.parse(content.trim());
+      if (isReActResponse(jsonData) && jsonData.thought) {
         const thought = String(jsonData.thought);
-        const answer = jsonData.answer ? String(jsonData.answer) : "";
+        const answer = jsonData.answer ? String(jsonData.answer) : '';
         if (answer) {
           return `🤔 **Thinking:** ${thought}\n\n${answer}`;
         } else {
@@ -45,22 +60,14 @@ const processStoredReActResponse = (content: string): string => {
   return content;
 };
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-}
-
-export interface UseLlamaChatOptions {
-  onError?: (error: Error) => void;
-  onFinish?: (message: ChatMessage) => void;
-}
-
 /**
  * Simple chat hook that directly handles LlamaStack without the AI SDK overhead
  */
-export function useChat(agentId: string, agentType: 'Regular' | 'ReAct' = 'Regular', options?: UseLlamaChatOptions) {
+export function useChat(
+  agentId: string,
+  agentType: 'Regular' | 'ReAct' = 'Regular',
+  options?: UseLlamaChatOptions
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -94,12 +101,12 @@ export function useChat(agentId: string, agentType: 'Regular' | 'ReAct' = 'Regul
         const convertedMessages: ChatMessage[] = sessionDetail.messages.map(
           (msg: SessionMessage, index: number) => {
             let processedContent = msg.content;
-            
+
             // Process assistant messages that might contain raw JSON
             if (msg.role === 'assistant') {
               processedContent = processStoredReActResponse(msg.content);
             }
-            
+
             return {
               id: `${msg.role}-${sessionId}-${index}`,
               role: msg.role,
@@ -177,8 +184,6 @@ export function useChat(agentId: string, agentType: 'Regular' | 'ReAct' = 'Regul
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-
-
 
         // Process stream
         const reader = response.body.getReader();

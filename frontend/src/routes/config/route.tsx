@@ -38,7 +38,9 @@ function ConfigLayout() {
               <Link to="/config/mcp-servers">MCP Servers</Link>
             </NavItem>
             <NavItem itemId={3} isActive={location.pathname == '/config/users'} to="#">
-              <Link to="/config/users" search={{ userId: undefined }}>Users</Link>
+              <Link to="/config/users" search={{ userId: undefined }}>
+                Users
+              </Link>
             </NavItem>
           </NavList>
         </Nav>

@@ -1,90 +1,152 @@
-# Install AI Virtual Agent
+<!-- omit from toc -->
+# Installing AI Virtual Agent Kickstart
 
-This guide will help you to install the AI Virtual Agent on an OpenShift AI platform.
+The AI Virtual Agent Kickstart is designed for production deployment on OpenShift AI and compatible Kubernetes platforms. This guide covers installation, configuration, and production operations.
 
-## Requirements
+<!-- omit from toc -->
+## Table of Contents
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+  - [Hardware Requirements](#hardware-requirements)
+  - [Supported Models](#supported-models)
+  - [Required Software](#required-software)
+  - [Required Access](#required-access)
+- [Installation](#installation)
+  - [1. Prepare the Environment](#1-prepare-the-environment)
+  - [2. Identify GPU Node Configuration](#2-identify-gpu-node-configuration)
+  - [3. Review Available Models](#3-review-available-models)
+  - [4. Install the Application](#4-install-the-application)
+    - [Basic Installation (No Safety Shields)](#basic-installation-no-safety-shields)
+    - [Production Installation (With Safety Shields)](#production-installation-with-safety-shields)
+    - [Simplified Installation (Untainted Nodes)](#simplified-installation-untainted-nodes)
+    - [Installation with pre-installed models](#installation-with-pre-installed-models)
+- [Check Installation Status](#check-installation-status)
+- [Access the Application](#access-the-application)
+- [Troubleshooting](#troubleshooting)
+- [Uninstallation](#uninstallation)
 
-### Minimum hardware requirements
 
-- 1 GPU with 24GB of VRAM for the LLM, refer to the chart below
-- 1 GPU with 24GB of VRAM for the safety/shield model (optional)
+## Architecture
 
-### Required software
+```mermaid
+graph TB
+    subgraph "User Interface"
+        UI[Frontend React App<br/>Route: ai-virtual-agent]
+    end
 
-- OpenShift Cluster 4.16+ with OpenShift AI 2.19+
-- OpenShift Client CLI - [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc#installing-openshift-cli)
-- Helm CLI - helm
-- [huggingface-cli](https://huggingface.co/docs/huggingface_hub/guides/cli) (optional)
-- [Hugging Face Token](https://huggingface.co/settings/tokens)
-- Access to [Meta Llama](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/) model.
-- Access to [Meta Llama Guard](https://huggingface.co/meta-llama/Llama-Guard-3-8B/) model.
+    subgraph "Application Services"
+        API[Backend FastAPI<br/>Service: ai-virtual-agent]
+        LS[LlamaStack<br/>Service: llamastack]
+    end
+
+    subgraph "Storage Services"
+        DB[(PostgreSQL + pgvector<br/>Service: pgvector)]
+        S3[(MinIO S3<br/>Service: minio)]
+    end
+
+    subgraph "AI Infrastructure"
+        LLM[Model Servers<br/>InferenceService: vLLM/TGI]
+        EMB[Embedding Service]
+    end
+
+    subgraph "Processing Pipeline"
+        MON[Ingestion Monitor]
+        KFP[Kubeflow Pipelines<br/>Data Science Pipelines]
+    end
+
+    UI --> API
+    API --> LS
+    API --> DB
+    LS --> LLM
+    LS --> EMB
+    MON --> DB
+    MON --> KFP
+    KFP --> S3
+    KFP --> LS
+```
+
+## Prerequisites
+
+### Hardware Requirements
+
+- **1 GPU with 24GB+ VRAM** for the primary LLM model
+- **1 GPU with 24GB+ VRAM** for the safety/shield model (optional)
 
 ### Supported Models
 
-| Function    | Model Name                             | GPU         | AWS
-|-------------|----------------------------------------|-------------|-------------
-| Embedding   | `all-MiniLM-L6-v2`                     | CPU or GPU  |
-| Generation  | `meta-llama/Llama-3.2-3B-Instruct`     | L4          | g6.2xlarge
-| Generation  | `meta-llama/Llama-3.1-8B-Instruct`     | L4          | g6.2xlarge
-| Generation  | `meta-llama/Meta-Llama-3-70B-Instruct` | A100 x2     | p4d.24xlarge
-| Safety      | `meta-llama/Llama-Guard-3-8B`          | L4          | g6.2xlarge
+| Function    | Model Name                             | GPU Required    | AWS Instance
+|-------------|----------------------------------------|-----------------|-------------
+| Embedding   | `all-MiniLM-L6-v2`                     | CPU or GPU      | -
+| Generation  | `meta-llama/Llama-3.2-3B-Instruct`     | L4 (24GB)       | g6.2xlarge
+| Generation  | `meta-llama/Llama-3.1-8B-Instruct`     | L4 (24GB)       | g6.2xlarge
+| Generation  | `meta-llama/Meta-Llama-3-70B-Instruct` | A100 x2 (80GB)  | p4d.24xlarge
+| Safety      | `meta-llama/Llama-Guard-3-8B`          | L4 (24GB)       | g6.2xlarge
 
-Note: the 70B model is NOT required for initial testing of this example.  The safety/shield model `Llama-Guard-3-8B` is also optional.
+### Required Software
 
-## Install
+- **OpenShift Cluster 4.16+** with OpenShift AI 2.19+
+- **OpenShift Client CLI** - [oc](https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc#installing-openshift-cli)
+- **Helm CLI** - [helm](https://helm.sh/docs/intro/install/)
+- **[Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli)** (optional)
+- **[Hugging Face Token](https://huggingface.co/settings/tokens)** with access to Meta Llama models
 
-1. Clone the repo so you have a working copy
+### Required Access
 
+- Access to [Meta Llama](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct/) models
+- Access to [Meta Llama Guard](https://huggingface.co/meta-llama/Llama-Guard-3-8B/) models (optional)
+- OpenShift cluster admin or sufficient permissions for:
+  - Creating namespaces
+  - Deploying workloads with GPU resources
+  - Creating persistent volume claims
+  - Managing secrets and config maps
+
+## Installation
+
+### 1. Prepare the Environment
+
+Clone the repository:
 ```bash
 git clone https://github.com/rh-ai-kickstart/ai-virtual-agent
+cd ai-virtual-agent
 ```
 
-2. Login to your OpenShift Cluster
-
+Login to your OpenShift cluster:
 ```bash
 oc login --server="<cluster-api-endpoint>" --token="sha256~XYZ"
 ```
 
-3. If the GPU nodes are tainted, find the taint key. You will have to pass in the
-   make command to ensure that the llm pods are deployed on the tainted nodes with GPU.
-   In the example below the key for the taint is `nvidia.com/gpu`
+### 2. Identify GPU Node Configuration
+
+If GPU nodes are tainted, identify the taint key for deployment configuration:
 
 ```bash
 oc get nodes -l nvidia.com/gpu.present=true -o yaml | grep -A 3 taint
 ```
 
-The output of the command may be something like below
-
-```
-  taints:
-    - effect: NoSchedule
-      key: nvidia.com/gpu
-      value: "true"
---
-    taints:
-    - effect: NoSchedule
-      key: nvidia.com/gpu
-      value: "true"
+Example output:
+```yaml
+taints:
+- effect: NoSchedule
+  key: nvidia.com/gpu
+  value: "true"
 ```
 
-You can work with your OpenShift cluster admin team to determine what labels and taints identify GPU-enabled worker nodes.  It is also possible that all your worker nodes have GPUs therefore have no distinguishing taint.
+Work with your cluster admin team to determine the appropriate labels and taints for GPU-enabled nodes.
 
-4. Navigate to Helm deploy directory
+### 3. Review Available Models
 
+Navigate to the Helm deployment directory:
 ```bash
 cd deploy/helm
 ```
 
-5. List available models
-
+List available models:
 ```bash
 make list-models
 ```
 
-The above command will list the models to use in the next command
-
-```bash
-(Output)
+Example output:
+```
 model: llama-3-1-8b-instruct (meta-llama/Llama-3.1-8B-Instruct)
 model: llama-3-2-1b-instruct (meta-llama/Llama-3.2-1B-Instruct)
 model: llama-3-2-1b-instruct-quantized (RedHatAI/Llama-3.2-1B-Instruct-quantized.w8a8)
@@ -94,122 +156,99 @@ model: llama-guard-3-1b (meta-llama/Llama-Guard-3-1B)
 model: llama-guard-3-8b (meta-llama/Llama-Guard-3-8B)
 ```
 
-The "guard" models can be used to test shields for profanity, hate speech, violence, etc.
+### 4. Install the Application
 
-6. Install via make
-
-Use the taint key from above as the `LLM_TOLERATION` and `SAFETY_TOLERATION`
-
-The namespace will be auto-created
-
-To install only the AI Virtual Agent without shields, use the following command:
+#### Basic Installation (No Safety Shields)
 
 ```bash
-make install NAMESPACE=ai-virtual-agent LLM=llama-3-1-8b-instruct LLM_TOLERATION="nvidia.com/gpu"
+make install \
+  NAMESPACE=ai-virtual-agent \
+  LLM=llama-3-1-8b-instruct \
+  LLM_TOLERATION="nvidia.com/gpu"
 ```
 
-To install AI Virtual Agent with the guard model to allow for shields, use the following command:
+#### Production Installation (With Safety Shields)
 
 ```bash
-make install NAMESPACE=ai-virtual-agent LLM=llama-3-1-8b-instruct LLM_TOLERATION="nvidia.com/gpu" SAFETY=llama-guard-3-8b SAFETY_TOLERATION="nvidia.com/gpu"
+make install \
+  NAMESPACE=ai-virtual-agent \
+  LLM=llama-3-1-8b-instruct \
+  LLM_TOLERATION="nvidia.com/gpu" \
+  SAFETY=llama-guard-3-8b \
+  SAFETY_TOLERATION="nvidia.com/gpu"
 ```
 
-If you have no tainted nodes, perhaps every worker node has a GPU, then you can use a simplified version of the make command
+#### Simplified Installation (Untainted Nodes)
+
+If all worker nodes have GPUs and are not tainted:
+```bash
+make install \
+  NAMESPACE=ai-virtual-agent \
+  LLM=llama-3-1-8b-instruct \
+  SAFETY=llama-guard-3-8b
+```
+
+#### Installation with pre-installed models
+```bash
+make install \
+NAMESPACE=ai-virtual-agent \
+LLM=llama-3-1-8b-instruct \
+LLM_URL= <your-llm-url>\
+SAFETY=llama-guard-3-8b \
+SAFETY_URL= <your-safety-model-url>
+```
+
+When prompted, enter your **[Hugging Face Token](https://huggingface.co/settings/tokens)**.
+
+  **Note**: Installation may take 10-30 minutes depending on model sizes and download speeds.
+
+## Check Installation Status
+
+Monitor the installation progress and verify when components are ready:
 
 ```bash
-make install NAMESPACE=ai-virtual-agent LLM=llama-3-1-8b-instruct SAFETY=llama-guard-3-8b
+cd deploy/helm
+make status NAMESPACE=ai-virtual-agent
 ```
 
-When prompted, enter your **[Hugging Face Token]((https://huggingface.co/settings/tokens))**.
+Wait for all pods to show `Running` status before proceeding to access the application.
 
-Note: This process may take 10 to 30 minutes depending on the number and size of models to be downloaded.
+## Access the Application
 
-7. Watch/Monitor
+The installation will automatically display the application URL when complete. Open the URL in your browser to access the AI Virtual Agent interface.
+
+If you need to retrieve the URL later:
 
 ```bash
-oc get pods -n ai-virtual-agent
+oc get routes ai-virtual-agent -n ai-virtual-agent
 ```
 
-```
-(Output)
-NAME                                                                READY   STATUS      RESTARTS   AGE
-add-default-ingestion-pipeline-brfbb                                0/1     Completed   0          10m
-ai-virtual-agent-854f8588dc-86kmb                               2/2     Running     0          10m
-ai-virtual-agent-fnc6j                                          0/1     Completed   3          10m
-ai-virtual-agent-ingestion-pipeline-6dcb65b4fc-mxmp9            1/1     Running     0          10m
-ai-virtual-agent-mcp-weather-646654864d-j8wbh                   1/1     Running     0          10m
-ds-pipeline-dspa-855d64dcdc-gqtqw                                   2/2     Running     0          10m
-ds-pipeline-metadata-envoy-dspa-7759f8589d-vhcvx                    2/2     Running     0          10m
-ds-pipeline-metadata-grpc-dspa-6df7dbc65d-r4svx                     1/1     Running     0          10m
-ds-pipeline-persistenceagent-dspa-c84c998bb-x2jnc                   1/1     Running     0          10m
-ds-pipeline-scheduledworkflow-dspa-7f4cbfbb6f-vd6fz                 1/1     Running     0          10m
-ds-pipeline-workflow-controller-dspa-dd69bddd6-5tj9b                1/1     Running     0          10m
-fetch-and-store-pipeline-m6kbg-system-container-driver-3649736823   0/2     Completed   0          10m
-fetch-and-store-pipeline-m6kbg-system-container-driver-662109129    0/2     Completed   0          10m
-fetch-and-store-pipeline-m6kbg-system-container-impl-1096845703     0/2     Completed   0          10m
-fetch-and-store-pipeline-m6kbg-system-container-impl-3659398265     0/2     Completed   0          10m
-fetch-and-store-pipeline-m6kbg-system-dag-driver-1735541709         0/2     Completed   0          10m
-ingestion-pipeline-monitor-85585696d4-d67zx                         2/2     Running     0          10m
-llama-3-2-3b-instruct-predictor-00001-deployment-6bbf96f8674677     3/3     Running     0          10m
-llamastack-6dc8bdd5c4-vpft7                                         1/1     Running     0          10m
-mariadb-dspa-9bc764fdf-pq8wd                                        1/1     Running     0          10m
-minio-0                                                             1/1     Running     0          10m
-minio-dspa-68bf8b6947-dsxpv                                         1/1     Running     0          10m
-pgvector-0                                                          1/1     Running     0          10m
-rag-pipeline-notebook-0                                             2/2     Running     0          10m
-upload-sample-docs-job-zlc74                                        0/1     Completed   0          10m
+## Troubleshooting
 
-```
-
-8. Verify:
-
-Verify if all the pods are running, and the jobs have completed successfully.
+If installation fails or the application isn't accessible, use the status command to identify issues:
 
 ```bash
-oc get pods -n ai-virtual-agent
+cd deploy/helm
+make status NAMESPACE=ai-virtual-agent
 ```
 
-The key pods to watch include **predictor** in their name, those are the kserve model servers running vLLM
+This will show detailed information about pods, services, and other resources.
+
+## Uninstallation
+
+Remove the application and all associated resources:
 
 ```bash
-oc get pods -l component=predictor
-```
-
-Look for **2/2** under the Ready column
-
-The **inferenceservice** CR describes the limits, requests, model name, serving-runtime, chat-template, etc.
-
-```bash
-oc get inferenceservice llama-3-1-8b-instruct \
-  -n ai-virtual-agent \
-  -o jsonpath='{.spec.predictor.model}' | jq
-```
-
-Watch the **llamastack** pod as that one becomes available after all the model servers are up.
-
-```bash
- oc get pods -l app.kubernetes.io/name=llamastack
-```
-
-### Using the AI Virtual Agent UI
-
-1. Get the route url for the application and open in your browser
-
-```bash
-URL=http://$(oc get routes --field-selector metadata.name=ai-virtual-assistant  -o jsonpath="{range .items[*]}{.status.ingress[0].host}{end}")
-echo $URL
-open $URL
-```
-
-## Uninstalling the AI Virtual Agent application
-
-Uninstall the application and its dependencies
-
-```bash
+cd deploy/helm
 make uninstall NAMESPACE=ai-virtual-agent
 ```
 
-Delete the project
+This will automatically clean up:
+- Helm chart and all deployed resources
+- Persistent Volume Claims (PVCs) for pgvector and MinIO
+- Remaining pods in the namespace
+
+To completely remove the namespace:
 
 ```bash
 oc delete project ai-virtual-agent

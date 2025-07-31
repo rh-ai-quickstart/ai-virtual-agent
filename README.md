@@ -1,73 +1,152 @@
-# AI Virtual Agent
+# AI Virtual Agent Kickstart
 
-A comprehensive platform for creating and managing AI-powered virtual agents with knowledge base integration, built on top of LlamaStack. Use this to quickly create AI Virtual Agent for different user personas such as lawyer, accountants and marketers.
+A platform for creating and managing AI-powered virtual agents with knowledge base integration, built on top of LlamaStack.
 
-To see how it's done, refer to the [installation guide](INSTALLING.md).
+## What is this?
 
-## Description
+This platform provides the tools to build and deploy conversational AI agents that can:
 
-The AI Virtual Agent platform provides a complete solution for building intelligent conversational agents that can access and reason over your organization's knowledge. The system combines modern web technologies with powerful AI capabilities to deliver a seamless experience for both developers and end users.
-
-### Use Cases
-
-- **Customer Support**: Create AI agents with access to product documentation and FAQ databases
-- **Internal Knowledge Management**: Build intelligent agents for employee onboarding and information access
-- **Document Q&A**: Enable natural language queries over large document collections
-- **Multi-modal Assistance**: Combine different AI capabilities through tool integration
-
-## Architecture
-
-The platform consists of several interconnected components:
-
-- **Frontend UI**: Modern React application for user interaction
-- **Backend API**: FastAPI server handling business logic and data persistence
-- **LlamaStack**: AI platform managing agents, models, and inference
-- **Knowledge Processing**: Kubernetes-based document ingestion pipeline
-- **Database Layer**: PostgreSQL with vector extension for data storage
-
-![AI Virtual Agent Architecture](docs/images/ai-virtual-agent.jpg)
-
-For detailed architecture information, see:
-
-- [Virtual Agents Architecture Guide](docs/virtual-agents-architecture.md)
-- [Knowledge Base Architecture Guide](docs/knowledge-base-architecture.md)
+- **Access knowledge bases** - Upload documents and create searchable knowledge bases for RAG (Retrieval-Augmented Generation)
+- **Use tools** - Integrate web search, databases, and custom tools through the Model Context Protocol (MCP)
+- **Apply guardrails** - Built-in safety measures and content filtering
+- **Scale in production** - Kubernetes-ready architecture
 
 ### Key Features
 
-- **🤖 Virtual Agent Management**: Create, configure, and manage AI agents with different personalities and capabilities
-- **📚 Knowledge Base Integration**: Upload documents and create searchable knowledge bases for RAG (Retrieval-Augmented Generation)
-- **💬 Real-time Chat**: Stream-based chat interface with Server-Sent Events for responsive conversations
-- **🔧 Tool Integration**: Support for built-in tools (RAG, web search) and external MCP (Model Context Protocol) servers
-- **🛡️ Safety & Guardrails**: Configurable input/output shields and safety measures
-- **📊 Session Management**: Persistent chat sessions with history and metadata
-- **🏗️ Scalable Architecture**: Production-ready deployment with Kubernetes and containerization
+🤖 **Agent Management** - Create and configure AI agents with different capabilities
+📚 **Knowledge Integration** - Document search and question answering via RAG
+💬 **Real-time Chat** - Streaming conversations with session history
+🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
-### Technology Stack
+## Quick Start
 
-- **Frontend**: React + TypeScript + PatternFly UI + TanStack Router/Query
-- **Backend**: FastAPI + SQLAlchemy + PostgreSQL + Alembic
-- **AI Platform**: LlamaStack for agent management and inference
-- **Vector Storage**: pgvector for knowledge base embeddings
-- **Document Processing**: Kubeflow Pipelines + Docling for ingestion
-- **Infrastructure**: Kubernetes + Helm + MinIO for object storage
+### Installation
 
-## Documentation
+**Option 1: One-command setup**
+```bash
+git clone https://github.com/rh-ai-kickstart/ai-virtual-agent
+cd ai-virtual-agent
+make install dev
+```
 
-- **[Installation Guide](INSTALLING.md)** - Install AI Virtual Agent
-- **[Contributing Guide](CONTRIBUTING.md)** - Setup, development, and contribution guidelines
-- **[Virtual Agents Architecture](docs/virtual-agents-architecture.md)** - How AI agents work in the platform
-- **[Knowledge Base Architecture](docs/knowledge-base-architecture.md)** - Document ingestion and RAG system
-- **[Backend README](backend/README.md)** - Backend API documentation and features
+**Option 2: Step-by-step**
+```bash
+# 1. Start database
+podman compose up -d
+
+# 2. Start backend
+cd backend && python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt && alembic upgrade head
+uvicorn main:app --reload &
+
+# 3. Start frontend
+cd ../frontend && npm install && npm run dev
+```
+
+**Access your app:**
+- Frontend: http://localhost:5173
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
+
+### Production Deployment
+
+For production installation on Kubernetes/OpenShift:
+
+```bash
+cd deploy/helm
+make install NAMESPACE=ai-virtual-agent
+```
+
+📖 **[Full Installation Guide →](INSTALLING.md)**
+
+## Project Structure
+
+```
+ai-virtual-agent/
+├── frontend/           # React UI with PatternFly components
+├── backend/            # FastAPI server with PostgreSQL
+├── mcpservers/         # Custom MCP tool servers
+├── docs/               # Architecture and API documentation
+├── deploy/             # Kubernetes and Helm deployment
+├── scripts/            # Development and deployment scripts
+└── tests/              # Integration test suite
+```
+
+## Architecture Overview
+
+The platform integrates several components:
+
+- **React Frontend** - Web interface for agent and chat management
+- **FastAPI Backend** - API server handling business logic and data persistence
+- **LlamaStack** - AI platform managing models, agents, and inference
+- **PostgreSQL + pgvector** - Data storage with vector search capabilities
+- **Kubernetes Pipeline** - Document processing and knowledge base ingestion
+
+![Architecture](docs/images/architecture.png)
+
+📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
+
+## Getting Started Guides
+
+### 👩‍💻 **For Developers**
+- **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
+- **[Backend API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Frontend Architecture](frontend/README.md)** - UI components and patterns
+
+### 🚀 **For Deployment**
+- **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
+- **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
+- **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
+
+### 🔧 **For Integration**
+- **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **[Testing Guide](tests/README.md)** - Running integration tests
+- **[API Reference](docs/api-reference.md)** - Backend API endpoints
+
+## Example Use Cases
+
+**Customer Support Agent**
+```typescript
+const agent = await createAgent({
+  name: "Support Bot",
+  model: "llama3.1-8b-instruct",
+  knowledge_bases: ["support-docs"],
+  tools: ["builtin::rag", "builtin::web_search"]
+});
+```
+
+**Domain Expert (Banking)**
+```typescript
+const expert = await initializeAgentTemplate({
+  template: "commercial_banker",
+  knowledge_bases: ["banking-regulations"]
+});
+```
+
+## Development Commands
+
+```bash
+# Start everything locally
+make dev
+
+# Run tests
+make test
+
+# Stop all services
+make stop
+
+# Reset database
+make reset-db
+```
 
 ## Community & Support
 
-- **Issues**: Report bugs and request features via [GitHub Issues](https://github.com/RHEcosystemAppEng/ai-virtual-agent/issues)
-- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines
+- **🐛 Issues** - [Report bugs and request features](https://github.com/rh-ai-kickstart/ai-virtual-agent/issues)
+- **💬 Discussions** - [Ask questions and share ideas](https://github.com/rh-ai-kickstart/ai-virtual-agent/discussions)
+- **🤝 Contributing** - See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- **📚 Documentation** - Browse `/docs` for detailed guides
 
 ## License
 
-This project is licensed under the [MIT LICENSE](LICENSE) - see the LICENSE file for details.
-
----
-
-**Built with ❤️ by the Red Hat Ecosystem App Engineering team**
+[MIT License](LICENSE) - Built with ❤️ by the Red Hat Ecosystem App Engineering team

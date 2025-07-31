@@ -3,7 +3,7 @@ Model Server management API endpoints for LLM providers.
 
 This module provides CRUD operations for model servers, which are external
 LLM providers and inference endpoints that can be integrated with the AI
-Virtual Assistant system. Model servers are synchronized with LlamaStack
+Virtual Agent system. Model servers are synchronized with LlamaStack
 to provide access to various language models.
 
 Key Features:
@@ -163,7 +163,7 @@ async def delete_model_server(server_id: UUID, db: AsyncSession = Depends(get_db
     Delete a model server configuration.
 
     This endpoint removes a model server from the database. The server will
-    no longer be available for use by virtual assistants.
+    no longer be available for use by virtual agents.
 
     Args:
         server_id: The unique identifier of the model server to delete

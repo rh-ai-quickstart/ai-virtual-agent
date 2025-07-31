@@ -1,0 +1,18 @@
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-authenticated
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+spec:
+  to:
+    kind: Service
+    name: {{ include "ai-virtual-agent.fullname" . }}
+    weight: 100
+  port:
+    targetPort: proxy
+  tls:
+    termination: reencrypt
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

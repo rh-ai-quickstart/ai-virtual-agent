@@ -1,4 +1,10 @@
-import { fetchUsers, fetchUserById, updateUserAgents, removeUserAgents, User } from '@/services/users';
+import {
+  fetchUsers,
+  fetchUserById,
+  updateUserAgents,
+  removeUserAgents,
+  User,
+} from '@/services/users';
 import { fetchAgents } from '@/services/agents';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
@@ -97,11 +103,11 @@ function Users() {
     },
     onSuccess: () => {
       // Invalidate user profile data to update the current view
-      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       // Invalidate users list to update agent counts on the users list page
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
       // Invalidate current user if they are the same user being updated
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
     onError: (error) => {
       console.error('Error adding agent:', error);
@@ -115,11 +121,11 @@ function Users() {
     },
     onSuccess: () => {
       // Invalidate user profile data to update the current view
-      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       // Invalidate users list to update agent counts on the users list page
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
       // Invalidate current user if they are the same user being updated
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },
     onError: (error) => {
       console.error('Error removing agent:', error);
@@ -141,11 +147,11 @@ function Users() {
   };
 
   const handleUserClick = (user: User) => {
-    navigate({ search: { userId: user.id } });
+    void navigate({ search: { userId: user.id } });
   };
 
   const handleBackToList = () => {
-    navigate({ search: { userId: undefined } });
+    void navigate({ search: { userId: undefined } });
   };
 
   if (loading) {
@@ -228,8 +234,12 @@ function Users() {
                             <DropdownList>
                               {availableAgents.map((agent) => {
                                 const isAssigned = userProfile.agent_ids?.includes(agent.id);
-                                const isLoading = addAgentMutation.isPending && addAgentMutation.variables?.agentId === agent.id;
-                                const hasError = addAgentMutation.isError && addAgentMutation.variables?.agentId === agent.id;
+                                const isLoading =
+                                  addAgentMutation.isPending &&
+                                  addAgentMutation.variables?.agentId === agent.id;
+                                const hasError =
+                                  addAgentMutation.isError &&
+                                  addAgentMutation.variables?.agentId === agent.id;
 
                                 return (
                                   <DropdownItem
@@ -241,7 +251,10 @@ function Users() {
                                     }}
                                     isDisabled={isAssigned || isLoading}
                                   >
-                                    <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+                                    <Flex
+                                      alignItems={{ default: 'alignItemsCenter' }}
+                                      gap={{ default: 'gapSm' }}
+                                    >
                                       <Checkbox
                                         isChecked={isAssigned}
                                         isDisabled={isLoading}
@@ -255,10 +268,19 @@ function Users() {
                                       />
                                       <FlexItem>
                                         <span>{agent.name}</span>
-                                        {isLoading && <Spinner size="sm" style={{ marginLeft: '8px' }} />}
+                                        {isLoading && (
+                                          <Spinner size="sm" style={{ marginLeft: '8px' }} />
+                                        )}
                                         {hasError && (
-                                          <span style={{ color: 'red', fontSize: '0.8em', marginLeft: '8px' }}>
-                                            {addAgentMutation.error?.message || 'Failed to add agent'}
+                                          <span
+                                            style={{
+                                              color: 'red',
+                                              fontSize: '0.8em',
+                                              marginLeft: '8px',
+                                            }}
+                                          >
+                                            {addAgentMutation.error?.message ||
+                                              'Failed to add agent'}
                                           </span>
                                         )}
                                       </FlexItem>
@@ -273,29 +295,44 @@ function Users() {
                           {userProfile.agent_ids && userProfile.agent_ids.length > 0 ? (
                             <LabelGroup>
                               {userProfile.agent_ids.map((agentId) => {
-                                const agent = availableAgents.find(a => a.id === agentId);
-                                const isLoading = removeAgentMutation.isPending && removeAgentMutation.variables?.agentId === agentId;
+                                const agent = availableAgents.find((a) => a.id === agentId);
+                                const isLoading =
+                                  removeAgentMutation.isPending &&
+                                  removeAgentMutation.variables?.agentId === agentId;
 
                                 return (
                                   <Label
                                     key={agentId}
                                     color="blue"
-                                    onClose={isLoading ? undefined : () => handleRemoveAgent(agentId)}
+                                    onClose={
+                                      isLoading ? undefined : () => handleRemoveAgent(agentId)
+                                    }
                                     closeBtnAriaLabel={`Remove ${agent?.name || agentId}`}
                                   >
                                     {agent?.name || agentId}
-                                    {isLoading && <Spinner size="sm" style={{ marginLeft: '8px' }} />}
-                                    {removeAgentMutation.isError && removeAgentMutation.variables?.agentId === agentId && (
-                                      <span style={{ color: 'red', fontSize: '0.8em', marginLeft: '8px' }}>
-                                        Error
-                                      </span>
+                                    {isLoading && (
+                                      <Spinner size="sm" style={{ marginLeft: '8px' }} />
                                     )}
+                                    {removeAgentMutation.isError &&
+                                      removeAgentMutation.variables?.agentId === agentId && (
+                                        <span
+                                          style={{
+                                            color: 'red',
+                                            fontSize: '0.8em',
+                                            marginLeft: '8px',
+                                          }}
+                                        >
+                                          Error
+                                        </span>
+                                      )}
                                   </Label>
                                 );
                               })}
                             </LabelGroup>
                           ) : (
-                            <span style={{ color: '#6a6e73', fontStyle: 'italic' }}>No agents assigned</span>
+                            <span style={{ color: '#6a6e73', fontStyle: 'italic' }}>
+                              No agents assigned
+                            </span>
                           )}
                         </FlexItem>
                       </Flex>
@@ -303,11 +340,15 @@ function Users() {
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Created</DescriptionListTerm>
-                    <DescriptionListDescription>{new Date(userProfile.created_at).toLocaleString()}</DescriptionListDescription>
+                    <DescriptionListDescription>
+                      {new Date(userProfile.created_at).toLocaleString()}
+                    </DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Updated</DescriptionListTerm>
-                    <DescriptionListDescription>{new Date(userProfile.updated_at).toLocaleString()}</DescriptionListDescription>
+                    <DescriptionListDescription>
+                      {new Date(userProfile.updated_at).toLocaleString()}
+                    </DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>
@@ -340,17 +381,13 @@ function Users() {
                       <DataListItemRow>
                         <DataListItemCells
                           dataListCells={[
-                            <DataListCell key="username">
-                              @{user.username}
-                            </DataListCell>,
-                            <DataListCell key="email">
-                              {user.email}
-                            </DataListCell>,
-                            <DataListCell key="role">
-                              {user.role || 'User'}
-                            </DataListCell>,
+                            <DataListCell key="username">@{user.username}</DataListCell>,
+                            <DataListCell key="email">{user.email}</DataListCell>,
+                            <DataListCell key="role">{user.role || 'User'}</DataListCell>,
                             <DataListCell key="agents">
-                              {user.agent_ids ? `${user.agent_ids.length} agent${user.agent_ids.length !== 1 ? 's' : ''}` : '0 agents'}
+                              {user.agent_ids
+                                ? `${user.agent_ids.length} agent${user.agent_ids.length !== 1 ? 's' : ''}`
+                                : '0 agents'}
                             </DataListCell>,
                             <DataListCell key="actions">
                               <Button
@@ -360,7 +397,7 @@ function Users() {
                               >
                                 View Profile
                               </Button>
-                            </DataListCell>
+                            </DataListCell>,
                           ]}
                         />
                       </DataListItemRow>

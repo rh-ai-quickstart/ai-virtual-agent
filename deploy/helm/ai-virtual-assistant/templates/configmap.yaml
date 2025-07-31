@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "ai-virtual-assistant.fullname" . }}-schema
-  labels:
-    {{- include "ai-virtual-assistant.labels" . | nindent 4 }}
-data:
-  schema.sql: |
-    {{ .Files.Get "files/schema.sql" | nindent 4 }}
