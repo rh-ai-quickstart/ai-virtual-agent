@@ -136,6 +136,9 @@ class Chat:
                 # Fallback to response_format check
                 agent_type = AgentType.REACT if agent_config.get("response_format") else AgentType.REGULAR
 
+            # Store the detected agent type for use in response generation
+            self.detected_agent_type = agent_type
+
             # Create agent instance using existing ID
             if agent_type == AgentType.REACT:
                 # Get the actual sampling parameters from the agent config
@@ -534,7 +537,7 @@ class Chat:
                 payload = response.event.payload
                 logger.debug(f"Regular agent response: {payload}")
                 
-                # Handle step progress (accumulate text like ReAct)
+                # Handle step progress (accumulate text like ReAct - don't send immediately)
                 if payload.event_type == "step_progress" and hasattr(payload.delta, "text"):
                     text_chunk = payload.delta.text
                     logger.debug(f"Regular agent received text chunk: '{text_chunk}'")
@@ -662,8 +665,9 @@ class Chat:
 
             turn_response = asyncio.run(async_iterator_to_iterator())
 
-            # Use passed agent type
-            agent_type = AgentType.REACT if agent_type_str == "ReAct" else AgentType.REGULAR
+            # Use the detected agent type from creation instead of passed parameter
+            agent_type = getattr(self, 'detected_agent_type', AgentType.REGULAR)
+            self.log.info(f"Using detected agent type: {agent_type}")
 
             # Stream the response
             yield from self._response_generator(turn_response, session_id, agent_type)
