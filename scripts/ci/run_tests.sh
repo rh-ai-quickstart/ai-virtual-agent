@@ -84,14 +84,14 @@ if [[ "$RUN_UNIT" == true ]]; then
         pytest $SPECIFIC_TESTS -ra --cov=backend --cov-report=term-missing --cov-branch || {
             echo ""
             echo "❌ Unit tests failed!"
-            echo "   If you see import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            echo "   If you see pytest not found or import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
             exit 1
         }
     else
         pytest tests/unit -ra --cov=backend --cov-report=term-missing --cov-branch || {
             echo ""
             echo "❌ Unit tests failed!"
-            echo "   If you see import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            echo "   If you see pytest not found or import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
             exit 1
         }
     fi
