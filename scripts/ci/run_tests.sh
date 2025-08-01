@@ -69,41 +69,10 @@ echo "  LlamaStack URL: $LLAMASTACK_URL"
 echo ""
 
 # Check if we're already in a virtual environment
-if [[ -n "$VIRTUAL_ENV" ]]; then
-    echo "📍 Using active virtual environment: $VIRTUAL_ENV"
-else
-    # Look for existing virtual environment
-    if [[ -d ".venv" ]]; then
-        echo "📍 Activating .venv..."
-        source .venv/bin/activate
-    elif [[ -d "venv" ]]; then
-        echo "📍 Activating venv..."
-        source venv/bin/activate
-    else
-        echo "⚠️  Virtual environment not found. Creating .venv..."
-        python3 -m venv .venv
-        source .venv/bin/activate
-    fi
-fi
-
-# Install test dependencies
-echo "📦 Checking test dependencies..."
-
-# Check if we need to install/update dependencies
-
-# Install dependencies based on what tests we're running
-if [[ "$RUN_UNIT" == true ]]; then
-    echo "📦 Installing unit test dependencies (includes backend modules)..."
-    pip install -r requirements-test.txt --quiet
-    pip install -r backend/requirements.txt --quiet
-elif [[ "$RUN_INTEGRATION" == true && "$RUN_UNIT" == false ]]; then
-    echo "📦 Installing integration test dependencies..."
-    pip install -r requirements-test.txt --quiet
-else
-    # For specific tests or when both are true, install everything
-    echo "📦 Installing all test dependencies..."
-    pip install -r requirements-test.txt --quiet
-    pip install -r backend/requirements.txt --quiet
+if [[ -z "$VIRTUAL_ENV" ]] && [[ -z "$CONDA_DEFAULT_ENV" ]]; then
+    echo "⚠️  Warning: Not running in a virtual environment!"
+    echo "   It's recommended to activate a virtual environment or conda environment before running tests."
+    echo ""
 fi
 
 # Run unit tests first (they don't need services)
@@ -112,9 +81,19 @@ if [[ "$RUN_UNIT" == true ]]; then
     echo "🧪 Running unit tests..."
     echo "------------------------"
     if [[ -n "$SPECIFIC_TESTS" ]]; then
-        pytest $SPECIFIC_TESTS -ra --cov=backend --cov-report=term-missing --cov-branch
+        pytest $SPECIFIC_TESTS -ra --cov=backend --cov-report=term-missing --cov-branch || {
+            echo ""
+            echo "❌ Unit tests failed!"
+            echo "   If you see import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            exit 1
+        }
     else
-        pytest tests/unit -ra --cov=backend --cov-report=term-missing --cov-branch
+        pytest tests/unit -ra --cov=backend --cov-report=term-missing --cov-branch || {
+            echo ""
+            echo "❌ Unit tests failed!"
+            echo "   If you see import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            exit 1
+        }
     fi
     echo ""
     echo "✅ Unit tests completed!"
@@ -189,9 +168,19 @@ export TEST_LLAMASTACK_URL="$LLAMASTACK_URL"
     echo "------------------------------"
 
     if [[ -n "$SPECIFIC_TESTS" ]]; then
-        pytest $SPECIFIC_TESTS -v
+        pytest $SPECIFIC_TESTS -v || {
+            echo ""
+            echo "❌ Integration tests failed!"
+            echo "   If you see import errors, try: pip install -r requirements-test.txt"
+            exit 1
+        }
     else
-        pytest tests/integration/ -v
+        pytest tests/integration/ -v || {
+            echo ""
+            echo "❌ Integration tests failed!"
+            echo "   If you see import errors, try: pip install -r requirements-test.txt"
+            exit 1
+        }
     fi
     echo ""
     echo "✅ Integration tests completed!"
@@ -200,7 +189,12 @@ fi
 # Run specific tests if neither unit nor integration was explicitly chosen
 if [[ "$RUN_UNIT" == false && "$RUN_INTEGRATION" == false && -n "$SPECIFIC_TESTS" ]]; then
     echo "🚀 Running specified tests..."
-    pytest $SPECIFIC_TESTS -v
+    pytest $SPECIFIC_TESTS -v || {
+        echo ""
+        echo "❌ Tests failed!"
+        echo "   If you see import errors, try: pip install -r requirements-test.txt"
+        exit 1
+    }
 fi
 
 echo ""
