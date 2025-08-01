@@ -41,7 +41,7 @@ backend/
 When `LOCAL_DEV_ENV_MODE=true` is set, the application will:
 
 - **Bypass OAuth authentication** - No need to set up OAuth proxy or authentication headers
-- **Auto-create dev user** - Creates a default admin user (`dev-user` / `dev@localhost`) in the database
+- **Auto-create dev user** - Creates a default admin user (`dev-user` / `dev@localhost.dev`) in the database
 - **Skip external auth services** - No calls to LlamaStack validation service
 - **Maintain API compatibility** - All endpoints work the same way, just without auth requirements
 

@@ -16,6 +16,10 @@ from .. import models
 # Ensure .env file is loaded
 load_dotenv()
 
+# Development user constants
+DEV_USER_USERNAME = "dev-user"
+DEV_USER_EMAIL = "dev@localhost.dev"
+
 
 def is_local_dev_mode() -> bool:
     """
@@ -37,8 +41,8 @@ async def get_or_create_dev_user(db: AsyncSession) -> models.User:
     Returns:
         models.User: The development user
     """
-    dev_username = "dev-user"
-    dev_email = "dev@localhost"
+    dev_username = DEV_USER_USERNAME
+    dev_email = DEV_USER_EMAIL
     
     # Try to find existing dev user
     result = await db.execute(
@@ -78,9 +82,8 @@ async def ensure_dev_user_has_all_agents(db: AsyncSession, available_agent_ids: 
     if not is_local_dev_mode() or not available_agent_ids:
         return
         
-    dev_username = "dev-user"
     result = await db.execute(
-        select(models.User).where(models.User.username == dev_username)
+        select(models.User).where(models.User.username == DEV_USER_USERNAME)
     )
     dev_user = result.scalar_one_or_none()
     
@@ -104,6 +107,6 @@ def get_mock_dev_headers() -> dict[str, str]:
         dict: Mock headers simulating OAuth proxy headers
     """
     return {
-        "X-Forwarded-User": "dev-user",
-        "X-Forwarded-Email": "dev@localhost"
+        "X-Forwarded-User": DEV_USER_USERNAME,
+        "X-Forwarded-Email": DEV_USER_EMAIL
     }

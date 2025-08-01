@@ -23,7 +23,7 @@ from sqlalchemy.orm import declarative_base, relationship
 Base = declarative_base()
 
 
-class RoleEnum(enum.Enum):
+class RoleEnum(str, enum.Enum):
     user = "user"
     devops = "devops"
     admin = "admin"
