@@ -29,24 +29,6 @@ backend/
 └── .env                  # Environment variables (not committed)
 ```
 
-## Developer Utilities
-
-### Database User Creation (PostgreSQL CLI)
-```sql
-CREATE ROLE myuser WITH LOGIN PASSWORD 'mypassword';
-GRANT ALL PRIVILEGES ON DATABASE ai_virtual_agent TO myuser;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
-```
-
-### Password Hashing (Python)
-```python
-import bcrypt
-password = b"mypassword"
-hashed = bcrypt.hashpw(password, bcrypt.gensalt())
-print(hashed.decode())
-```
-
 ## Environment Variables
 
 | Variable | Description | Default | Example |
@@ -76,4 +58,26 @@ echo "LOCAL_DEV_ENV_MODE=true" >> .env
 
 # Start the backend
 python -m backend.main
+```
+
+## Developer Utilities (for advanced use cases only)
+
+> **Note**: This section is provided for additional information and in most cases users won't need to execute these commands. These utilities are to be used only for advanced use cases. Standard development setup using `podman compose up` (see [Contributing Guide](../CONTRIBUTING.md)) handles all database setup automatically.
+
+### Manual Database User Creation (PostgreSQL CLI)
+*Only needed if setting up PostgreSQL manually instead of using Docker Compose:*
+```sql
+CREATE ROLE myuser WITH LOGIN PASSWORD 'mypassword';
+GRANT ALL PRIVILEGES ON DATABASE ai_virtual_agent TO myuser;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
+```
+
+### Password Hashing Reference (Python)
+*For reference only - the application handles user creation automatically:*
+```python
+import bcrypt
+password = b"mypassword"
+hashed = bcrypt.hashpw(password, bcrypt.gensalt())
+print(hashed.decode())
 ```

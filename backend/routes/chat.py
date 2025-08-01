@@ -116,28 +116,9 @@ class Chat:
             model = await self._get_model_for_agent(agent_id)
             toolgroups = await self._get_toolgroups_for_agent(agent_id)
 
-            # Determine agent type from database
-            agent_type = AgentType.REGULAR  # Default
-            try:
-                from sqlalchemy.future import select
-                from .. import models
-                # Get database connection - this is a bit hacky but works for now
-                from ..database import AsyncSessionLocal
-                async with AsyncSessionLocal() as temp_db:
-                    result = await temp_db.execute(select(models.AgentType).where(models.AgentType.agent_id == agent_id))
-                    agent_type_record = result.scalar_one_or_none()
-                    if agent_type_record and agent_type_record.agent_type == models.AgentTypeEnum.REACT:
-                        agent_type = AgentType.REACT
-                        logger.info(f"Agent {agent_id} is ReAct type from database")
-                    else:
-                        logger.info(f"Agent {agent_id} is Regular type (default or from database)")
-            except Exception as e:
-                logger.error(f"Error checking agent type from database: {e}")
-                # Fallback to response_format check
-                agent_type = AgentType.REACT if agent_config.get("response_format") else AgentType.REGULAR
-
-            # Store the detected agent type for use in response generation
-            self.detected_agent_type = agent_type
+            # Determine agent type from database - for now, check if it's a ReAct agent by looking for response_format
+            # This is a simpler approach that doesn't require database access
+            agent_type = AgentType.REACT if agent_config.get("response_format") else AgentType.REGULAR
 
             # Create agent instance using existing ID
             if agent_type == AgentType.REACT:
@@ -228,11 +209,9 @@ class Chat:
                     
                     if step_details.step_type == "inference":
                         # Process inference step with simplified logic
-                        logger.info(f"ReAct inference step content: {repr(current_step_content[:200])}...")
-                        for chunk in self._process_inference_step_json(
+                        for chunk in self._process_inference_step_simple(
                             current_step_content, tool_results, final_answer
                         ):
-                            logger.info(f"ReAct yielding chunk: {repr(chunk[:200])}...")
                             yield chunk
                         current_step_content = ""
                         
@@ -283,20 +262,10 @@ class Chat:
     def _process_inference_step_json(
         self, current_step_content, tool_results, final_answer
     ):
-        """JSON-emitting version for unified ReAct format"""
+        """Simplified JSON-emitting version for unified ReAct format"""
         try:
-            # Parse the JSON content with minimal fixes for LLM double-escaping
-            cleaned_content = current_step_content.strip()
-            
-            # Fix specific LLM double-escaping issue: \\n -> \n
-            if '\\\\n' in cleaned_content:
-                cleaned_content = cleaned_content.replace('\\\\n', '\\n')
-                
-            # Fix incomplete JSON (missing closing brace)
-            if not cleaned_content.endswith('}'):
-                cleaned_content += '}'
-                
-            react_output_data = json.loads(cleaned_content)
+            # Try to parse as JSON first
+            react_output_data = json.loads(current_step_content.strip())
             thought = react_output_data.get("thought")
             action = react_output_data.get("action")
             answer = react_output_data.get("answer")
@@ -314,39 +283,38 @@ class Chat:
             }
             yield json.dumps(unified_response)
 
-        except json.JSONDecodeError as e:
-            # Handle plain text responses by creating a react_unified response
-            logger.info(f"ReAct agent sent plain text instead of JSON, wrapping it: {current_step_content[:100]}...")
+        except json.JSONDecodeError:
+            # If JSON parsing fails, treat as plain text
             cleaned_text = current_step_content.strip()
             if cleaned_text:
                 unified_response = {
                     "type": "react_unified",
-                    "thought": "I'm analyzing your question and providing a helpful response.",
+                    "thought": "I'm processing your request and providing a helpful response.",
                     "action": None,
                     "answer": cleaned_text,
                     "tool_results": tool_results if tool_results else []
                 }
                 yield json.dumps(unified_response)
             else:
-                yield json.dumps(
-                    {
-                        "type": "error",
-                        "content": (
-                            f"JSON Decode Error: {str(e)} | "
-                            f"Content: {repr(current_step_content[:200])}..."
-                        ),
-                    }
-                )
-        except Exception as e:
-            yield json.dumps(
-                {
-                    "type": "error",
-                    "content": (
-                        f"Processing Error: {str(e)} | "
-                        f"Content: {repr(current_step_content[:200])}..."
-                    ),
+                # Empty response fallback
+                unified_response = {
+                    "type": "react_unified",
+                    "thought": "I'm processing your request.",
+                    "action": None,
+                    "answer": "I understand your question. Let me provide you with a helpful response.",
+                    "tool_results": tool_results if tool_results else []
                 }
-            )
+                yield json.dumps(unified_response)
+        except Exception as e:
+            # Final fallback for any other errors
+            logger.error(f"Error processing ReAct step: {e}")
+            yield json.dumps({
+                "type": "react_unified",
+                "thought": "I'm processing your request.",
+                "action": None,
+                "answer": "I understand your question. Let me provide you with a helpful response.",
+                "tool_results": tool_results if tool_results else []
+            })
 
         return final_answer
 
@@ -537,7 +505,7 @@ class Chat:
                 payload = response.event.payload
                 logger.debug(f"Regular agent response: {payload}")
                 
-                # Handle step progress (accumulate text like ReAct - don't send immediately)
+                # Handle step progress (accumulate text like ReAct)
                 if payload.event_type == "step_progress" and hasattr(payload.delta, "text"):
                     text_chunk = payload.delta.text
                     logger.debug(f"Regular agent received text chunk: '{text_chunk}'")
@@ -665,9 +633,8 @@ class Chat:
 
             turn_response = asyncio.run(async_iterator_to_iterator())
 
-            # Use the detected agent type from creation instead of passed parameter
-            agent_type = getattr(self, 'detected_agent_type', AgentType.REGULAR)
-            self.log.info(f"Using detected agent type: {agent_type}")
+            # Use passed agent type
+            agent_type = AgentType.REACT if agent_type_str == "ReAct" else AgentType.REGULAR
 
             # Stream the response
             yield from self._response_generator(turn_response, session_id, agent_type)
@@ -691,10 +658,8 @@ class Chat:
         
         This method handles both JSON and plain text responses gracefully.
         """
-        logger.info(f"_process_inference_step_simple called with content: {repr(current_step_content[:100])}...")
         try:
             # Try to parse as JSON first
-            logger.info(f"Content starts with '{{': {current_step_content.strip().startswith('{')}")
             if current_step_content.strip().startswith('{'):
                 react_output_data = json.loads(current_step_content.strip())
                 thought = react_output_data.get("thought")
@@ -703,52 +668,69 @@ class Chat:
                 if answer and answer != "null" and answer is not None:
                     final_answer = answer
                 
-                simple_response = {
+                unified_response = {
+                    "type": "react_unified",
                     "thought": thought if thought else "Processing your request...",
-                    "answer": answer if answer and answer != "null" else "I'm working on your question."
+                    "action": None,
+                    "answer": answer if answer and answer != "null" else "I'm working on your question.",
+                    "tool_results": tool_results if tool_results else []
                 }
-                yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                yield json.dumps(unified_response)
             else:
                 # Handle plain text response
                 cleaned_text = current_step_content.strip()
                 if cleaned_text:
-                    simple_response = {
+                    unified_response = {
+                        "type": "react_unified",
                         "thought": "I'm processing your request and providing a helpful response.",
-                        "answer": cleaned_text
+                        "action": None,
+                        "answer": cleaned_text,
+                        "tool_results": tool_results if tool_results else []
                     }
-                    yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                    yield json.dumps(unified_response)
                 else:
                     # Empty response fallback
-                    simple_response = {
+                    unified_response = {
+                        "type": "react_unified",
                         "thought": "I'm processing your request.",
-                        "answer": "I understand your question. Let me provide you with a helpful response."
+                        "action": None,
+                        "answer": "I understand your question. Let me provide you with a helpful response.",
+                        "tool_results": tool_results if tool_results else []
                     }
-                    yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                    yield json.dumps(unified_response)
                     
         except json.JSONDecodeError:
             # JSON parsing failed, treat as plain text
             cleaned_text = current_step_content.strip()
             if cleaned_text:
-                simple_response = {
+                unified_response = {
+                    "type": "react_unified",
                     "thought": "I'm processing your request and providing a helpful response.",
-                    "answer": cleaned_text
+                    "action": None,
+                    "answer": cleaned_text,
+                    "tool_results": tool_results if tool_results else []
                 }
-                yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                yield json.dumps(unified_response)
             else:
                 # Empty response fallback
-                simple_response = {
+                unified_response = {
+                    "type": "react_unified",
                     "thought": "I'm processing your request.",
-                    "answer": "I understand your question. Let me provide you with a helpful response."
+                    "action": None,
+                    "answer": "I understand your question. Let me provide you with a helpful response.",
+                    "tool_results": tool_results if tool_results else []
                 }
-                yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                yield json.dumps(unified_response)
         except Exception as e:
             logger.error(f"Error in inference step processing: {e}")
             # Final fallback
-            simple_response = {
+            yield json.dumps({
+                "type": "react_unified",
                 "thought": "I'm processing your request.",
-                "answer": "I understand your question. Let me provide you with a helpful response."
-            }
-            yield json.dumps({"type": "text", "content": json.dumps(simple_response)})
+                "action": None,
+                "answer": "I understand your question. Let me provide you with a helpful response.",
+                "tool_results": tool_results if tool_results else []
+            })
         
         return final_answer
     

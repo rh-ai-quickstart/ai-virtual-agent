@@ -19,9 +19,6 @@ export const LlamaStackParser: LlamaStackParserType = {
     try {
       const json = JSON.parse(line) as LlamaStackResponse;
 
-      // Debug: Log what we're receiving
-      console.log('🔧 ADAPTER: Received type:', json.type, 'content length:', json.content?.length);
-
       // Store session ID if present (to be handled by the adapter)
       if (json.type === 'session' && json.sessionId) {
         // This will be handled separately by the adapter
@@ -30,12 +27,8 @@ export const LlamaStackParser: LlamaStackParserType = {
 
       // Handle text content which should be shown to the user
       if (json.type === 'text' && json.content) {
-        console.log('🔧 ADAPTER: Processing text content for agentType:', agentType, 'content:', json.content);
-        console.log('🔧 ADAPTER: Content type:', typeof json.content, 'starts with {:', json.content.trim().startsWith('{'));
         if (agentType === 'ReAct') {
           const result = processStreamingReActResponse(json.content);
-          console.log('🔧 ADAPTER: ReAct text processing result:', result);
-          console.log('🔧 ADAPTER: Result includes thinking emoji:', result.includes('🤔'));
           return result;
         }
         // For regular agents, use the same logic as refresh page (no special processing)
@@ -52,21 +45,17 @@ export const LlamaStackParser: LlamaStackParserType = {
         return `[Thinking: ${json.content}]\n`;
       }
 
-
       // Handle react_unified type from our backend
       if (json.type === 'react_unified' && agentType === 'ReAct') {
-        console.log('🔧 ADAPTER: Processing react_unified response', json);
         // The react_unified type contains thought and answer directly
         if (json.thought) {
           const thought = String(json.thought);
           const answer = json.answer ? String(json.answer) : '';
-          const result = answer 
-            ? `🤔 **Thinking:** ${thought}\n\n${answer}`
-            : `🤔 **Thinking:** ${thought}`;
-          console.log('🔧 ADAPTER: react_unified result with thinking emoji:', result);
-          return result;
-        } else {
-          console.log('🔧 ADAPTER: react_unified response has no thought field');
+          if (answer) {
+            return `🤔 **Thinking:** ${thought}\n\n${answer}`;
+          } else {
+            return `🤔 **Thinking:** ${thought}`;
+          }
         }
       }
 
@@ -76,7 +65,6 @@ export const LlamaStackParser: LlamaStackParserType = {
         return `[Error: ${json.content}]`;
       }
 
-      console.log('🔧 ADAPTER: No handler for type:', json.type);
       return null;
     } catch (e) {
       // If we can't parse as JSON, return the raw line

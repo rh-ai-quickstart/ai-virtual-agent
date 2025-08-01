@@ -88,7 +88,7 @@ async def validate(auth_request: AuthRequest, db: AsyncSession = Depends(get_db)
             attributes={
                 "roles": [user.role],
             },
-            message="Authentication successful (local dev mode)",
+            message="Authentication successful",
         )
     
     # Prepare headers
