@@ -88,8 +88,8 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
 
 # profile endpoint must be declared first in order to function within
 # the /api/users context
-@router.get("/profile")
-@router.get("/profile/")
+@router.get("/profile", response_model=schemas.UserRead)
+@router.get("/profile/", response_model=schemas.UserRead)
 async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Retrieve an authorized user's profile.

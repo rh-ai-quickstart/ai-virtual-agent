@@ -137,9 +137,6 @@ async def validate_with_headers(request: Request) -> User:
     Raises:
         HTTPException: If authentication fails
     """
-    # Check if local development mode is enabled
-    if is_local_dev_mode():
-        return User("dev-user", {"roles": ["admin"]})
     
     # Build the auth request model
     auth_request = AuthRequest(

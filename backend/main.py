@@ -39,6 +39,7 @@ from .routes import (
     virtual_assistants,
 )
 from .utils.logging_config import get_logger, setup_logging
+from .utils.auth_utils import is_local_dev_mode
 
 load_dotenv()
 
@@ -172,7 +173,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(debug.router, prefix="/api")
+# Include debug router only in local development mode
+if is_local_dev_mode():
+    app.include_router(debug.router, prefix="/api")
 app.include_router(validate.router)
 app.include_router(users.router, prefix="/api")
 app.include_router(mcp_servers.router, prefix="/api")
