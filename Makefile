@@ -169,6 +169,7 @@ helm_llama_stack_args = \
     $(if $(SAFETY_URL),--set global.models.$(SAFETY).url='$(SAFETY_URL)',) \
     $(if $(LLM_API_TOKEN),--set global.models.$(LLM).apiToken='$(LLM_API_TOKEN)',) \
     $(if $(SAFETY_API_TOKEN),--set global.models.$(SAFETY).apiToken='$(SAFETY_API_TOKEN)',) \
+    $(if $(TAVILY_API_KEY),--set llama-stack.secrets.TAVILY_SEARCH_API_KEY='$(TAVILY_API_KEY)',) \
     $(if $(LLAMA_STACK_ENV),--set-json llama-stack.secrets='$(LLAMA_STACK_ENV)',)
 
 helm_ingestion_args = \
@@ -195,6 +196,7 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo ""
 	@echo "Optional Configuration (set via environment variables or make arguments):"
 	@echo "  HF_TOKEN                 - Hugging Face Token (will prompt if not provided)"
+	@echo "  TAVILY_API_KEY           - Tavily Search API Key (will prompt if not provided)"
 	@echo "  {SAFETY,LLM}             - Model id as defined in values (eg. llama-3-2-1b-instruct)"
 	@echo "  {SAFETY,LLM}_URL         - Model URL"
 	@echo "  {SAFETY,LLM}_API_TOKEN   - Model API token for remote models"
@@ -225,15 +227,30 @@ install: install-namespace helm-deps ## Install the AI Virtual Agent deployment
 	@$(eval ADMIN_EMAIL := $(shell bash -c 'read -r -p "Enter admin user email: " ADMIN_EMAIL; echo $$ADMIN_EMAIL'))
 	@$(eval SEED_ADMIN_USER_ARGS := $(call helm_seed_admin_user_args))
 
-	@echo "Installing $(AI_VIRTUAL_AGENT_RELEASE) helm chart in namespace $(NAMESPACE)"
-	@helm upgrade --install $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART) -n $(NAMESPACE) \
-		$(PGVECTOR_ARGS) \
-		$(MINIO_ARGS) \
-		$(LLM_SERVICE_ARGS) \
-		$(LLAMA_STACK_ARGS) \
-		$(INGESTION_ARGS) \
-		$(SEED_ADMIN_USER_ARGS) \
-		$(EXTRA_HELM_ARGS)
+	@bash -c '\
+		echo ""; \
+		echo "💡 Tavily Search API Key"; \
+		echo "     Without a key, web search capabilities will be disabled in your AI agents."; \
+		echo "     To enable web search, obtain a key from https://tavily.com/"; \
+		echo ""; \
+		read -r -p "Enter Tavily API Key now (or press Enter to continue without web search): " TAVILY_API_KEY; \
+		if [ -n "$$TAVILY_API_KEY" ]; then \
+			TAVILY_ARG="--set llama-stack.secrets.TAVILY_SEARCH_API_KEY=$$TAVILY_API_KEY"; \
+		else \
+			TAVILY_ARG=""; \
+		fi; \
+		echo "Installing $(AI_VIRTUAL_AGENT_RELEASE) helm chart in namespace $(NAMESPACE)"; \
+		helm upgrade --install $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART) -n $(NAMESPACE) \
+			$(PGVECTOR_ARGS) \
+			$(MINIO_ARGS) \
+			$(LLM_SERVICE_ARGS) \
+			$(LLAMA_STACK_ARGS) \
+			$$TAVILY_ARG \
+			$(INGESTION_ARGS) \
+			$(SEED_ADMIN_USER_ARGS) \
+			$(EXTRA_HELM_ARGS) \
+	'
+
 	@echo "Waiting for model services and llamastack to deploy. It may take around 10-15 minutes depending on the size of the model..."
 	@oc rollout status deploy/ai-virtual-agent -n $(NAMESPACE)
 	@echo "$(AI_VIRTUAL_AGENT_RELEASE) installed successfully"

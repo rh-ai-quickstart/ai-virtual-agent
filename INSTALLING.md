@@ -15,7 +15,8 @@ The AI Virtual Agent Kickstart is designed for production deployment on OpenShif
   - [1. Prepare the Environment](#1-prepare-the-environment)
   - [2. Identify GPU Node Configuration](#2-identify-gpu-node-configuration)
   - [3. Review Available Models](#3-review-available-models)
-  - [4. Install the Application](#4-install-the-application)
+  - [4. Configure API Keys](#4-configure-api-keys)
+  - [5. Install the Application](#5-install-the-application)
     - [Basic Installation (No Safety Shields)](#basic-installation-no-safety-shields)
     - [Production Installation (With Safety Shields)](#production-installation-with-safety-shields)
     - [Simplified Installation (Untainted Nodes)](#simplified-installation-untainted-nodes)
@@ -89,6 +90,7 @@ graph TB
 - **Helm CLI** - [helm](https://helm.sh/docs/intro/install/)
 - **[Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli)** (optional)
 - **[Hugging Face Token](https://huggingface.co/settings/tokens)** with access to Meta Llama models
+- **[Tavily API Key](https://tavily.com/)** for web search capabilities
 
 ### Required Access
 
@@ -151,7 +153,27 @@ model: llama-guard-3-1b (meta-llama/Llama-Guard-3-1B)
 model: llama-guard-3-8b (meta-llama/Llama-Guard-3-8B)
 ```
 
-### 4. Install the Application
+### 4. Configure API Keys
+
+To enable enhanced web search capabilities, you can configure your Tavily API key:
+
+1. **Get a Tavily API Key**: Sign up at [Tavily](https://tavily.com/) and obtain your API key
+
+2. **During installation**: The installer will prompt you to enter your Tavily API key
+   - Enter your key when prompted to enable web search capabilities
+   - Press Enter (leave blank) to skip and proceed without web search functionality
+
+3. **Alternative - Set as environment variable** (for automation/scripting):
+   ```bash
+   export TAVILY_API_KEY="your-tavily-api-key"
+   ```
+   This will skip the interactive prompt during installation.
+
+**Notes**:
+- The application will function without the Tavily key, but web search capabilities will be disabled
+- Setting the environment variable locally only affects the installation process - the key gets deployed to your cluster during installation
+
+### 5. Install the Application
 
 #### Basic Installation (No Safety Shields)
 
@@ -193,9 +215,11 @@ SAFETY=llama-guard-3-8b \
 SAFETY_URL= <your-safety-model-url>
 ```
 
-When prompted, enter your **[Hugging Face Token](https://huggingface.co/settings/tokens)**.
+When prompted, enter your **[Hugging Face Token](https://huggingface.co/settings/tokens)** and your **[Tavily API Key](https://tavily.com/)** for enhanced web search capabilities.
 
-  **Note**: Installation may take 10-30 minutes depending on model sizes and download speeds.
+  **Note**:
+  - The Tavily API Key enables advanced web search functionality in your AI agents
+  - Installation may take 10-30 minutes depending on model sizes and download speeds
 
 ## Check Installation Status
 

@@ -190,6 +190,8 @@ llama-stack:
         actions: [read, update, delete]
       when: user is owner
       description: users can read, update and delete resources they own
+  secrets:
+    TAVILY_SEARCH_API_KEY: "api-key"
 
 # global:
 #   models:
@@ -198,9 +200,6 @@ llama-stack:
 #       enabled: true
 #       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
 
-# llama-stack:
-#   secrets:
-#     TAVILY_SEARCH_API_KEY: "api-key"
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
