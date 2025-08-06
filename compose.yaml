@@ -1,4 +1,10 @@
-# docker-compose.yml
+# AI Virtual Agent - Container Compose Configuration
+# 
+# Usage: podman compose up -d
+# or:    docker-compose up -d
+# 
+# This will automatically start PostgreSQL with full database initialization
+
 version: '3'
 
 services:
@@ -10,10 +16,25 @@ services:
       POSTGRES_DB: ai_virtual_agent
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
+      # Enable detailed logging for debugging
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/dev/db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ai_virtual_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres 
+      -c log_statement=mod
+      -c log_destination=stderr
+      -c log_min_messages=info
+      -c shared_preload_libraries=''
+      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 
   # Example backend service configuration for local development
   # backend:

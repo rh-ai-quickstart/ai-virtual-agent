@@ -32,8 +32,10 @@ make install dev
 
 **Option 2: Step-by-step**
 ```bash
-# 1. Start database
+# 1. Start database (automatically initializes with permissions)
 podman compose up -d
+# or with Docker:
+# docker-compose up -d
 
 # 2. Start backend
 cd backend && python -m venv venv && source venv/bin/activate
@@ -43,6 +45,8 @@ uvicorn main:app --reload &
 # 3. Start frontend
 cd ../frontend && npm install && npm run dev
 ```
+
+> **Note**: The PostgreSQL database is automatically initialized with proper permissions. Works with both Docker and Podman. No manual database setup needed!
 
 **Access your app:**
 - Frontend: http://localhost:5173
