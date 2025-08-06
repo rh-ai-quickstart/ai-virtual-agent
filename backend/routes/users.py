@@ -86,6 +86,85 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
     return user
 
 
+async def get_current_user(
+    request: Request, db: AsyncSession = Depends(get_db)
+) -> models.User:
+    """
+    FastAPI dependency to get the current authenticated user from OAuth proxy headers.
+
+    Args:
+        request: HTTP request containing OAuth proxy headers
+        db: Database session dependency
+
+    Returns:
+        models.User: The authenticated user
+
+    Raises:
+        HTTPException: 401 if authentication fails
+    """
+    return await get_user_from_headers(request.headers, db)
+
+
+async def require_admin_role(
+    current_user: models.User = Depends(get_current_user),
+) -> models.User:
+    """
+    FastAPI dependency to ensure the current user has admin role.
+
+    This dependency should be used on endpoints that require admin privileges.
+    It will raise a 403 Forbidden error if the user doesn't have admin role.
+
+    Args:
+        current_user: The authenticated user (from get_current_user dependency)
+
+    Returns:
+        models.User: The authenticated admin user
+
+    Raises:
+        HTTPException: 403 if the user doesn't have admin role
+    """
+    if current_user.role != models.RoleEnum.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required to access this resource.",
+        )
+    return current_user
+
+
+async def require_user_access(
+    user_id: UUID, current_user: models.User = Depends(get_current_user)
+) -> models.User:
+    """
+    FastAPI dependency to ensure the current user can access the specified user's data.
+
+    This allows:
+    - Admin users to access any user's data
+    - Regular users to access only their own data
+
+    Args:
+        user_id: The UUID of the user being accessed (from path parameter)
+        current_user: The authenticated user (from get_current_user dependency)
+
+    Returns:
+        models.User: The authenticated user
+
+    Raises:
+        HTTPException: 403 if the user cannot access the requested user's data
+    """
+    # Admin users can access any user's data
+    if current_user.role == models.RoleEnum.admin:
+        return current_user
+
+    # Regular users can only access their own data
+    if current_user.id == user_id:
+        return current_user
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied. You can only access your own user data.",
+    )
+
+
 # profile endpoint must be declared first in order to function within
 # the /api/users context
 @router.get("/profile", response_model=schemas.UserRead)
@@ -134,21 +213,29 @@ async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/", response_model=schemas.UserRead, status_code=status.HTTP_201_CREATED)
-async def create_user(user: schemas.UserBase, db: AsyncSession = Depends(get_db)):
+async def create_user(
+    user: schemas.UserBase,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
+):
     """
     Create a new user account.
 
     This endpoint registers a new user in the system. The user's role
     determines their access permissions within the application.
 
+    **Admin Access Required**: Only users with admin role can create new users.
+
     Args:
         user: User creation data including username, email, and role
         db: Database session dependency
+        current_user: Authenticated admin user (injected by dependency)
 
     Returns:
         schemas.UserRead: The created user
 
     Raises:
+        HTTPException: 403 if the current user is not an admin
         HTTPException: If username/email already exists or validation fails
     """
     db_user = models.User(
@@ -163,38 +250,57 @@ async def create_user(user: schemas.UserBase, db: AsyncSession = Depends(get_db)
 
 
 @router.get("/", response_model=List[schemas.UserRead])
-async def read_users(db: AsyncSession = Depends(get_db)):
+async def read_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
+):
     """
     Retrieve all user accounts from the database.
 
     This endpoint returns a list of all registered users with their profile
     information.
 
+    **Admin Access Required**: Only users with admin role can list all users.
+
     Args:
         db: Database session dependency
+        current_user: Authenticated admin user (injected by dependency)
 
     Returns:
         List[schemas.UserRead]: List of all users
+
+    Raises:
+        HTTPException: 403 if the current user is not an admin
     """
     result = await db.execute(select(models.User))
     return result.scalars().all()
 
 
 @router.get("/{user_id}", response_model=schemas.UserRead)
-async def read_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
+async def read_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_user_access),
+):
     """
     Retrieve a specific user by their unique identifier.
 
     This endpoint fetches a single user's profile information using their UUID.
 
+    **Access Control**:
+    - Admin users can view any user's profile
+    - Regular users can only view their own profile
+
     Args:
         user_id: The unique identifier of the user to retrieve
         db: Database session dependency
+        current_user: Authenticated user (injected by dependency)
 
     Returns:
         schemas.UserRead: The requested user profile
 
     Raises:
+        HTTPException: 403 if the user cannot access the requested profile
         HTTPException: 404 if the user is not found
     """
     result = await db.execute(select(models.User).where(models.User.id == user_id))
@@ -206,7 +312,10 @@ async def read_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
 
 @router.put("/{user_id}", response_model=schemas.UserRead)
 async def update_user(
-    user_id: UUID, user: schemas.UserBase, db: AsyncSession = Depends(get_db)
+    user_id: UUID,
+    user: schemas.UserBase,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
 ):
     """
     Update an existing user's profile information.
@@ -214,15 +323,19 @@ async def update_user(
     This endpoint allows updating user details including username, email,
     and role.
 
+    **Admin Access Required**: Only users with admin role can update users.
+
     Args:
         user_id: The unique identifier of the user to update
         user: Updated user data
         db: Database session dependency
+        current_user: Authenticated admin user (injected by dependency)
 
     Returns:
         schemas.UserRead: The updated user profile
 
     Raises:
+        HTTPException: 403 if the current user is not an admin
         HTTPException: 404 if the user is not found
     """
     result = await db.execute(select(models.User).where(models.User.id == user_id))
@@ -240,7 +353,11 @@ async def update_user(
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
+async def delete_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
+):
     """
     Delete a user account from the system.
 
@@ -271,6 +388,7 @@ async def update_user_agents(
     user_id: UUID,
     agent_assignment: schemas.UserAgentAssignment,
     db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
 ):
     """
     Add agents to a user's assignment list.
@@ -317,21 +435,31 @@ async def update_user_agents(
 
 
 @router.get("/{user_id}/agents", response_model=List[str])
-async def get_user_agents(user_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_user_agents(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_user_access),
+):
     """
     Retrieve the list of agents assigned to a specific user.
 
     This endpoint returns the list of virtual agent IDs that are
     currently assigned to the specified user.
 
+    **Access Control**:
+    - Admin users can view any user's agents
+    - Regular users can only view their own agents
+
     Args:
         user_id: The unique identifier of the user
         db: Database session dependency
+        current_user: Authenticated user (injected by dependency)
 
     Returns:
         List[str]: List of agent IDs assigned to the user
 
     Raises:
+        HTTPException: 403 if the user cannot access the requested user's agents
         HTTPException: 404 if the user is not found
     """
     result = await db.execute(select(models.User).where(models.User.id == user_id))
@@ -348,6 +476,7 @@ async def remove_user_agents(
     user_id: UUID,
     agent_assignment: schemas.UserAgentAssignment,
     db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(require_admin_role),
 ):
     """
     Remove agents from a user's assignment list.
