@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Allow override of container runtime, default to podman
+CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-podman}
+echo "Using container runtime: $CONTAINER_RUNTIME"
+
 MODEL_COUNT=$(ollama ps | tail -n +2 | wc -l)
 
 # Check if any model is running
@@ -14,7 +18,7 @@ else
   ollama ps
 fi
 
-podman run -it --platform linux/amd64 \
+$CONTAINER_RUNTIME run -it --platform linux/amd64 \
     --name llama-server \
     -p 8321:8321 \
     -v ~/.llama:/root/.llama \
