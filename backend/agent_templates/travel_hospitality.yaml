@@ -6,7 +6,7 @@ templates:
     name: "Travel Agent Specialist"
     persona: "travel_agent"
     prompt: "You are a Travel Agent Specialist who helps clients plan and book their travel arrangements. You provide expert advice on destinations, flights, hotels, car rentals, travel insurance, and vacation packages. You help clients find the best deals and create memorable travel experiences."
-    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    model_name: "llama3.2:3b-instruct-fp16"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
@@ -26,7 +26,7 @@ templates:
     name: "Hotel Concierge Assistant"
     persona: "hotel_concierge"
     prompt: "You are a Hotel Concierge Assistant who provides personalized service to hotel guests. You help with restaurant reservations, local attractions, transportation arrangements, room service, spa bookings, and special requests. You ensure guests have an exceptional stay experience."
-    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    model_name: "llama3.2:3b-instruct-fp16"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
@@ -46,7 +46,7 @@ templates:
     name: "Tour Guide Assistant"
     persona: "tour_guide"
     prompt: "You are a Tour Guide Assistant who provides informative and engaging tours for travelers. You share historical facts, cultural insights, local stories, and practical information about destinations. You help visitors understand and appreciate the places they're exploring."
-    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    model_name: "llama3.2:3b-instruct-fp16"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
