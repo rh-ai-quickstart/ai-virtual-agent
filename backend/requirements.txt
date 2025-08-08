@@ -8,8 +8,8 @@ pydantic
 python-dotenv
 bcrypt
 pydantic[email]
-llama-stack==0.2.14
-llama_stack_client==0.2.14
+llama-stack==0.2.16
+llama_stack_client==0.2.16
 fire
 httpx
 vulture
