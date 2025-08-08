@@ -75,6 +75,11 @@ if [[ -z "$VIRTUAL_ENV" ]] && [[ -z "$CONDA_DEFAULT_ENV" ]]; then
     echo ""
 fi
 
+# Ensure project root is on PYTHONPATH so 'backend' is importable
+if [[ ":$PYTHONPATH:" != *":.:"* ]]; then
+    export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}."
+fi
+
 # Run unit tests first (they don't need services)
 if [[ "$RUN_UNIT" == true ]]; then
     echo ""
@@ -85,6 +90,7 @@ if [[ "$RUN_UNIT" == true ]]; then
             echo ""
             echo "❌ Unit tests failed!"
             echo "   If you see pytest not found or import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
             exit 1
         }
     else
@@ -92,6 +98,7 @@ if [[ "$RUN_UNIT" == true ]]; then
             echo ""
             echo "❌ Unit tests failed!"
             echo "   If you see pytest not found or import errors, try: pip install -r requirements-test.txt -r backend/requirements.txt"
+            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
             exit 1
         }
     fi
@@ -172,6 +179,7 @@ export TEST_LLAMASTACK_URL="$LLAMASTACK_URL"
             echo ""
             echo "❌ Integration tests failed!"
             echo "   If you see import errors, try: pip install -r requirements-test.txt"
+            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
             exit 1
         }
     else
@@ -179,6 +187,7 @@ export TEST_LLAMASTACK_URL="$LLAMASTACK_URL"
             echo ""
             echo "❌ Integration tests failed!"
             echo "   If you see import errors, try: pip install -r requirements-test.txt"
+            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
             exit 1
         }
     fi
@@ -193,6 +202,7 @@ if [[ "$RUN_UNIT" == false && "$RUN_INTEGRATION" == false && -n "$SPECIFIC_TESTS
         echo ""
         echo "❌ Tests failed!"
         echo "   If you see import errors, try: pip install -r requirements-test.txt"
+        echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
         exit 1
     }
 fi
