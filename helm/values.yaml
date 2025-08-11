@@ -191,7 +191,7 @@ llama-stack:
       when: user is owner
       description: users can read, update and delete resources they own
   secrets:
-    TAVILY_SEARCH_API_KEY: "api-key"
+    TAVILY_SEARCH_API_KEY: ""
 
 # global:
 #   models:

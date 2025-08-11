@@ -121,7 +121,7 @@ POSTGRES_PASSWORD ?= rag_password
 POSTGRES_DBNAME ?= rag_blueprint
 MINIO_USER ?= minio_rag_user
 MINIO_PASSWORD ?= minio_rag_password
-HF_TOKEN ?= $(shell bash -c 'read -r -p "Enter Hugging Face Token: " HF_TOKEN; echo $$HF_TOKEN')
+HF_TOKEN ?=
 AI_VIRTUAL_AGENT_CHART := helm
 AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
@@ -194,15 +194,15 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "Required Configuration:"
 	@echo "  NAMESPACE        - Target namespace (required for all deployment commands)"
 	@echo ""
-	@echo "Optional Configuration (set via environment variables or make arguments):"
-	@echo "  HF_TOKEN                 - Hugging Face Token (will prompt if not provided)"
-	@echo "  TAVILY_API_KEY           - Tavily Search API Key (will prompt if not provided)"
+	@echo "Optional Configuration (set via environment variables or will be prompted):"
+	@echo "  HF_TOKEN                 - Hugging Face Token"
+	@echo "  TAVILY_API_KEY           - Tavily Search API Key"
+	@echo "  ADMIN_USERNAME           - Admin user name"
+	@echo "  ADMIN_EMAIL              - Admin user email"
 	@echo "  {SAFETY,LLM}             - Model id as defined in values (eg. llama-3-2-1b-instruct)"
 	@echo "  {SAFETY,LLM}_URL         - Model URL"
 	@echo "  {SAFETY,LLM}_API_TOKEN   - Model API token for remote models"
 	@echo "  {SAFETY,LLM}_TOLERATION  - Model pod toleration"
-	@echo "  ADMIN_USERNAME           - Admin user name (will prompt if not provided)"
-	@echo "  ADMIN_EMAIL              - Admin user email (will prompt if not provided)"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make install NAMESPACE=my-ai-assistant"
@@ -217,39 +217,7 @@ install-namespace: ## Create and configure deployment namespace
 	@oc project $(NAMESPACE) &> /dev/null ||:
 
 install: install-namespace helm-deps ## Install the AI Virtual Agent deployment
-	@$(eval PGVECTOR_ARGS := $(call helm_pgvector_args))
-	@$(eval MINIO_ARGS := $(call helm_minio_args))
-	@$(eval LLM_SERVICE_ARGS := $(call helm_llm_service_args))
-	@$(eval LLAMA_STACK_ARGS := $(call helm_llama_stack_args))
-	@$(eval INGESTION_ARGS := $(call helm_ingestion_args))
-
-	@$(eval ADMIN_USERNAME := $(shell bash -c 'read -r -p "Enter admin user name: " ADMIN_USERNAME; echo $$ADMIN_USERNAME'))
-	@$(eval ADMIN_EMAIL := $(shell bash -c 'read -r -p "Enter admin user email: " ADMIN_EMAIL; echo $$ADMIN_EMAIL'))
-	@$(eval SEED_ADMIN_USER_ARGS := $(call helm_seed_admin_user_args))
-
-	@bash -c '\
-		echo ""; \
-		echo "💡 Tavily Search API Key"; \
-		echo "     Without a key, web search capabilities will be disabled in your AI agents."; \
-		echo "     To enable web search, obtain a key from https://tavily.com/"; \
-		echo ""; \
-		read -r -p "Enter Tavily API Key now (or press Enter to continue without web search): " TAVILY_API_KEY; \
-		if [ -n "$$TAVILY_API_KEY" ]; then \
-			TAVILY_ARG="--set llama-stack.secrets.TAVILY_SEARCH_API_KEY=$$TAVILY_API_KEY"; \
-		else \
-			TAVILY_ARG=""; \
-		fi; \
-		echo "Installing $(AI_VIRTUAL_AGENT_RELEASE) helm chart in namespace $(NAMESPACE)"; \
-		helm upgrade --install $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART) -n $(NAMESPACE) \
-			$(PGVECTOR_ARGS) \
-			$(MINIO_ARGS) \
-			$(LLM_SERVICE_ARGS) \
-			$(LLAMA_STACK_ARGS) \
-			$$TAVILY_ARG \
-			$(INGESTION_ARGS) \
-			$(SEED_ADMIN_USER_ARGS) \
-			$(EXTRA_HELM_ARGS) \
-	'
+	@./scripts/dev/install_with_env.sh $(NAMESPACE) $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART)
 
 	@echo "Waiting for model services and llamastack to deploy. It may take around 10-15 minutes depending on the size of the model..."
 	@oc rollout status deploy/ai-virtual-agent -n $(NAMESPACE)
