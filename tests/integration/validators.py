@@ -45,3 +45,49 @@ def validate_exact_text(response, expected_text):
         f"Combined text from SSE chunks: '{combined_text}' "
         f"Raw response body: {body_text[:500]}..."  # Show first 500 chars for debugging
     )
+
+
+def validate_users_list_contains_admin(response):
+    """
+    Validate that the users list response contains an admin user.
+
+    Args:
+        response: HTTP response object
+
+    Returns:
+        True if validation passes
+
+    Raises:
+        AssertionError: If admin user not found or has wrong role
+    """
+    import json
+
+    # Parse JSON response
+    if hasattr(response, "json"):
+        users = response.json()
+    else:
+        users = json.loads(response.text)
+
+    # Check that response is a list
+    if not isinstance(users, list):
+        raise AssertionError(f"Expected list, got {type(users)}")
+
+    # Find admin user
+    admin_user = None
+    for user in users:
+        if user.get("username") == "admin" and user.get("email") == "admin@example.com":
+            admin_user = user
+            break
+
+    # Validate admin user exists
+    if not admin_user:
+        usernames = [u.get("username") for u in users]
+        raise AssertionError(f"Admin user not found. Available users: {usernames}")
+
+    # Validate admin user has admin role
+    if admin_user.get("role") != "admin":
+        raise AssertionError(
+            f"Admin user has role '{admin_user.get('role')}', expected 'admin'"
+        )
+
+    return True

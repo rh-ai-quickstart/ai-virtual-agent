@@ -1,0 +1,178 @@
+---
+test_name: Test Users API - CRUD Workflow Integration
+stages:
+  - name: Create user for workflow testing
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/"
+      method: POST
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+      json:
+        username: "workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
+        email: "workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
+        role: "user"
+    response:
+      status_code: 201
+      save:
+        json:
+          workflow_user_id: "id"
+
+  - name: Verify user persisted in database (GET)
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/{workflow_user_id}"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 200
+      json:
+        id: "{workflow_user_id}"
+        username: "workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
+        email: "workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
+        role: "user"
+        agent_ids: []
+        created_at: !anything
+        updated_at: !anything
+
+  - name: Update user and verify changes persist
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/{workflow_user_id}"
+      method: PUT
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+      json:
+        username: "updated_workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
+        email: "updated_workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
+        role: "devops"
+        agent_ids: []
+    response:
+      status_code: 200
+      json:
+        username: "updated_workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
+        email: "updated_workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
+        role: "devops"
+        agent_ids: []
+        id: !anything
+        created_at: !anything
+        updated_at: !anything
+
+  - name: Confirm update persisted by reading again
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/{workflow_user_id}"
+      method: GET
+      headers:
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 200
+      json:
+        username: "updated_workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
+        email: "updated_workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
+        role: "devops"
+        agent_ids: []
+        id: !anything
+        created_at: !anything
+        updated_at: !anything
+
+  - name: Delete user and verify removal
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/{workflow_user_id}"
+      method: DELETE
+      headers:
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 204
+
+  - name: Confirm deletion by attempting to read deleted user
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/{workflow_user_id}"
+      method: GET
+      headers:
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 404
+
+---
+test_name: Test OAuth Headers Integration
+stages:
+  - name: Test OAuth proxy authentication with admin headers
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/profile"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 200
+      json:
+        username: "admin"
+        email: "admin@example.com"
+        role: "admin"
+        agent_ids: []
+        id: !anything
+        created_at: !anything
+        updated_at: !anything
+
+  - name: Test cross-user access control enforcement
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: regular_user
+        X-Forwarded-Email: user@example.com
+    response:
+      status_code: 403
+      json:
+        detail: "Admin privileges required to access this resource."
+
+---
+test_name: Test Database Transaction Integrity
+stages:
+  - name: Test duplicate username conflict with database state
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/"
+      method: POST
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+      json:
+        username: "admin"  # This should conflict with existing admin user
+        email: "conflict_test@example.com"
+        role: "user"
+    response:
+      status_code: 409
+      json:
+        detail: "A user with this username or email already exists."
+
+  - name: Verify original admin user is unchanged after conflict
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/users/profile"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: admin
+        X-Forwarded-Email: admin@example.com
+    response:
+      status_code: 200
+      json:
+        username: "admin"
+        email: "admin@example.com"  # Original email should be intact
+        role: "admin"
+        agent_ids: []
+        id: !anything
+        created_at: !anything
+        updated_at: !anything

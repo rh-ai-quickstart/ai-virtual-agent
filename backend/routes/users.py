@@ -102,7 +102,25 @@ async def get_current_user(
     Raises:
         HTTPException: 401 if authentication fails
     """
-    return await get_user_from_headers(request.headers, db)
+    # Log authentication attempt for debugging only
+    if log.isEnabledFor(logging.DEBUG):
+        forwarded_user = request.headers.get("x-forwarded-user")
+        forwarded_email = request.headers.get("x-forwarded-email")
+        log.debug(
+            f"Authentication attempt - User: {forwarded_user}, Email: {forwarded_email}"
+        )
+
+    user = await get_user_from_headers(request.headers, db)
+
+    if user:
+        log.info(
+            f"User authenticated - ID: {user.id}, Username: {user.username}, "
+            f"Role: {user.role}"
+        )
+    else:
+        log.warning("Authentication failed - User not found")
+
+    return user
 
 
 async def require_admin_role(
@@ -124,18 +142,26 @@ async def require_admin_role(
         HTTPException: 403 if the user doesn't have admin role
     """
     if current_user.role != models.RoleEnum.admin:
+        log.warning(
+            f"Access denied - User {current_user.username} (ID: {current_user.id}) "
+            f"with role '{current_user.role}' attempted admin operation"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required to access this resource.",
         )
+
+    log.info(
+        f"Admin access granted - User {current_user.username} (ID: {current_user.id})"
+    )
     return current_user
 
 
-async def require_user_access(
+async def check_user_access(
     user_id: UUID, current_user: models.User = Depends(get_current_user)
 ) -> models.User:
     """
-    FastAPI dependency to ensure the current user can access the specified user's data.
+    Validate that the current user can access the specified user's data.
 
     This allows:
     - Admin users to access any user's data
@@ -153,12 +179,24 @@ async def require_user_access(
     """
     # Admin users can access any user's data
     if current_user.role == models.RoleEnum.admin:
+        log.debug(
+            f"Admin access granted - User {current_user.username} "
+            f"(ID: {current_user.id}) accessing user {user_id}"
+        )
         return current_user
 
     # Regular users can only access their own data
     if current_user.id == user_id:
+        log.debug(
+            f"Self access granted - User {current_user.username} "
+            f"(ID: {current_user.id}) accessing own data"
+        )
         return current_user
 
+    log.warning(
+        f"Access denied - User {current_user.username} (ID: {current_user.id}) "
+        f"attempted to access user {user_id}"
+    )
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Access denied. You can only access your own user data.",
@@ -236,17 +274,44 @@ async def create_user(
 
     Raises:
         HTTPException: 403 if the current user is not an admin
-        HTTPException: If username/email already exists or validation fails
+        HTTPException: 409 if username/email already exists
+        HTTPException: 422 if validation fails
     """
-    db_user = models.User(
-        username=user.username,
-        email=user.email,
-        role=user.role,
+    # Check if user already exists
+    existing_user = await db.execute(
+        select(models.User).where(
+            (models.User.username == user.username) | (models.User.email == user.email)
+        )
     )
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
-    return db_user
+    if existing_user.scalar_one_or_none():
+        log.warning(
+            f"User creation failed - Admin {current_user.username} attempted to create "
+            f"user with existing username/email: {user.username}/{user.email}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this username or email already exists.",
+        )
+
+    try:
+        db_user = models.User(
+            username=user.username,
+            email=user.email,
+            role=user.role,
+        )
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+
+        log.info(f"Admin {current_user.username} created new user: {db_user.username}")
+        return db_user
+    except Exception as e:
+        await db.rollback()
+        log.error(f"Failed to create user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user account.",
+        )
 
 
 @router.get("/", response_model=List[schemas.UserRead])
@@ -280,7 +345,7 @@ async def read_users(
 async def read_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(require_user_access),
+    current_user: models.User = Depends(check_user_access),
 ):
     """
     Retrieve a specific user by their unique identifier.
@@ -364,12 +429,17 @@ async def delete_user(
     This endpoint permanently removes a user account and all associated data.
     Use with caution as this operation cannot be undone.
 
+    **Admin Access Required**: Only users with admin role can delete users.
+
     Args:
         user_id: The unique identifier of the user to delete
         db: Database session dependency
+        current_user: Authenticated admin user (injected by dependency)
 
     Raises:
+        HTTPException: 403 if the current user is not an admin
         HTTPException: 404 if the user is not found
+        HTTPException: 400 if trying to delete own account
 
     Returns:
         None: 204 No Content on successful deletion
@@ -377,10 +447,37 @@ async def delete_user(
     result = await db.execute(select(models.User).where(models.User.id == user_id))
     db_user = result.scalar_one_or_none()
     if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    await db.delete(db_user)
-    await db.commit()
-    return None
+        log.warning(
+            f"User deletion failed - Admin {current_user.username} attempted to delete "
+            f"non-existent user {user_id}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    # Prevent admin from deleting their own account
+    if current_user.id == user_id:
+        log.warning(
+            f"Self-deletion blocked - Admin {current_user.username} "
+            f"attempted to delete own account"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account.",
+        )
+
+    try:
+        log.info(f"Admin {current_user.username} deleting user: {db_user.username}")
+        await db.delete(db_user)
+        await db.commit()
+        return None
+    except Exception as e:
+        await db.rollback()
+        log.error(f"Failed to delete user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete user account.",
+        )
 
 
 @router.post("/{user_id}/agents", response_model=schemas.UserRead)
@@ -438,7 +535,7 @@ async def update_user_agents(
 async def get_user_agents(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(require_user_access),
+    current_user: models.User = Depends(check_user_access),
 ):
     """
     Retrieve the list of agents assigned to a specific user.
