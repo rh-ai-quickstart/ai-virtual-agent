@@ -1,0 +1,123 @@
+# MCP WebStore deployment with both MCP server and Store API
+replicaCount:
+  mcpServer: 1
+  storeApi: 1
+
+image:
+  mcpServer:
+    repository: quay.io/ecosystem-appeng/mcp-webstore
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  storeApi:
+    repository: quay.io/ecosystem-appeng/mcp-webstore-api
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  mcpServer:
+    type: ClusterIP
+    port: 8001
+  storeApi:
+    type: ClusterIP
+    port: 8001
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: mcp-webstore.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  mcpServer:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  storeApi:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Environment variables
+env:
+  # MCP server connects to local store API
+  STORE_SERVER_URL: "http://mcp-webstore-store-api:8001"
+  # Store API connects to database
+  DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@mcp-webstore-postgresql:5432/store_db"
+
+# Health check configuration
+healthCheck:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# PostgreSQL configuration (for store API)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres"
+    username: "myuser"
+    password: "mypassword"
+    database: "store_db"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Database initialization
+dbInit:
+  enabled: true
+  populateData: true

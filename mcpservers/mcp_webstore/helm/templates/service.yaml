@@ -1,0 +1,39 @@
+---
+# MCP Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp-webstore.fullname" . }}-mcp-server
+  labels:
+    {{- include "mcp-webstore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-server
+spec:
+  type: {{ .Values.service.mcpServer.type }}
+  ports:
+    - port: {{ .Values.service.mcpServer.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "mcp-webstore.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-server
+
+---
+# Store API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp-webstore.fullname" . }}-store-api
+  labels:
+    {{- include "mcp-webstore.labels" . | nindent 4 }}
+    app.kubernetes.io/component: store-api
+spec:
+  type: {{ .Values.service.storeApi.type }}
+  ports:
+    - port: {{ .Values.service.storeApi.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "mcp-webstore.storeApiSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: store-api

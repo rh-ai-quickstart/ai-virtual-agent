@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:15 # Or your preferred PostgreSQL version
+          image: postgres:15-alpine # Lightweight PostgreSQL for Kubernetes
           ports:
             - containerPort: 5432
           env:
@@ -129,7 +129,7 @@ spec:
     spec:
       containers:
         - name: mcpdbstore
-          image: quay.io/skattoju/mcp_dbstore:latest
+          image: quay.io/ecosystem-appeng/mcp-dbstore:latest
           ports:
             - containerPort: 8001
           env:

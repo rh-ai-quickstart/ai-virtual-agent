@@ -1,0 +1,22 @@
+apiVersion: v2
+name: mcp-webstore
+description: A Helm chart for MCP WebStore Server with Store API
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - mcp
+  - webstore
+  - api
+  - client-server
+home: https://github.com/your-org/ai-virtual-agent
+sources:
+  - https://github.com/your-org/ai-virtual-agent
+maintainers:
+  - name: AI Virtual Agent Team
+    email: team@example.com
+dependencies:
+  - name: postgresql
+    version: "15.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
