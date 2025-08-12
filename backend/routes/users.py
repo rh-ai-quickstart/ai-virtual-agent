@@ -315,7 +315,7 @@ async def create_user(
 
 
 @router.get("/", response_model=List[schemas.UserRead])
-async def read_users(
+async def list_users(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(require_admin_role),
 ):
@@ -342,7 +342,7 @@ async def read_users(
 
 
 @router.get("/{user_id}", response_model=schemas.UserRead)
-async def read_user(
+async def get_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(check_user_access),
