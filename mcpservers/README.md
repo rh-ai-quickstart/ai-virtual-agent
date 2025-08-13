@@ -1,559 +1,303 @@
-# Model Context Protocol (MCP) Servers
+# MCP Servers
 
-Model Context Protocol (MCP) servers provide external tool capabilities to AI agents in the AI Virtual Agent Kickstart. These servers implement standardized interfaces that allow agents to access external data sources and perform complex operations.
-
-## Overview
-
-MCP (Model Context Protocol) is a standard for connecting AI agents to external tools and data sources. In our platform, MCP servers act as bridges between LlamaStack agents and external services, providing capabilities beyond the built-in tools.
-
-## Architecture
-
-```mermaid
-graph TD
-    subgraph "AI Virtual Agent Kickstart"
-        AGENT[LlamaStack Agent]
-        LLAMA[LlamaStack Platform]
-    end
-
-    subgraph "MCP Server Ecosystem"
-        MCPDB[MCP DB Store Server<br/>• Product Database<br/>• Order Management]
-        MCPWEB[MCP Web Store Server<br/>• HTTP API Client<br/>• Store Integration]
-    end
-
-    subgraph "External Systems"
-        STORE[Store API Server<br/>• REST API<br/>• Business Logic]
-        DB[(PostgreSQL<br/>Store Database)]
-    end
-
-    AGENT --> LLAMA
-    LLAMA --> MCPDB
-    LLAMA --> MCPWEB
-    MCPDB --> DB
-    MCPWEB --> STORE
-    STORE --> DB
-```
+Model Context Protocol (MCP) servers provide external tool capabilities to AI agents in the AI Virtual Agent Kickstart platform. These servers implement standardized interfaces that allow agents to access external data sources and perform operations beyond built-in tools.
 
 ## Available MCP Servers
 
-### 1. MCP DB Store Server (`mcp_dbstore/`)
+| Server | Type | Description | Use Case |
+|--------|------|-------------|---------|
+| [**mcp_dbstore**](mcp_dbstore/) | Integrated | MCP server with tightly coupled database for direct data access | MCP Server + Database |
+| [**mcp_webstore**](mcp_webstore/) | Client-Server | MCP server with separate store API for distributed architecture | MCP Server + Store API |
+| [**mcp-store-inventory**](mcp-store-inventory/) | Standalone | Lightweight MCP server requiring external store API | Standalone MCP Server |
+| [**store-inventory**](store-inventory/) | API Service | Standalone FastAPI service for inventory management | Standalone Store API |
 
-**Purpose**: Direct database access for product and order management
-**Protocol**: Database-first approach with direct SQL operations
+## Architecture Overview
 
-**Key Features**:
-- **Product Management**: Create, read, update, delete products
-- **Order Processing**: Handle customer orders and fulfillment
-- **Inventory Tracking**: Monitor stock levels and availability
-- **Direct Database Access**: Efficient operations through SQLAlchemy
+```mermaid
+graph TB
+    subgraph "AI Virtual Agent Platform"
+        Agent[AI Agent]
+        LlamaStack[LlamaStack]
+    end
 
-**Available Tools**:
-```python
-@mcp_server.tool()
-async def get_products(skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]
+    subgraph "MCP Servers"
+        MCP_DB[mcp_dbstore<br/>Integrated]
+        MCP_WEB[mcp_webstore<br/>Client-Server]
+        MCP_INV[mcp-store-inventory<br/>Standalone]
+    end
 
-@mcp_server.tool()
-async def get_product_by_id(product_id: int) -> Dict[str, Any]
+    subgraph "APIs & Databases"
+        WEB_API[mcp_webstore API]
+        STORE_API[store-inventory API]
+        DB1[(PostgreSQL)]
+        DB2[(PostgreSQL)]
+        DB3[(PostgreSQL)]
+    end
 
-@mcp_server.tool()
-async def create_product(name: str, description: str, price: float, inventory_count: int) -> Dict[str, Any]
+    Agent --> LlamaStack
+    LlamaStack --> MCP_DB
+    LlamaStack --> MCP_WEB
+    LlamaStack --> MCP_INV
 
-@mcp_server.tool()
-async def create_order(product_id: int, quantity: int, customer_identifier: str) -> Dict[str, Any]
+    MCP_DB --> DB1
+    MCP_WEB --> WEB_API
+    WEB_API --> DB2
+    MCP_INV --> STORE_API
+    STORE_API --> DB3
 ```
 
-**Database Schema**:
-```sql
--- Products table
-CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR UNIQUE NOT NULL,
-    description TEXT,
-    price DECIMAL(10, 2) NOT NULL,
-    inventory_count INTEGER DEFAULT 0
-);
+## Quick Start
 
--- Orders table
-CREATE TABLE orders (
-    id SERIAL PRIMARY KEY,
-    product_id INTEGER REFERENCES products(id),
-    quantity INTEGER NOT NULL,
-    customer_identifier VARCHAR NOT NULL,
-    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_amount DECIMAL(10, 2) CALCULATED
-);
-```
-
-### 2. MCP Web Store Server (`mcp_webstore/`)
-
-**Purpose**: HTTP API client for external store systems
-**Protocol**: RESTful API integration with external services
-
-**Key Features**:
-- **API Integration**: Connect to external e-commerce platforms
-- **HTTP Client Management**: Async HTTP operations with connection pooling
-- **Error Handling**: Robust error management for network operations
-- **Flexible Endpoints**: Configurable store server URLs
-
-**Available Tools**:
-```python
-@mcp_server.tool()
-async def get_products() -> List[Dict[str, Any]]
-
-@mcp_server.tool()
-async def get_product_details(product_id: int) -> Dict[str, Any]
-
-@mcp_server.tool()
-async def place_order(product_id: int, quantity: int, customer_info: Dict) -> Dict[str, Any]
-```
-
-**Configuration**:
-```bash
-# Environment variables
-STORE_SERVER_URL=http://localhost:8001  # External store API endpoint
-```
-
-## Development Guide
-
-### Creating a New MCP Server
-
-1. **Project Structure**:
-   ```
-   mcpservers/
-   └── mcp_newserver/
-       ├── __init__.py
-       ├── server.py          # Main MCP server implementation
-       ├── models.py          # Pydantic models (optional)
-       ├── database.py        # Database setup (if needed)
-       ├── requirements.txt   # Python dependencies
-       └── Containerfile      # Container configuration
-   ```
-
-2. **Basic Server Implementation**:
-   ```python
-   # server.py
-   from mcp.server.fastmcp import FastMCP
-   from typing import Dict, Any
-
-   # Initialize MCP server
-   mcp_server = FastMCP()
-
-   @mcp_server.tool()
-   async def my_tool(param1: str, param2: int = 10) -> Dict[str, Any]:
-       """
-       Tool description for the AI agent.
-
-       Args:
-           param1: Description of first parameter
-           param2: Description of second parameter
-
-       Returns:
-           Dictionary with operation results
-       """
-       # Implement tool logic
-       result = perform_operation(param1, param2)
-       return {"status": "success", "data": result}
-
-   # Additional tools...
-
-   if __name__ == "__main__":
-       # Server startup logic
-       mcp_server.run()
-   ```
-
-3. **Database Integration** (if needed):
-   ```python
-   # database.py
-   from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-   from sqlalchemy.orm import sessionmaker, declarative_base
-   import os
-
-   DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://...")
-
-   engine = create_async_engine(DATABASE_URL, echo=False)
-   AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession)
-   Base = declarative_base()
-
-   # Database models
-   class MyModel(Base):
-       __tablename__ = "my_table"
-       # ... table definition
-   ```
-
-4. **Container Configuration**:
-   ```dockerfile
-   # Containerfile
-   FROM python:3.10-slim
-
-   WORKDIR /app
-   COPY ./mcpservers/mcp_newserver/ /app/mcpservers/mcp_newserver/
-
-   ENV PYTHONPATH=/app
-
-   COPY ./mcpservers/mcp_newserver/requirements.txt /app/requirements.txt
-   RUN pip install --no-cache-dir -r requirements.txt
-
-   CMD ["python", "-m", "mcpservers.mcp_newserver.server"]
-   ```
-
-### Tool Design Patterns
-
-#### 1. CRUD Operations
-```python
-@mcp_server.tool()
-async def create_resource(name: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    """Create a new resource"""
-    # Validation
-    # Database operation
-    # Return result
-
-@mcp_server.tool()
-async def get_resource(resource_id: int) -> Dict[str, Any]:
-    """Retrieve a resource by ID"""
-    # Database query
-    # Format response
-
-@mcp_server.tool()
-async def update_resource(resource_id: int, updates: Dict[str, Any]) -> Dict[str, Any]:
-    """Update an existing resource"""
-    # Validation
-    # Database update
-    # Return updated resource
-
-@mcp_server.tool()
-async def delete_resource(resource_id: int) -> Dict[str, Any]:
-    """Delete a resource"""
-    # Existence check
-    # Database deletion
-    # Return confirmation
-```
-
-#### 2. Search and Filtering
-```python
-@mcp_server.tool()
-async def search_resources(
-    query: str = "",
-    filters: Dict[str, Any] = None,
-    skip: int = 0,
-    limit: int = 100
-) -> Dict[str, Any]:
-    """Search resources with filters and pagination"""
-    # Build query
-    # Apply filters
-    # Return paginated results
-```
-
-#### 3. External API Integration
-```python
-@mcp_server.tool()
-async def call_external_api(endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
-    """Make calls to external APIs"""
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(f"{BASE_URL}/{endpoint}", params=params)
-            response.raise_for_status()
-            return {"status": "success", "data": response.json()}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-```
-
-### Error Handling Best Practices
-
-```python
-@mcp_server.tool()
-async def robust_operation(param: str) -> Dict[str, Any]:
-    """Example of robust error handling"""
-    try:
-        # Validate input
-        if not param or len(param.strip()) == 0:
-            return {
-                "status": "error",
-                "error_type": "validation",
-                "message": "Parameter cannot be empty"
-            }
-
-        # Perform operation
-        result = await perform_complex_operation(param)
-
-        return {
-            "status": "success",
-            "data": result,
-            "metadata": {"timestamp": datetime.now().isoformat()}
-        }
-
-    except ValidationError as e:
-        return {
-            "status": "error",
-            "error_type": "validation",
-            "message": f"Invalid input: {str(e)}"
-        }
-    except ConnectionError as e:
-        return {
-            "status": "error",
-            "error_type": "connection",
-            "message": "Failed to connect to external service",
-            "details": str(e)
-        }
-    except Exception as e:
-        # Log error for debugging
-        logger.error(f"Unexpected error in robust_operation: {str(e)}")
-        return {
-            "status": "error",
-            "error_type": "internal",
-            "message": "An unexpected error occurred"
-        }
-```
-
-## Deployment
+### Prerequisites
+- Python 3.12+
+- PostgreSQL 15+
+- Podman (for containerized deployment)
+- Kubernetes + Helm (for cluster deployment)
 
 ### Local Development
-
-1. **Set up environment**:
-   ```bash
-   cd mcpservers/mcp_dbstore
-   pip install -r requirements.txt
-   ```
-
-2. **Configure database**:
-   ```bash
-   export DATABASE_URL="postgresql+asyncpg://user:pass@localhost:5432/store_db"
-   ```
-
-3. **Run the server**:
-   ```bash
-   python -m mcpservers.mcp_dbstore.store
-   ```
-
-### Container Deployment
-
-1. **Build container**:
-   ```bash
-   podman build -f mcpservers/mcp_dbstore/Containerfile -t mcp-dbstore:latest .
-   ```
-
-2. **Run container**:
-   ```bash
-   podman run -d \
-     -e DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/store_db" \
-     -p 8003:8003 \
-     mcp-dbstore:latest
-   ```
-
-### Kubernetes Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mcp-dbstore
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: mcp-dbstore
-  template:
-    metadata:
-      labels:
-        app: mcp-dbstore
-    spec:
-      containers:
-      - name: mcp-dbstore
-        image: mcp-dbstore:latest
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: db-secret
-              key: connection-string
-        ports:
-        - containerPort: 8003
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mcp-dbstore-service
-spec:
-  selector:
-    app: mcp-dbstore
-  ports:
-  - port: 8003
-    targetPort: 8003
-```
-
-## Integration with LlamaStack
-
-### Tool Registration
-
-MCP servers are automatically discovered and registered with LlamaStack through the tool system:
-
-1. **Server Discovery**: LlamaStack queries available MCP servers
-2. **Tool Registration**: Each `@mcp_server.tool()` becomes available to agents
-3. **Agent Configuration**: Agents can be configured to use specific MCP server tools
-
-### Agent Usage Example
-
-```python
-# Agent configuration with MCP tools
-agent_config = {
-    "name": "Store Assistant",
-    "model": "llama3.1-8b-instruct",
-    "instructions": "You are a helpful store assistant with access to product and order systems.",
-    "tools": [
-        "mcp-dbstore::get_products",
-        "mcp-dbstore::create_order",
-        "mcp-webstore::get_product_details"
-    ]
-}
-```
-
-### Chat Integration
-
-When an agent uses MCP tools, the conversation flow includes tool calls:
-
-```
-User: "What products do you have available?"
-
-Agent: Let me check our current inventory.
-[Tool Call: mcp-dbstore::get_products]
-[Tool Result: {"status": "success", "data": [...]}]
-
-Based on our current inventory, we have the following products available:
-1. Widget A - $29.99 (15 in stock)
-2. Widget B - $39.99 (8 in stock)
-...
-```
-
-## Testing
-
-### Unit Testing
-
-```python
-# tests/test_mcp_tools.py
-import pytest
-from mcpservers.mcp_dbstore.store import get_products, create_product
-
-@pytest.mark.asyncio
-async def test_get_products():
-    """Test product retrieval"""
-    result = await get_products(limit=5)
-    assert result["status"] == "success"
-    assert len(result["data"]) <= 5
-
-@pytest.mark.asyncio
-async def test_create_product():
-    """Test product creation"""
-    result = await create_product(
-        name="Test Product",
-        description="Test Description",
-        price=19.99,
-        inventory_count=10
-    )
-    assert result["status"] == "success"
-    assert result["data"]["name"] == "Test Product"
-```
-
-### Integration Testing
-
-```python
-# Test MCP server integration with LlamaStack
-async def test_mcp_integration():
-    """Test that MCP tools work with LlamaStack agents"""
-    # Create agent with MCP tools
-    agent_config = {...}
-    agent = await llamastack_client.agents.create(agent_config)
-
-    # Send message that requires MCP tool usage
-    response = await agent.chat("Show me available products")
-
-    # Verify tool was called and response includes product data
-    assert "products" in response.content.lower()
-```
-
-## Monitoring and Logging
-
-### Logging Configuration
-
-```python
-import logging
-
-# Configure logging for MCP server
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-logger = logging.getLogger(__name__)
-
-@mcp_server.tool()
-async def logged_operation(param: str) -> Dict[str, Any]:
-    """Operation with comprehensive logging"""
-    logger.info(f"Starting operation with param: {param}")
-
-    try:
-        result = await perform_operation(param)
-        logger.info(f"Operation completed successfully")
-        return result
-    except Exception as e:
-        logger.error(f"Operation failed: {str(e)}")
-        raise
-```
-
-### Health Checks
-
-```python
-@mcp_server.tool()
-async def health_check() -> Dict[str, Any]:
-    """Health check endpoint for monitoring"""
-    try:
-        # Check database connectivity
-        async with AsyncSessionLocal() as db:
-            await db.execute("SELECT 1")
-
-        # Check external service connectivity (if applicable)
-        # ...
-
-        return {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "checks": {
-                "database": "ok",
-                "external_service": "ok"
-            }
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**MCP server not connecting:**
 ```bash
-# Check server is running
-curl http://localhost:8003/health
+# Clone and setup
+git clone <repository>
+cd mcpservers
 
-# Verify environment variables
-echo $DATABASE_URL
+# Choose a server to run locally
+cd mcp_dbstore  # or mcp_webstore, mcp-store-inventory, store-inventory
 
-# Check logs
-docker logs mcp-server-container
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup PostgreSQL database (see Local Development with Compose section below)
+podman-compose -f compose.yaml up -d postgresql
+# Database 'store_db' will be created automatically
+
+# Run the server
+python store.py  # or appropriate main file
 ```
 
-**Tool registration issues:**
-- Verify `@mcp_server.tool()` decorator is used correctly
-- Check function signatures match expected types
-- Ensure server is discoverable by LlamaStack
+### Cluster Deployment
+```bash
+# Deploy with Helm (configure critical options)
+cd mcp_dbstore  # or any server
+helm install my-mcp-server ./helm \
+  --set postgresql.auth.postgresPassword=yourpassword \
+  --set env.DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/db"
 
-**Database connection problems:**
-- Verify DATABASE_URL format: `postgresql+asyncpg://user:pass@host:port/db`
-- Check database server accessibility
-- Verify credentials and permissions
+# For mcp-store-inventory, also set API URL
+helm install mcp-inventory mcp-store-inventory/helm \
+  --set env.STORE_API_URL="http://store-inventory:8002"
+```
 
-**Performance issues:**
-- Monitor database query performance
-- Check for connection pool exhaustion
-- Review async operation patterns
+## Server Comparison
+
+### Use Case Selection Guide
+
+**Choose `mcp_dbstore` when:**
+- You need simple, direct database access
+- Minimal infrastructure complexity is preferred
+- Tight coupling between MCP server and data is acceptable
+
+**Choose `mcp_webstore` when:**
+- You need both MCP capabilities and REST API access
+- Multiple clients will access the same data
+- You want API flexibility with MCP integration
+
+**Choose `mcp-store-inventory` + `store-inventory` when:**
+- You need maximum architectural flexibility
+- Independent scaling of MCP and API layers
+- Microservices architecture is preferred
+
+### Feature Matrix
+
+| Feature | mcp_dbstore | mcp_webstore | mcp-store-inventory | store-inventory |
+|---------|-------------|--------------|-------------------|-----------------|
+| **MCP Protocol** | ✅ | ✅ | ✅ | ❌ |
+| **REST API** | ❌ | ✅ | ❌ | ✅ |
+| **Database Integration** | Direct | Via API | Via API | Direct |
+| **Independent Scaling** | ❌ | ⚠️ Limited | ✅ | ✅ |
+| **Deployment Complexity** | Low | Medium | Low | Low |
+| **Resource Usage** | Low | Medium | Low | Low |
+
+## Development
+
+### Project Structure
+```
+mcpservers/
+├── mcp_dbstore/           # Integrated MCP + Database
+├── mcp_webstore/          # MCP + API Bundle
+├── mcp-store-inventory/   # Standalone MCP Server
+├── store-inventory/       # Standalone API Service
+└── docs/                  # Shared documentation
+```
+
+### Contributing
+Each server has its own development guide:
+- [mcp_dbstore Development Guide](mcp_dbstore/DEVGUIDE.md)
+- [mcp_webstore Development Guide](mcp_webstore/DEVGUIDE.md)
+- [mcp-store-inventory Development Guide](mcp-store-inventory/DEVGUIDE.md)
+- [store-inventory Development Guide](store-inventory/DEVGUIDE.md)
+
+## Documentation
+
+### User Guides
+- [mcp_dbstore User Guide](mcp_dbstore/USERGUIDE.md) - Direct database MCP server
+- [mcp_webstore User Guide](mcp_webstore/USERGUIDE.md) - MCP server with API
+- [mcp-store-inventory User Guide](mcp-store-inventory/USERGUIDE.md) - Standalone MCP client
+- [store-inventory User Guide](store-inventory/USERGUIDE.md) - Inventory management API
+
+### Technical Documentation
+See individual component documentation for technical details and deployment guides.
+
+## Local Development with Compose
+
+The `compose.yaml` file provides a complete local development environment for all MCP servers.
+
+### Quick Start
+
+```bash
+# Start PostgreSQL (required for all components)
+# -d flag runs in background (detached mode)
+podman-compose -f compose.yaml up -d postgresql
+
+# Alternative: Start and see logs in real-time (foreground)
+# podman-compose -f compose.yaml up postgresql
+
+# Verify database is running
+podman-compose -f compose.yaml ps
+podman-compose -f compose.yaml logs postgresql
+```
+
+**About the `-d` flag:**
+- **`-d postgresql`** = Start only the postgresql service in detached mode (background)
+- **`-d`** (without service name) = Start all services in detached mode
+- **No `-d` flag** = Start services in foreground (see logs in real-time)
+
+### Component-Specific Setups
+
+#### MCP DBStore (Integrated)
+```bash
+# Uncomment mcp-dbstore service in compose.yaml, then:
+podman-compose -f compose.yaml up -d mcp-dbstore
+
+# Test the server
+curl http://localhost:8005/health  # Local port 8005
+```
+
+#### Store Inventory API (Standalone)
+```bash
+# Uncomment store-inventory service in compose.yaml, then:
+podman-compose -f compose.yaml up -d store-inventory
+
+# Test the API
+curl http://localhost:8002/health
+curl http://localhost:8002/docs
+```
+
+#### MCP Store Inventory + Store API (Microservices)
+```bash
+# Uncomment both store-inventory and mcp-store-inventory services in compose.yaml, then:
+podman-compose -f compose.yaml up -d store-inventory mcp-store-inventory
+
+# Test both services
+curl http://localhost:8002/health  # Store API (local port 8002)
+curl http://localhost:8001/health  # MCP Server (local port 8001)
+```
+
+#### MCP WebStore (Hybrid)
+```bash
+# Uncomment both mcp-webstore-api and mcp-webstore services in compose.yaml, then:
+podman-compose -f compose.yaml up -d mcp-webstore-api mcp-webstore
+
+# Test both components
+curl http://localhost:8004/health  # Store API (local port 8004)
+curl http://localhost:8004/docs    # API documentation
+curl http://localhost:8003/health  # MCP Server (local port 8003)
+```
+
+### Port Configuration
+
+| Service | Local Port | Container Port | Description |
+|---------|------------|----------------|-------------|
+| **PostgreSQL** | 5432 | 5432 | Database server |
+| **mcp-dbstore** | 8005 | 8002 | Integrated MCP + Database |
+| **store-inventory** | 8002 | 8002 | Standalone Store API |
+| **mcp-store-inventory** | 8001 | 8003 | Standalone MCP Server |
+| **mcp-webstore-api** | 8004 | 8001 | Store API component |
+| **mcp-webstore** | 8003 | 8001 | MCP Server component |
+
+**Note**:
+- **Local Port**: Port on your host machine (unique to avoid conflicts)
+- **Container Port**: Port inside the container (can be the same across services)
+- **Cluster Deployment**: All services can use the same port (e.g., 8002) as they run in separate pods
+
+**Port Strategy**:
+- **Local Development**: Each service gets a unique local port to avoid conflicts
+- **Container Internals**: Services use their preferred internal ports (8001, 8002, 8003)
+- **Kubernetes**: No port conflicts since each service runs in its own pod/namespace
+
+### Database Configuration
+
+- **Database**: `store_db` (automatically created)
+- **User**: `postgres`
+- **Password**: `password`
+- **Port**: `5432`
+- **Connection String**: `postgresql+asyncpg://postgres:password@localhost:5432/store_db`
+
+### Testing Database Connection
+
+```bash
+# Using psql (if installed)
+psql "postgresql://postgres:password@localhost:5432/store_db" -c "SELECT 1;"
+
+# Using podman exec
+podman exec -it mcp-postgresql psql -U postgres -d store_db -c "SELECT 1;"
+```
+
+### Cleanup
+
+```bash
+# Stop all services
+podman-compose -f compose.yaml down
+
+# Remove volumes (deletes data)
+podman-compose -f compose.yaml down -v
+```
+
+### Troubleshooting
+
+#### Port Conflicts
+If ports are already in use, modify the port mappings in `compose.yaml`:
+```yaml
+ports:
+  - '5433:5432'  # Use different host port for PostgreSQL
+  - '8012:8002'  # Use different host port for APIs
+```
+
+#### Database Connection Issues
+```bash
+# Check container status
+podman-compose -f compose.yaml ps
+
+# View logs
+podman-compose -f compose.yaml logs postgresql
+podman-compose -f compose.yaml logs <service-name>
+
+# Test connection
+podman exec -it mcp-postgresql pg_isready -U postgres
+```
+
+## Support
+
+For issues, questions, or contributions:
+1. Check the specific server's documentation
+2. Review the development guides for technical details
+3. Consult the user guides for usage instructions
+4. Use the `compose.yaml` file for local development
+5. Create issues in the main repository
+
+## License
+
+This project is licensed under the same terms as the AI Virtual Agent Kickstart platform.

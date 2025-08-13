@@ -1,0 +1,89 @@
+# MCP Servers Local Development Compose File
+# Uncomment the services you want to run locally
+version: '3.8'
+
+services:
+  # PostgreSQL Database (required for all components)
+  postgresql:
+    image: postgres:15-alpine
+    container_name: mcp-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: store_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    volumes:
+      - mcp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d store_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP DBStore - Integrated MCP server with direct database access
+  # Uncomment to run mcp_dbstore
+  # mcp-dbstore:
+  #   build: ./mcp_dbstore
+  #   container_name: mcp-dbstore
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://postgres:password@postgresql:5432/store_db
+  #   ports:
+  #     - '8005:8002'  # Local port 8005 maps to container port 8002
+  #   depends_on:
+  #     postgresql:
+  #       condition: service_healthy
+
+  # Store Inventory API - Standalone FastAPI service
+  # Uncomment to run store-inventory API
+  # store-inventory:
+  #   build: ./store-inventory
+  #   container_name: store-inventory
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://postgres:password@postgresql:5432/store_db
+  #   ports:
+  #     - '8002:8002'  # Local port 8002 maps to container port 8002
+  #   depends_on:
+  #     postgresql:
+  #       condition: service_healthy
+
+  # MCP Store Inventory - Lightweight MCP client (requires store-inventory)
+  # Uncomment to run mcp-store-inventory (also uncomment store-inventory above)
+  # mcp-store-inventory:
+  #   build: ./mcp-store-inventory
+  #   container_name: mcp-store-inventory
+  #   environment:
+  #     STORE_API_URL: http://store-inventory:8002
+  #   ports:
+  #     - '8001:8003'  # Local port 8001 maps to container port 8003
+  #   depends_on:
+  #     - store-inventory
+
+  # MCP WebStore API - Store API component for mcp_webstore
+  # Uncomment to run the store API part of mcp_webstore
+  # mcp-webstore-api:
+  #   build: ./mcp_webstore/store
+  #   container_name: mcp-webstore-api
+  #   environment:
+  #     DATABASE_URL: postgresql+asyncpg://postgres:password@postgresql:5432/store_db
+  #   ports:
+  #     - '8004:8001'  # Local port 8004 maps to container port 8001
+  #   depends_on:
+  #     postgresql:
+  #       condition: service_healthy
+
+  # MCP WebStore Server - MCP server component for mcp_webstore
+  # Uncomment to run the MCP server part of mcp_webstore (also uncomment mcp-webstore-api above)
+  # mcp-webstore:
+  #   build: ./mcp_webstore
+  #   container_name: mcp-webstore
+  #   environment:
+  #     STORE_SERVER_URL: http://mcp-webstore-api:8001
+  #   ports:
+  #     - '8003:8001'  # Local port 8003 maps to container port 8001
+  #   depends_on:
+  #     - mcp-webstore-api
+
+volumes:
+  mcp_pgdata:
