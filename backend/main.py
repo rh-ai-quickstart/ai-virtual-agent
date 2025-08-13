@@ -10,6 +10,7 @@ knowledge bases, chat sessions, and integration with LlamaStack for AI capabilit
 """
 
 import asyncio
+import os
 import sys
 import time
 from contextlib import asynccontextmanager
@@ -188,7 +189,9 @@ app.include_router(model_servers.router, prefix="/api")
 app.include_router(llama_stack.router, prefix="/api")
 app.include_router(chat_sessions.router, prefix="/api")
 app.include_router(agent_templates.router, prefix="/api")
-app.include_router(attachments.router, prefix="/api")
+
+if os.getenv("DISABLE_ATTACHMENTS") != "true":
+    app.include_router(attachments.router, prefix="/api")
 
 class SPAStaticFiles(StaticFiles):
     """
