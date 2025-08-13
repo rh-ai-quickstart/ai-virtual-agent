@@ -34,6 +34,13 @@ class UserBase(BaseModel):
     agent_ids: Optional[List[str]] = []
 
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[RoleEnum] = None
+    agent_ids: Optional[List[str]] = None
+
+
 class UserRead(UserBase):
     id: UUID4
     created_at: Any

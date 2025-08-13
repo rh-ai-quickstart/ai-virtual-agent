@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User,
+  NewUser,
   fetchUsers,
   fetchCurrentUser,
   fetchUserById,
   updateUserAgents,
   getUserAgents,
   removeUserAgents,
+  createUser,
 } from '@/services/users';
 
 export const useUsers = () => {
@@ -79,6 +81,18 @@ export const useUsers = () => {
     }
   );
 
+  // Mutation for creating a new user
+  const createUserMutation = useMutation<User, Error, NewUser>({
+    mutationFn: createUser,
+    onSuccess: () => {
+      // Invalidate users list to refresh the data
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      console.error('Failed to create user:', error);
+    },
+  });
+
   // Helper function to refresh users data
   const refreshUsers = () => {
     void queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -100,12 +114,15 @@ export const useUsers = () => {
     useUserAgents,
 
     // Mutations
+    createUser: (newUser: NewUser) => createUserMutation.mutateAsync(newUser),
     updateUserAgents: (userId: string, agentIds: string[]) =>
       updateUserAgentsMutation.mutateAsync({ userId, agentIds }),
     removeUserAgents: (userId: string, agentIds: string[]) =>
       removeUserAgentsMutation.mutateAsync({ userId, agentIds }),
 
     // Mutation states
+    isCreating: createUserMutation.isPending,
+    createError: createUserMutation.error,
     isUpdatingAgents: updateUserAgentsMutation.isPending,
     isRemovingAgents: removeUserAgentsMutation.isPending,
     updateError: updateUserAgentsMutation.error,

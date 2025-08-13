@@ -23,7 +23,7 @@ from sqlalchemy.future import select
 from .. import models, schemas
 from ..database import get_db
 from ..services.user_service import UserService
-from ..utils.auth_utils import is_local_dev_mode, get_or_create_dev_user
+from ..utils.auth_utils import get_or_create_dev_user, is_local_dev_mode
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
     if is_local_dev_mode():
         log.info("LOCAL_DEV_ENV_MODE is enabled, using development user")
         return await get_or_create_dev_user(db)
-    
+
     username = headers.get("X-Forwarded-User") or headers.get("x-forwarded-user")
     email = headers.get("X-Forwarded-Email") or headers.get("x-forwarded-email")
     if not username and not email:
@@ -235,7 +235,7 @@ async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="User not found"
         )
-    
+
     # Convert the user to a dict for proper serialization
     user_dict = {
         "id": user.id,
@@ -244,9 +244,9 @@ async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
         "role": user.role.value,  # Convert enum to string value
         "agent_ids": user.agent_ids or [],
         "created_at": user.created_at,
-        "updated_at": user.updated_at
+        "updated_at": user.updated_at,
     }
-    
+
     return user_dict
 
 
@@ -298,7 +298,8 @@ async def create_user(
             username=user.username,
             email=user.email,
             role=user.role,
-        )
+            agent_ids=user.agent_ids or [],
+    )
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
@@ -378,7 +379,7 @@ async def get_user(
 @router.put("/{user_id}", response_model=schemas.UserRead)
 async def update_user(
     user_id: UUID,
-    user: schemas.UserBase,
+    user: schemas.UserUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(require_admin_role),
 ):

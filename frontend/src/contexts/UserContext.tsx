@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, QueryObserverResult } from '@tanstack/react-query';
 import { fetchCurrentUser } from '@/services/users';
 import { User } from '@/types/auth';
 
@@ -7,7 +7,7 @@ interface UserContextType {
   currentUser: User | null;
   isLoading: boolean;
   error: string | null;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<QueryObserverResult<User, Error>>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -22,17 +22,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<User, Error>({
     queryKey: ['currentUser'],
     queryFn: fetchCurrentUser,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: Error) => {
       // Don't retry on authentication errors
-      if (
-        error.message === 'User not authenticated' ||
-        error.message === 'User not found'
-      ) {
+      if (error.message === 'User not authenticated' || error.message === 'User not found') {
         return false;
       }
       return failureCount < 3;
@@ -66,6 +63,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
  *   - error: Error message if any (including authentication errors)
  *   - refetch: Function to manually refetch user data
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCurrentUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (context === undefined) {

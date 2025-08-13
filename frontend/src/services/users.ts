@@ -79,3 +79,55 @@ export const removeUserAgents = async (userId: string, agentIds: string[]): Prom
   const data: unknown = await response.json();
   return data as User;
 };
+
+export interface NewUser {
+  username: string;
+  email: string;
+  role: 'user' | 'devops' | 'admin';
+  agent_ids?: string[];
+}
+
+export const createUser = async (newUser: NewUser): Promise<User> => {
+  const response = await fetch(USERS_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(newUser),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create user');
+  }
+  const data: unknown = await response.json();
+  return data as User;
+};
+
+export interface UpdateUser {
+  username?: string;
+  email?: string;
+  role?: 'user' | 'devops' | 'admin';
+}
+
+export const updateUser = async (userId: string, updates: UpdateUser): Promise<User> => {
+  const response = await fetch(`${USERS_API_ENDPOINT}${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update user');
+  }
+  const data: unknown = await response.json();
+  return data as User;
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  const response = await fetch(`${USERS_API_ENDPOINT}${userId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete user');
+  }
+};
