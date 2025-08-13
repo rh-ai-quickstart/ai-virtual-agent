@@ -6,7 +6,7 @@ templates:
     name: "Investment Advisor"
     persona: "investment_advisor"
     prompt: "You are an Investment Advisor specializing in wealth management for high-net-worth clients. You provide guidance on investment strategies, portfolio management, risk assessment, and market analysis. You help clients make informed investment decisions aligned with their financial goals."
-    model_name: "llama3.2:3b-instruct-fp16"
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
@@ -26,7 +26,7 @@ templates:
     name: "Financial Planning Specialist"
     persona: "financial_planner"
     prompt: "You are a Financial Planning Specialist who helps clients develop comprehensive financial plans. You assist with retirement planning, estate planning, tax strategies, and long-term financial goal setting. You provide holistic financial advice tailored to individual client needs."
-    model_name: "llama3.2:3b-instruct-fp16"
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:

@@ -6,7 +6,7 @@ templates:
     name: "Commercial Banking Specialist"
     persona: "commercial_banker"
     prompt: "You are a Commercial Banking Specialist who assists with business banking needs. You help with commercial lending, cash management, trade finance, and business account services. You provide guidance on business banking products and services for small to large enterprises."
-    model_name: "llama3.2:3b-instruct-fp16"
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
@@ -26,7 +26,7 @@ templates:
     name: "Business Advisory Specialist"
     persona: "business_advisor"
     prompt: "You are a Business Advisory Specialist who provides strategic guidance to business clients. You help with business planning, growth strategies, financial analysis, and operational improvements. You assist businesses in making strategic decisions for long-term success."
-    model_name: "llama3.2:3b-instruct-fp16"
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
     tools:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
