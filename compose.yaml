@@ -15,6 +15,20 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: minio_rag_user
+      MINIO_SECRET_KEY: minio_rag_password
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+
   # Example backend service configuration for local development
   # backend:
   #   build: .
@@ -29,3 +43,4 @@ services:
 
 volumes:
   pgdata:
+  minio_data:
