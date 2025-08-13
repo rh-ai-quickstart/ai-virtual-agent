@@ -24,8 +24,8 @@ Development setup for the standalone FastAPI inventory management service.
 
 3. **Database Setup**
    ```bash
-   # Using podman-compose (recommended)
-   podman-compose -f ../compose.yaml up -d postgresql
+   # Using podman compose (recommended)
+podman compose -f ../compose.yaml up -d postgresql
    # Database 'store_db' will be created automatically
 
    # Or manually (if not using compose):

@@ -80,7 +80,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Setup PostgreSQL database (uncomment store-inventory service in ../compose.yaml for full setup)
-podman-compose -f ../compose.yaml up -d postgresql
+podman compose -f ../compose.yaml up -d postgresql
 # Database 'store_db' will be created automatically by PostgreSQL container
 
 # Set database URL (optional, defaults work with compose setup)

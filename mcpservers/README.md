@@ -160,14 +160,14 @@ The `compose.yaml` file provides a complete local development environment for al
 ```bash
 # Start PostgreSQL (required for all components)
 # -d flag runs in background (detached mode)
-podman-compose -f compose.yaml up -d postgresql
+podman compose -f compose.yaml up -d postgresql
 
 # Alternative: Start and see logs in real-time (foreground)
-# podman-compose -f compose.yaml up postgresql
+# podman compose -f compose.yaml up postgresql
 
 # Verify database is running
-podman-compose -f compose.yaml ps
-podman-compose -f compose.yaml logs postgresql
+podman compose -f compose.yaml ps
+podman compose -f compose.yaml logs postgresql
 ```
 
 **About the `-d` flag:**
@@ -180,7 +180,7 @@ podman-compose -f compose.yaml logs postgresql
 #### MCP DBStore (Integrated)
 ```bash
 # Uncomment mcp-dbstore service in compose.yaml, then:
-podman-compose -f compose.yaml up -d mcp-dbstore
+podman compose -f compose.yaml up -d mcp-dbstore
 
 # Test the server
 curl http://localhost:8005/health  # Local port 8005
@@ -189,7 +189,7 @@ curl http://localhost:8005/health  # Local port 8005
 #### Store Inventory API (Standalone)
 ```bash
 # Uncomment store-inventory service in compose.yaml, then:
-podman-compose -f compose.yaml up -d store-inventory
+podman compose -f compose.yaml up -d store-inventory
 
 # Test the API
 curl http://localhost:8002/health
@@ -199,7 +199,7 @@ curl http://localhost:8002/docs
 #### MCP Store Inventory + Store API (Microservices)
 ```bash
 # Uncomment both store-inventory and mcp-store-inventory services in compose.yaml, then:
-podman-compose -f compose.yaml up -d store-inventory mcp-store-inventory
+podman compose -f compose.yaml up -d store-inventory mcp-store-inventory
 
 # Test both services
 curl http://localhost:8002/health  # Store API (local port 8002)
@@ -209,7 +209,7 @@ curl http://localhost:8001/health  # MCP Server (local port 8001)
 #### MCP WebStore (Hybrid)
 ```bash
 # Uncomment both mcp-webstore-api and mcp-webstore services in compose.yaml, then:
-podman-compose -f compose.yaml up -d mcp-webstore-api mcp-webstore
+podman compose -f compose.yaml up -d mcp-webstore-api mcp-webstore
 
 # Test both components
 curl http://localhost:8004/health  # Store API (local port 8004)
@@ -260,10 +260,10 @@ podman exec -it mcp-postgresql psql -U postgres -d store_db -c "SELECT 1;"
 
 ```bash
 # Stop all services
-podman-compose -f compose.yaml down
+podman compose -f compose.yaml down
 
 # Remove volumes (deletes data)
-podman-compose -f compose.yaml down -v
+podman compose -f compose.yaml down -v
 ```
 
 ### Troubleshooting
@@ -279,11 +279,11 @@ ports:
 #### Database Connection Issues
 ```bash
 # Check container status
-podman-compose -f compose.yaml ps
+podman compose -f compose.yaml ps
 
 # View logs
-podman-compose -f compose.yaml logs postgresql
-podman-compose -f compose.yaml logs <service-name>
+podman compose -f compose.yaml logs postgresql
+podman compose -f compose.yaml logs <service-name>
 
 # Test connection
 podman exec -it mcp-postgresql pg_isready -U postgres

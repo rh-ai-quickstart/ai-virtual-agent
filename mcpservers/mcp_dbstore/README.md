@@ -68,10 +68,10 @@ pip install -r requirements.txt
 
 # Setup PostgreSQL database (uncomment mcp-dbstore service in ../compose.yaml for full setup)
 # -d flag runs PostgreSQL in background (detached mode)
-podman-compose -f ../compose.yaml up -d postgresql
+podman compose -f ../compose.yaml up -d postgresql
 
 # Alternative: Start and see logs in real-time
-# podman-compose -f ../compose.yaml up postgresql
+# podman compose -f ../compose.yaml up postgresql
 
 # Database 'store_db' will be created automatically by PostgreSQL container
 

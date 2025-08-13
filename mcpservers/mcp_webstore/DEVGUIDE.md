@@ -31,9 +31,9 @@ Development setup and contribution guide for the MCP WebStore hybrid server (MCP
 
 3. **Database Setup**
    ```bash
-   # Using podman-compose (recommended)
+   # Using podman compose (recommended)
    # Use the main compose.yaml file in the parent directory
-   podman-compose -f ../compose.yaml up -d postgresql
+   podman compose -f ../compose.yaml up -d postgresql
 
    # Verify database connection
    psql "postgresql://postgres:password@localhost:5432/store_db" -c "SELECT 1;"

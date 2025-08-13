@@ -32,9 +32,9 @@ This guide covers development setup, testing, and contribution guidelines for th
 
 4. **Database Setup**
    ```bash
-   # Option 1: Using podman-compose (recommended)
-   # Use the main compose.yaml file in the parent directory
-   podman-compose -f ../compose.yaml up -d postgresql
+   # Option 1: Using podman compose (recommended)
+# Use the main compose.yaml file in the parent directory
+podman compose -f ../compose.yaml up -d postgresql
 
    # Option 2: Manual setup (if not using compose)
    # First start PostgreSQL, then create database:

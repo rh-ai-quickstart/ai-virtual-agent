@@ -37,16 +37,16 @@ services:
 
   # Store Inventory API - Standalone FastAPI service
   # Uncomment to run store-inventory API
-  # store-inventory:
-  #   build: ./store-inventory
-  #   container_name: store-inventory
-  #   environment:
-  #     DATABASE_URL: postgresql+asyncpg://postgres:password@postgresql:5432/store_db
-  #   ports:
-  #     - '8002:8002'  # Local port 8002 maps to container port 8002
-  #   depends_on:
-  #     postgresql:
-  #       condition: service_healthy
+  store-inventory:
+    build: ./store-inventory
+    container_name: store-inventory
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgresql:5432/store_db
+    ports:
+      - '8002:8002'  # Local port 8002 maps to container port 8002
+    depends_on:
+      postgresql:
+        condition: service_healthy
 
   # MCP Store Inventory - Lightweight MCP client (requires store-inventory)
   # Uncomment to run mcp-store-inventory (also uncomment store-inventory above)

@@ -77,7 +77,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Start the database (uncomment store-inventory and mcp-store-inventory services in ../compose.yaml for full setup)
-podman-compose -f ../compose.yaml up -d postgresql
+podman compose -f ../compose.yaml up -d postgresql
 
 # Start Store Inventory API first (in another terminal)
 cd ../store-inventory
