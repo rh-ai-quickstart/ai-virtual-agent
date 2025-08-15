@@ -13,7 +13,7 @@ SPECIFIC_TESTS=""
 
 # Default to running both if no arguments
 if [[ $# -eq 0 ]]; then
-    RUN_UNIT=false
+    RUN_UNIT=true
     RUN_INTEGRATION=true
 else
     # Parse arguments
