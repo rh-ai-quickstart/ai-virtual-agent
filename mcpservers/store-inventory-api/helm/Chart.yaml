@@ -1,0 +1,23 @@
+apiVersion: v2
+name: store-inventory-api
+description: A Helm chart for Store Inventory API and Database
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - api
+  - inventory
+  - store
+  - fastapi
+  - postgresql
+home: https://github.com/your-org/ai-virtual-agent
+sources:
+  - https://github.com/your-org/ai-virtual-agent
+maintainers:
+  - name: AI Virtual Agent Team
+    email: team@example.com
+dependencies:
+  - name: postgresql
+    version: "15.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled

@@ -6,10 +6,10 @@ Model Context Protocol (MCP) servers provide external tool capabilities to AI ag
 
 | Server | Type | Description | Use Case |
 |--------|------|-------------|---------|
-| [**mcp_dbstore**](mcp_dbstore/) | Integrated | MCP server with tightly coupled database for direct data access | MCP Server + Database |
-| [**mcp_webstore**](mcp_webstore/) | Client-Server | MCP server with separate store API for distributed architecture | MCP Server + Store API |
+| [**mcp-store-db**](mcp-store-db/) | Integrated | MCP server with tightly coupled database for direct data access | MCP Server + Database |
+| [**mcp-store-api**](mcp-store-api/) | Client-Server | MCP server with separate store API for distributed architecture | MCP Server + Store API |
 | [**mcp-store-inventory**](mcp-store-inventory/) | Standalone | Lightweight MCP server requiring external store API | Standalone MCP Server |
-| [**store-inventory**](store-inventory/) | API Service | Standalone FastAPI service for inventory management | Standalone Store API |
+| [**store-inventory-api**](store-inventory-api/) | API Service | Standalone FastAPI service for inventory management | Standalone Store API |
 
 ## Architecture Overview
 
@@ -21,14 +21,14 @@ graph TB
     end
 
     subgraph "MCP Servers"
-        MCP_DB[mcp_dbstore<br/>Integrated]
-        MCP_WEB[mcp_webstore<br/>Client-Server]
+        MCP_DB[mcp-store-db<br/>Integrated]
+        MCP_WEB[mcp-store-api<br/>Client-Server]
         MCP_INV[mcp-store-inventory<br/>Standalone]
     end
 
     subgraph "APIs & Databases"
-        WEB_API[mcp_webstore API]
-        STORE_API[store-inventory API]
+        WEB_API[mcp-store-api API]
+        STORE_API[store-inventory-api API]
         DB1[(PostgreSQL)]
         DB2[(PostgreSQL)]
         DB3[(PostgreSQL)]
@@ -61,7 +61,7 @@ git clone <repository>
 cd mcpservers
 
 # Choose a server to run locally
-cd mcp_dbstore  # or mcp_webstore, mcp-store-inventory, store-inventory
+cd mcp-store-db  # or mcp-store-api, mcp-store-inventory, store-inventory-api
 
 # Create virtual environment
 python -m venv .venv
@@ -81,38 +81,38 @@ python store.py  # or appropriate main file
 ### Cluster Deployment
 ```bash
 # Deploy with Helm (configure critical options)
-cd mcp_dbstore  # or any server
+cd mcp-store-db  # or any server
 helm install my-mcp-server ./helm \
   --set postgresql.auth.postgresPassword=yourpassword \
   --set env.DATABASE_URL="postgresql+asyncpg://user:pass@host:5432/db"
 
 # For mcp-store-inventory, also set API URL
 helm install mcp-inventory mcp-store-inventory/helm \
-  --set env.STORE_API_URL="http://store-inventory:8002"
+  --set env.STORE_API_URL="http://store-inventory-api:8002"
 ```
 
 ## Server Comparison
 
 ### Use Case Selection Guide
 
-**Choose `mcp_dbstore` when:**
+**Choose `mcp-store-db` when:**
 - You need simple, direct database access
 - Minimal infrastructure complexity is preferred
 - Tight coupling between MCP server and data is acceptable
 
-**Choose `mcp_webstore` when:**
+**Choose `mcp-store-api` when:**
 - You need both MCP capabilities and REST API access
 - Multiple clients will access the same data
 - You want API flexibility with MCP integration
 
-**Choose `mcp-store-inventory` + `store-inventory` when:**
+**Choose `mcp-store-inventory` + `store-inventory-api` when:**
 - You need maximum architectural flexibility
 - Independent scaling of MCP and API layers
 - Microservices architecture is preferred
 
 ### Feature Matrix
 
-| Feature | mcp_dbstore | mcp_webstore | mcp-store-inventory | store-inventory |
+| Feature | mcp-store-db | mcp-store-api | mcp-store-inventory | store-inventory-api |
 |---------|-------------|--------------|-------------------|-----------------|
 | **MCP Protocol** | ✅ | ✅ | ✅ | ❌ |
 | **REST API** | ❌ | ✅ | ❌ | ✅ |
@@ -126,27 +126,29 @@ helm install mcp-inventory mcp-store-inventory/helm \
 ### Project Structure
 ```
 mcpservers/
-├── mcp_dbstore/           # Integrated MCP + Database
-├── mcp_webstore/          # MCP + API Bundle
+├── mcp-store-db/           # Integrated MCP + Database
+├── mcp-store-api/          # MCP + API Bundle
 ├── mcp-store-inventory/   # Standalone MCP Server
-├── store-inventory/       # Standalone API Service
+├── store-inventory-api/       # Standalone API Service
 └── docs/                  # Shared documentation
 ```
 
 ### Contributing
 Each server has its own development guide:
-- [mcp_dbstore Development Guide](mcp_dbstore/DEVGUIDE.md)
-- [mcp_webstore Development Guide](mcp_webstore/DEVGUIDE.md)
+- [mcp-store-db Development Guide](mcp-store-db/DEVGUIDE.md) - Direct database MCP server
+- [mcp-store-db User Guide](mcp-store-db/USERGUIDE.md) - Direct database MCP server
+- [mcp-store-api Development Guide](mcp-store-api/DEVGUIDE.md) - MCP server with API
+- [mcp-store-api User Guide](mcp-store-api/USERGUIDE.md) - MCP server with API
 - [mcp-store-inventory Development Guide](mcp-store-inventory/DEVGUIDE.md)
-- [store-inventory Development Guide](store-inventory/DEVGUIDE.md)
+- [store-inventory-api Development Guide](store-inventory-api/DEVGUIDE.md)
 
 ## Documentation
 
 ### User Guides
-- [mcp_dbstore User Guide](mcp_dbstore/USERGUIDE.md) - Direct database MCP server
-- [mcp_webstore User Guide](mcp_webstore/USERGUIDE.md) - MCP server with API
+- [mcp-store-db User Guide](mcp-store-db/USERGUIDE.md) - Direct database MCP server
+- [mcp-store-api User Guide](mcp-store-api/USERGUIDE.md) - MCP server with API
 - [mcp-store-inventory User Guide](mcp-store-inventory/USERGUIDE.md) - Standalone MCP client
-- [store-inventory User Guide](store-inventory/USERGUIDE.md) - Inventory management API
+- [store-inventory-api User Guide](store-inventory-api/USERGUIDE.md) - Inventory management API
 
 ### Technical Documentation
 See individual component documentation for technical details and deployment guides.
@@ -188,8 +190,8 @@ curl http://localhost:8005/health  # Local port 8005
 
 #### Store Inventory API (Standalone)
 ```bash
-# Uncomment store-inventory service in compose.yaml, then:
-podman compose -f compose.yaml up -d store-inventory
+# Uncomment store-inventory-api service in compose.yaml, then:
+podman compose -f compose.yaml up -d store-inventory-api
 
 # Test the API
 curl http://localhost:8002/health
@@ -198,8 +200,8 @@ curl http://localhost:8002/docs
 
 #### MCP Store Inventory + Store API (Microservices)
 ```bash
-# Uncomment both store-inventory and mcp-store-inventory services in compose.yaml, then:
-podman compose -f compose.yaml up -d store-inventory mcp-store-inventory
+# Uncomment both store-inventory-api and mcp-store-inventory services in compose.yaml, then:
+podman compose -f compose.yaml up -d store-inventory-api mcp-store-inventory
 
 # Test both services
 curl http://localhost:8002/health  # Store API (local port 8002)
@@ -223,7 +225,7 @@ curl http://localhost:8003/health  # MCP Server (local port 8003)
 |---------|------------|----------------|-------------|
 | **PostgreSQL** | 5432 | 5432 | Database server |
 | **mcp-dbstore** | 8005 | 8002 | Integrated MCP + Database |
-| **store-inventory** | 8002 | 8002 | Standalone Store API |
+| **store-inventory-api** | 8002 | 8002 | Standalone Store API |
 | **mcp-store-inventory** | 8001 | 8003 | Standalone MCP Server |
 | **mcp-webstore-api** | 8004 | 8001 | Store API component |
 | **mcp-webstore** | 8003 | 8001 | MCP Server component |

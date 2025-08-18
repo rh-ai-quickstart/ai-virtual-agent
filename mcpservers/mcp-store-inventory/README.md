@@ -61,7 +61,7 @@ graph LR
 ## Quick Start
 
 ### Prerequisites
-- Running Store Inventory API (see [store-inventory](../store-inventory/))
+- Running Store Inventory API (see [store-inventory-api](../store-inventory-api/))
 - Python 3.12+
 
 ### Local Development
@@ -80,7 +80,7 @@ pip install -r requirements.txt
 podman compose -f ../compose.yaml up -d postgresql
 
 # Start Store Inventory API first (in another terminal)
-cd ../store-inventory
+cd ../store-inventory-api
 uvicorn main:app --port 8002 --reload
 
 # Configure API endpoint
@@ -109,7 +109,7 @@ podman run -p 8003:8003 \
 ```bash
 # Deploy with Helm (configure critical options)
 helm install mcp-inventory ./helm \
-  --set env.STORE_API_URL="http://store-inventory:8002" \
+  --set env.STORE_API_URL="http://store-inventory-api:8002" \
   --set image.repository=quay.io/ecosystem-appeng/mcp-store-inventory \
   --set image.tag=latest
 
@@ -171,7 +171,7 @@ This server expects the connected API to provide:
 - Separation of concerns
 
 ### ⚠️ **Consider Alternatives When**
-- Simple, monolithic deployment is preferred (use mcp_dbstore)
+- Simple, monolithic deployment is preferred (use mcp-store-db)
 - Direct database access is needed
 - Minimal network hops are critical
 - Single-team development
@@ -243,7 +243,7 @@ The server provides intelligent error handling:
 ### With Store Inventory API
 ```bash
 # Start Store Inventory API first
-cd ../store-inventory
+cd ../store-inventory-api
 uvicorn main:app --port 8002
 
 # Then start MCP server
@@ -267,5 +267,5 @@ python server.py
 For technical support and development:
 - Review the [Development Guide](DEVGUIDE.md)
 - Check the [User Guide](USERGUIDE.md) for usage examples
-- Ensure [Store Inventory API](../store-inventory/) is running
+- Ensure [Store Inventory API](../store-inventory-api/) is running
 - See the main [MCP Servers documentation](../README.md)

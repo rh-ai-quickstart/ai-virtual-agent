@@ -1,0 +1,109 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/ecosystem-appeng/mcp-dbstore
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false  # MCP server needs to write temporary files
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8002
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: mcp-dbstore.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Environment variables
+env:
+  DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@postgres-service:5432/store_db"
+  # Database connection pool configuration
+  DB_POOL_SIZE: "10"
+  DB_MAX_OVERFLOW: "20"
+  DB_POOL_TIMEOUT: "30"
+  DB_POOL_RECYCLE: "3600"
+  # Health check configuration
+  DB_HEALTH_CHECK_INTERVAL: "30"
+  DB_HEALTH_CHECK_TIMEOUT: "5"
+  DB_MAX_RETRY_ATTEMPTS: "5"
+
+# Health check configuration - based on MCP server status, not database status
+healthCheck:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# PostgreSQL configuration - optional dependency (disabled by default)
+postgresql:
+  enabled: false  # Set to true if you want Helm to deploy PostgreSQL
+  auth:
+    postgresPassword: "postgres"
+    username: "myuser"
+    password: "mypassword"
+    database: "store_db"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Database initialization
+dbInit:
+  enabled: false  # Disabled since PostgreSQL is optional
+  populateData: false
