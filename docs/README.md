@@ -10,6 +10,7 @@ Welcome to the AI Virtual Agent Quickstart documentation! This page provides eas
 | [Main README](../README.md) | Project overview and quick start |
 | [Installation Guide](../INSTALLING.md) | Production installation on OpenShift |
 | [Contributing Guide](../CONTRIBUTING.md) | Development setup and contribution guidelines |
+| [.env Usage](../README.md#environment-setup-env) | Make targets auto-load `.env` if present |
 
 ### 🤖 **Platform Concepts**
 

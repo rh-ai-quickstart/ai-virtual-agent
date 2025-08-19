@@ -28,7 +28,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .database import AsyncSessionLocal
 from .routes import (
     agent_templates,
-    attachments,
     chat_sessions,
     debug,
     guardrails,
@@ -210,6 +209,9 @@ app.include_router(chat_sessions.router, prefix="/api")
 app.include_router(agent_templates.router, prefix="/api")
 
 if os.getenv("DISABLE_ATTACHMENTS") != "true":
+    # Import lazily to avoid importing attachments when disabled
+    from .routes import attachments
+
     app.include_router(attachments.router, prefix="/api")
 
 

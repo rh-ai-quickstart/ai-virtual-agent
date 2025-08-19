@@ -85,6 +85,8 @@ if [[ "$RUN_UNIT" == true ]]; then
     echo ""
     echo "🧪 Running unit tests..."
     echo "------------------------"
+    # Make unit tests not dependent on Minio or attachments.
+    export DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-true}
     if [[ -n "$SPECIFIC_TESTS" ]]; then
         pytest $SPECIFIC_TESTS -ra --cov=backend --cov-report=term-missing --cov-branch || {
             echo ""

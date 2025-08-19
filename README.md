@@ -150,6 +150,59 @@ make stop
 make reset-db
 ```
 
+> Note: All Makefile targets automatically load environment variables from a `.env` file in the repository root if it exists. No manual `export` is required for common workflows.
+
+### Environment setup (.env)
+
+Create a `.env` file in the repository root to configure your local environment. All Makefile targets will dynamically load this file if present:
+
+```bash
+cp .env.example .env
+# then edit `.env` as needed
+```
+
+At minimum, set:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://admin:password@localhost:5432/ai_virtual_agent
+```
+
+Optional toggles:
+
+```bash
+# Skip attachments bucket initialization/access during local dev
+DISABLE_ATTACHMENTS=true
+
+# Provide admin bootstrap for Alembic seeding (optional)
+# ADMIN_USERNAME=admin
+# ADMIN_EMAIL=admin@change.me
+```
+
+### Attachments (optional dependency)
+
+If you plan to use file attachments locally or see this error during tests:
+
+```
+ImportError: failed to find libmagic. Check your installation
+```
+
+install the MIME detection dependency (libmagic) and Python binding:
+
+- macOS (Homebrew):
+  - `brew install file`
+  - `pip install python-magic`
+- Ubuntu/Debian:
+  - `sudo apt-get install libmagic1` (or `libmagic-dev`)
+  - `pip install python-magic`
+- Fedora/RHEL:
+  - `sudo dnf install file libmagic`
+  - `pip install python-magic`
+
+Notes:
+- Unit tests import parts of the attachments stack. Without libmagic installed you can still proceed by installing the packages above.
+- If you’re not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip bucket-related startup paths.
+
+
 ## Community & Support
 
 - **🐛 Issues** - [Report bugs and request features](https://github.com/rh-ai-quickstart/ai-virtual-agent/issues)

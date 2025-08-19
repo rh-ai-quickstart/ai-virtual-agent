@@ -8,7 +8,7 @@ and proper error handling for the protected users API.
 from __future__ import annotations
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import status
@@ -110,7 +110,7 @@ class TestUserAuthentication:
         # Mock the database query result
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = [admin_user]
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalars.return_value = mock_scalars
         mock_db_session.execute.return_value = mock_result
 
@@ -125,24 +125,29 @@ class TestUserAuthentication:
 class TestCreateUser:
     """Test user creation endpoint."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_create_user_as_admin_success(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test successful user creation by admin."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock database query to return no existing user
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
+
+        # Simulate DB refresh assigning a generated id
+        async def refresh_side_effect(obj):
+            import uuid as _uuid
+
+            if getattr(obj, "id", None) is None:
+                obj.id = _uuid.uuid4()
+
+        mock_db_session.refresh.side_effect = refresh_side_effect
 
         new_user_data = {
             "username": "new_user",
@@ -153,19 +158,15 @@ class TestCreateUser:
         response = test_client.post("/api/users/", json=new_user_data)
         assert response.status_code == status.HTTP_201_CREATED
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_create_user_as_regular_user_forbidden(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test that regular users cannot create new users."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         new_user_data = {
             "username": "new_user",
@@ -176,19 +177,15 @@ class TestCreateUser:
         response = test_client.post("/api/users/", json=new_user_data)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_create_user_duplicate_conflict(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test creating user with existing username/email returns conflict."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock existing user found
         existing_user = User(
@@ -196,7 +193,7 @@ class TestCreateUser:
             email="existing@example.com",
             role=RoleEnum.user,
         )
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing_user
         mock_db_session.execute.return_value = mock_result
 
@@ -213,41 +210,35 @@ class TestCreateUser:
 class TestReadUsers:
     """Test user listing endpoint."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_list_users_as_admin_success(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin can list all users."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock users list
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = [admin_user]
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [admin_user]
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.get("/api/users/")
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_list_users_as_regular_user_forbidden(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test regular user cannot list all users."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         response = test_client.get("/api/users/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -256,85 +247,69 @@ class TestReadUsers:
 class TestReadSingleUser:
     """Test single user retrieval endpoint."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_admin_can_read_any_user(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin can read any user's profile."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.get(f"/api/users/{regular_user.id}")
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_user_can_read_own_profile(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test user can read their own profile."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         # Mock user found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.get(f"/api/users/{regular_user.id}")
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_user_cannot_read_other_user_profile(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test user cannot read another user's profile."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         response = test_client.get(f"/api/users/{admin_user.id}")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_read_nonexistent_user_returns_404(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test reading non-existent user returns 404."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user not found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
 
@@ -346,23 +321,19 @@ class TestReadSingleUser:
 class TestUpdateUser:
     """Test user update endpoint."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_admin_can_update_user(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin can update any user."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
@@ -370,19 +341,15 @@ class TestUpdateUser:
         response = test_client.put(f"/api/users/{regular_user.id}", json=update_data)
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_regular_user_cannot_update_user(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test regular user cannot update users."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         update_data = {"username": "updated_user"}
         response = test_client.put(f"/api/users/{regular_user.id}", json=update_data)
@@ -392,64 +359,52 @@ class TestUpdateUser:
 class TestDeleteUser:
     """Test user deletion endpoint."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_admin_can_delete_other_user(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin can delete other users."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.delete(f"/api/users/{regular_user.id}")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_admin_cannot_delete_own_account(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin cannot delete their own account."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user found (admin themselves)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = admin_user
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.delete(f"/api/users/{admin_user.id}")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_regular_user_cannot_delete_user(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test regular user cannot delete users."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         response = test_client.delete(f"/api/users/{regular_user.id}")
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -458,64 +413,52 @@ class TestDeleteUser:
 class TestUserAgents:
     """Test user agents management endpoints."""
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_user_can_view_own_agents(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test user can view their own assigned agents."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         # Mock user found with agents
         regular_user.agent_ids = ["agent1", "agent2"]
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
         response = test_client.get(f"/api/users/{regular_user.id}/agents")
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_user_cannot_view_other_user_agents(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         admin_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test user cannot view another user's agents."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         response = test_client.get(f"/api/users/{admin_user.id}/agents")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_admin_can_assign_agents(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         admin_user,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test admin can assign agents to users."""
-        mock_get_current_user.return_value = admin_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=admin_user, db_session=mock_db_session)
 
         # Mock user found
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = regular_user
         mock_db_session.execute.return_value = mock_result
 
@@ -525,19 +468,15 @@ class TestUserAgents:
         )
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("backend.routes.users.get_db")
-    @patch("backend.routes.users.get_current_user")
     def test_regular_user_cannot_assign_agents(
         self,
-        mock_get_current_user,
-        mock_get_db,
         test_client,
         regular_user,
         mock_db_session,
+        setup_dependencies,
     ):
         """Test regular user cannot assign agents."""
-        mock_get_current_user.return_value = regular_user
-        mock_get_db.return_value = mock_db_session
+        setup_dependencies(user=regular_user, db_session=mock_db_session)
 
         agent_data = {"agent_ids": ["agent1", "agent2"]}
         response = test_client.post(
