@@ -18,9 +18,7 @@ class TestMockedAPILogic:
         # Mock the entire server module
         with patch.dict("sys.modules", {"server": MagicMock()}):
             # Create a mock for the make_api_request function
-            async def mock_make_api_request(
-                method, endpoint, params=None, json_data=None
-            ):
+            async def mock_make_api_request(method, endpoint, json_data=None):
                 """Mock implementation of make_api_request."""
                 # Simulate the logic without external dependencies
                 if method == "GET":
