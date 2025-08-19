@@ -25,7 +25,7 @@ repos:
     rev: 6.0.1
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        args: ["--profile", "black", "--settings-path", "backend/pyproject.toml"]
         exclude: '^(backend/migrations/|migrations/)'
 
   - repo: https://github.com/pycqa/flake8

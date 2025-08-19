@@ -1,8 +1,9 @@
 # Adjust these imports based on your project structure
 import crud
-import database
 import pytest
 from crud import DatabaseOperationError, DatabaseUnavailableError
+
+import database
 from models import ProductCreate, ProductOrderRequest
 
 

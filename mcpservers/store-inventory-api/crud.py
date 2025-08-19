@@ -1,7 +1,8 @@
-import database
-import models
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+import database
+import models
 
 
 async def get_product_by_id(

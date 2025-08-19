@@ -11,8 +11,9 @@ This script tests the new lazy database connection features:
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-import database  # For direct DB manipulation/verification in tests
 import pytest
+
+import database  # For direct DB manipulation/verification in tests
 
 # No need to import MCP tools for unit tests - we test the underlying logic directly
 

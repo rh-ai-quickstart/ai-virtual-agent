@@ -4,10 +4,11 @@ from typing import List
 
 # Local imports
 import crud
-import database
-import models
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession  # Import AsyncSession for type hinting
+
+import database
+import models
 
 
 @asynccontextmanager
