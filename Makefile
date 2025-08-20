@@ -3,33 +3,17 @@
 
 .PHONY: all local helm help
 
-<<<<<<< HEAD
-all: ## Show usage instructions
-	@echo "AI Virtual Agent Quickstart"
-	@echo "========================="
-=======
-# -----------------------------------------------------------------------------
-# Global environment loading
-# -----------------------------------------------------------------------------
-
-# Use bash for better shell compatibility
 SHELL := /bin/bash
 
-# If a .env file exists in the project root, load it and export variables
 ifneq (,$(wildcard .env))
 include .env
 endif
 
-# Export all variables to recipe environments
 .EXPORT_ALL_VARIABLES:
 
-# -----------------------------------------------------------------------------
-# Helper
-# -----------------------------------------------------------------------------
-help: ## Show comprehensive help for all available targets
-	@echo "AI Virtual Agent Kickstart - Available Make Targets"
-	@echo "==================================================="
->>>>>>> 146fd5c (style: apply pre-commit fixes; tests/docs/attachments improvements)
+all: ## Show usage instructions
+	@echo "AI Virtual Agent Quickstart"
+	@echo "========================="
 	@echo ""
 	@echo "Usage:"
 	@echo "  make local/<target>   - Run local development targets"
