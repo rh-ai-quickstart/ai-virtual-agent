@@ -102,8 +102,19 @@ def wait_for_service_ready(
     return False
 
 
-async def sync_all_services():
-    """Sync all external services (model servers, knowledge bases)."""
+async def ensure_templates_available():
+    """Ensure templates are populated - runs in all environments."""
+    from .utils.template_startup import ensure_templates_populated
+
+    try:
+        await ensure_templates_populated()
+        logger.info("Template population completed")
+    except Exception as e:
+        logger.error(f"Failed to populate templates: {str(e)}")
+
+
+async def sync_external_services():
+    """Sync external services (model servers, knowledge bases) - requires service readiness."""
     sync_operations = [
         ("Model servers", model_servers.sync_model_servers),
         ("Knowledge bases", knowledge_bases.sync_knowledge_bases),
@@ -122,15 +133,22 @@ async def startup_tasks():
     """Run all startup tasks after the server is ready."""
     logger.info("Starting post-startup tasks...")
 
+    # Always ensure templates are available (no external dependencies)
+    await ensure_templates_available()
+
+    # Sync external services (requires service readiness in production)
     service_name = "ai-virtual-agent"
     namespace = get_incluster_namespace()
 
     if wait_for_service_ready(service_name, namespace):
-        logger.info("Service is ready, proceeding with sync operations.")
-        await sync_all_services()
+        logger.info("Service is ready, proceeding with external service sync.")
+        await sync_external_services()
         logger.info("All startup tasks completed successfully!")
     else:
-        logger.error("Service did not become ready within the timeout.")
+        logger.warning(
+            "Service readiness check failed, skipping external service sync."
+        )
+        logger.info("Templates are still available, core functionality will work.")
 
 
 @asynccontextmanager

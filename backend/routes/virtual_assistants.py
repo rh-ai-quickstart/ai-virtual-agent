@@ -6,16 +6,19 @@ managed through the LlamaStack platform. Virtual agents can be configured with
 different models, tools, knowledge bases, and safety shields.
 """
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from llama_stack_client.lib.agents.agent import AgentUtils
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models, schemas
 from ..api.llamastack import get_client_from_request
 from ..database import get_db
 from ..utils.logging_config import get_logger
+
+# from ..utils.template_loader import load_all_templates_from_directory  # Not needed for normalized approach
 from ..virtual_agents.agent_model import VirtualAgent
 
 logger = get_logger(__name__)
@@ -251,7 +254,11 @@ async def create_virtual_assistant(
         )
 
 
-def to_va_response(agent: VirtualAgent, agent_type: str = "ReAct"):
+async def to_va_response(
+    agent: VirtualAgent,
+    agent_type: str = "ReAct",
+    db: Optional[AsyncSession] = None,
+):
     """
     Convert a LlamaStack VirtualAgent to API response format.
 
@@ -282,6 +289,92 @@ def to_va_response(agent: VirtualAgent, agent_type: str = "ReAct"):
     output_shields = agent.agent_config.get("output_shields", [])
     prompt = agent.agent_config.get("instructions", "")
     model_name = agent.agent_config.get("model", "")
+    # Default metadata values
+    template_id: Optional[str] = None
+    template_name: Optional[str] = None
+    suite_id: Optional[str] = None
+    suite_name: Optional[str] = None
+    category: Optional[str] = None
+    metadata: Optional[models.AgentMetadata] = None
+
+    if db is not None:
+        try:
+            from sqlalchemy.orm import selectinload
+
+            # Use joins to get normalized data efficiently
+            result = await db.execute(
+                select(models.AgentMetadata)
+                .options(
+                    selectinload(models.AgentMetadata.template).selectinload(
+                        models.AgentTemplate.suite
+                    )
+                )
+                .where(models.AgentMetadata.agent_id == id)
+            )
+            metadata = result.scalar_one_or_none()
+
+            if metadata and metadata.template:
+                template_id = metadata.template.id
+                template_name = metadata.template.name
+                suite_id = (
+                    metadata.template.suite.id if metadata.template.suite else None
+                )
+                suite_name = (
+                    metadata.template.suite.name if metadata.template.suite else None
+                )
+                category = (
+                    metadata.template.suite.category
+                    if metadata.template.suite
+                    else None
+                )
+        except Exception:
+            # Fail open if metadata lookup fails or tables don't exist yet
+            pass
+
+    # Fallback: link existing agents to templates by name matching
+    if not any([template_id, template_name, suite_id, suite_name, category]):
+        # Try to find a matching template by agent name
+        if db is not None:
+            try:
+                from sqlalchemy.orm import selectinload
+
+                # Look for a template with matching name
+                result = await db.execute(
+                    select(models.AgentTemplate)
+                    .options(selectinload(models.AgentTemplate.suite))
+                    .where(models.AgentTemplate.name == name)
+                )
+                matching_template = result.scalar_one_or_none()
+
+                if matching_template:
+                    template_id = matching_template.id
+                    template_name = matching_template.name
+                    suite_id = (
+                        matching_template.suite.id if matching_template.suite else None
+                    )
+                    suite_name = (
+                        matching_template.suite.name
+                        if matching_template.suite
+                        else None
+                    )
+                    category = (
+                        matching_template.suite.category
+                        if matching_template.suite
+                        else None
+                    )
+
+                    # Create metadata record for this agent
+                    metadata = models.AgentMetadata(
+                        agent_id=id,
+                        template_id=template_id,
+                    )
+                    db.add(metadata)
+                    await db.commit()
+                    print(f"🔗 Linked agent '{name}' to template '{template_id}'")
+            except Exception:
+                # Ignore errors, agent will show as uncategorized
+                pass
+
     return schemas.VirtualAssistantRead(
         id=id,
         name=name,
@@ -291,7 +384,15 @@ def to_va_response(agent: VirtualAgent, agent_type: str = "ReAct"):
         prompt=prompt,
         model_name=model_name,
         knowledge_base_ids=kb_ids,
-        tools=tools,  # Use the 'tools' field with the correct structure
+        tools=tools,
+        # For now, omit metadata to avoid Pydantic conversion issues
+        # metadata=metadata,  # TODO: Convert SQLAlchemy model to Pydantic
+        # Backward compatibility fields
+        template_id=template_id,
+        template_name=template_name,
+        suite_id=suite_id,
+        suite_name=suite_name,
+        category=category,
     )
 
 
@@ -323,7 +424,7 @@ async def get_virtual_assistants(request: Request, db: AsyncSession = Depends(ge
                 agent_type = agent_type_record.agent_type.value
         except Exception:
             pass  # Use default
-        response_list.append(to_va_response(agent, agent_type))
+        response_list.append(await to_va_response(agent, agent_type, db))
     return response_list
 
 
@@ -360,7 +461,7 @@ async def read_virtual_assistant(
     except Exception:
         pass  # Use default
 
-    return to_va_response(agent, agent_type)
+    return await to_va_response(agent, agent_type, db)
 
 
 # @router.put("/{va_id}", response_model=schemas.VirtualAssistantRead)
@@ -369,9 +470,11 @@ async def read_virtual_assistant(
 
 
 @router.delete("/{va_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_virtual_assistant(va_id: str, request: Request):
+async def delete_virtual_assistant(
+    va_id: str, request: Request, db: AsyncSession = Depends(get_db)
+):
     """
-    Delete a virtual agent from LlamaStack.
+    Delete a virtual agent from LlamaStack and clean up database records.
 
     Args:
         va_id: The unique identifier of the virtual agent to delete
@@ -380,5 +483,46 @@ async def delete_virtual_assistant(va_id: str, request: Request):
         None (204 No Content status)
     """
     client = get_client_from_request(request)
-    await client.agents.delete(agent_id=va_id)
+
+    try:
+        # Delete from LlamaStack first
+        await client.agents.delete(agent_id=va_id)
+
+        # Clean up database records
+        try:
+            from sqlalchemy import delete
+
+            # Delete agent metadata
+            metadata_result = await db.execute(
+                delete(models.AgentMetadata).where(
+                    models.AgentMetadata.agent_id == va_id
+                )
+            )
+
+            # Delete agent type
+            type_result = await db.execute(
+                delete(models.AgentType).where(models.AgentType.agent_id == va_id)
+            )
+
+            await db.commit()
+
+            # Log cleanup results
+            if metadata_result.rowcount > 0:
+                logger.info(f"Cleaned up agent metadata for {va_id}")
+            if type_result.rowcount > 0:
+                logger.info(f"Cleaned up agent type for {va_id}")
+
+        except Exception as db_error:
+            await db.rollback()
+            logger.warning(
+                f"Failed to clean up database records for agent {va_id}: {db_error}"
+            )
+            # Don't fail the deletion if database cleanup fails
+
+    except Exception as e:
+        logger.error(f"Failed to delete agent {va_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete virtual assistant: {str(e)}"
+        )
+
     return None

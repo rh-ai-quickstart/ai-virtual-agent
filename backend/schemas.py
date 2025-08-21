@@ -11,6 +11,7 @@ across all endpoints and integrations.
 """
 
 import enum
+from datetime import datetime
 from typing import (  # Added Dict for Guardrail rules
     Any,
     Dict,
@@ -167,8 +168,65 @@ class VirtualAssistantUpdate(VirtualAssistantBase):
     tools: Optional[List[ToolAssociationInfo]] = None
 
 
+# Template Suite Schemas
+class TemplateSuiteBase(BaseModel):
+    id: str
+    name: str
+    category: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+
+
+class TemplateSuiteRead(TemplateSuiteBase):
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+# Agent Template Schemas
+class AgentTemplateBase(BaseModel):
+    id: str
+    suite_id: str
+    name: str
+    description: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+
+
+class AgentTemplateRead(AgentTemplateBase):
+    created_at: datetime
+    updated_at: datetime
+    suite: Optional[TemplateSuiteRead] = None
+
+    class Config:
+        orm_mode = True
+
+
+# Agent Metadata Schemas
+class AgentMetadataRead(BaseModel):
+    agent_id: str
+    template_id: Optional[str] = None
+    custom_metadata: Optional[Dict[str, Any]] = None
+    template: Optional[AgentTemplateRead] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
 class VirtualAssistantRead(VirtualAssistantBase):
     id: str
+    # Normalized metadata via relationship
+    metadata: Optional[AgentMetadataRead] = None
+
+    # Computed fields for backward compatibility
+    template_id: Optional[str] = None
+    template_name: Optional[str] = None
+    suite_id: Optional[str] = None
+    suite_name: Optional[str] = None
+    category: Optional[str] = None
 
     class Config:
         orm_mode = True

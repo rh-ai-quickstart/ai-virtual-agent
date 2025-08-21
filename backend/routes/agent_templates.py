@@ -309,6 +309,54 @@ async def initialize_agent_from_template(
                 agent_config, http_request, db
             )
 
+            # Persist agent metadata for suite/template grouping
+            try:
+                # Find suite that contains this template
+                suite_id: Optional[str] = None
+                suite_name: Optional[str] = None
+                category: Optional[str] = None
+
+                for sid, suite_cfg in ALL_SUITES.items():
+                    if request.template_name in suite_cfg.get("templates", {}):
+                        suite_id = sid
+                        suite_name = suite_cfg.get("name")
+                        category = suite_cfg.get("category")
+                        break
+
+                # Fallback: suite may be None if initialized outside known suites
+                from sqlalchemy import select
+
+                existing = await db.execute(
+                    select(models.AgentMetadata).where(
+                        models.AgentMetadata.agent_id == created_agent.id
+                    )
+                )
+                existing_meta = existing.scalar_one_or_none()
+
+                if existing_meta:
+                    existing_meta.template_id = request.template_name
+                    existing_meta.template_name = template.name
+                    existing_meta.suite_id = suite_id
+                    existing_meta.suite_name = suite_name
+                    existing_meta.category = category
+                else:
+                    db.add(
+                        models.AgentMetadata(
+                            agent_id=created_agent.id,
+                            template_id=request.template_name,
+                            template_name=template.name,
+                            suite_id=suite_id,
+                            suite_name=suite_name,
+                            category=category,
+                        )
+                    )
+                await db.commit()
+            except Exception as meta_error:
+                logger.warning(
+                    f"Failed to persist agent metadata for {created_agent.id}: "
+                    f"{meta_error}"
+                )
+
         logger.info(
             f"Successfully created agent '{agent_name}' from template "
             f"'{request.template_name}'"

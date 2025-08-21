@@ -138,3 +138,75 @@ class AgentType(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+class TemplateSuite(Base):
+    __tablename__ = "template_suites"
+
+    id = Column(String(255), primary_key=True)
+    name = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)
+    description = Column(String, nullable=True)
+    icon = Column(String(100), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship to agent templates
+    templates = relationship(
+        "AgentTemplate", back_populates="suite", cascade="all, delete-orphan"
+    )
+
+
+class AgentTemplate(Base):
+    __tablename__ = "agent_templates"
+
+    id = Column(String(255), primary_key=True)
+    suite_id = Column(
+        String(255),
+        ForeignKey("template_suites.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(String, nullable=True)
+    config = Column(JSON, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    suite = relationship("TemplateSuite", back_populates="templates")
+    agent_metadata = relationship("AgentMetadata", back_populates="template")
+
+
+class AgentMetadata(Base):
+    __tablename__ = "agent_metadata"
+
+    # Agent identifier from LlamaStack
+    agent_id = Column(String(255), primary_key=True)
+
+    # Reference to template (normalized)
+    template_id = Column(
+        String(255),
+        ForeignKey("agent_templates.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    # Custom metadata for agents not using templates
+    custom_metadata = Column(JSON, nullable=True)
+
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationship to template (which connects to suite)
+    template = relationship("AgentTemplate", back_populates="agent_metadata")

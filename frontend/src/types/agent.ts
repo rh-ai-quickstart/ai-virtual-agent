@@ -34,6 +34,12 @@ export interface Agent extends AgentBase, SamplingParameters {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Optional metadata for grouping and display
+  template_id?: string;
+  template_name?: string;
+  suite_id?: string;
+  suite_name?: string;
+  category?: string;
 }
 
 export interface NewAgent extends AgentBase, SamplingParameters {
