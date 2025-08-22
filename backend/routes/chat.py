@@ -202,6 +202,28 @@ class Chat:
 
         try:
             for response in turn_response:
+                # Check if this is an error response from LlamaStack
+                if hasattr(response, "error") and response.error:
+                    error_message = response.error.get("message", str(response.error))
+                    logger.error(f"LlamaStack error response: {error_message}")
+
+                    # Handle specific websearch tool error
+                    # Check for this error message: ValueError: Tool group 'builtin::websearch' not found
+                    if "Tool group 'builtin::websearch' not found" in error_message:
+                        error_message = (
+                            "This assistant is not available right now. It needs internet search tools "
+                            "(such as Tavily) that aren't set up yet. Please try a different assistant "
+                            "or contact your administrator."
+                        )
+
+                    yield json.dumps(
+                        {
+                            "type": "error",
+                            "content": error_message,
+                        }
+                    )
+                    return
+
                 # Robust payload validation
                 if not hasattr(response, "event") or not hasattr(
                     response.event, "payload"
@@ -537,6 +559,27 @@ class Chat:
 
         try:
             for response in turn_response:
+                # Check if this is an error response from LlamaStack
+                if hasattr(response, "error") and response.error:
+                    error_message = response.error.get("message", str(response.error))
+                    logger.error(f"LlamaStack error response: {error_message}")
+
+                    # Handle specific websearch tool error
+                    if "Tool group 'builtin::websearch' not found" in error_message:
+                        error_message = (
+                            "This assistant is not available right now. It needs internet search tools "
+                            "(such as Tavily) that aren't set up yet. Please try a different assistant "
+                            "or contact your administrator."
+                        )
+
+                    yield json.dumps(
+                        {
+                            "type": "error",
+                            "content": error_message,
+                        }
+                    )
+                    return
+
                 # Robust payload validation (same as ReAct)
                 if not hasattr(response, "event") or not hasattr(
                     response.event, "payload"
@@ -731,14 +774,30 @@ class Chat:
             self.log.error(
                 f"Error in stream for agent {agent_id}, session {session_id}: {e}"
             )
-            yield json.dumps(
+
+            # Handle specific websearch tool error with user-friendly message
+            error_message = str(e)
+            if "Tool group 'builtin::websearch' not found" in error_message:
+                error_message = (
+                    "This assistant is not available right now. It needs internet search tools "
+                    "(such as Tavily) that aren't set up yet. Please try a different assistant "
+                    "or contact your administrator."
+                )
+            else:
+                error_message = (
+                    f"Error occurred while processing your request: {error_message}"
+                )
+
+            # Log what we're about to yield for debugging
+            error_response = json.dumps(
                 {
                     "type": "error",
-                    "content": (
-                        f"Error occurred while processing your request: {str(e)}"
-                    ),
+                    "content": error_message,
                 }
             )
+            self.log.error(f"Yielding error response: {error_response}")
+
+            yield error_response
 
     def _process_inference_step_simple(
         self, current_step_content, tool_results, final_answer

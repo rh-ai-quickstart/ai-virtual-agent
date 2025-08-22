@@ -62,13 +62,19 @@ export const LlamaStackParser: LlamaStackParserType = {
       // Handle errors
       if (json.type === 'error') {
         console.error('LlamaStack API error:', json.content);
-        return `[Error: ${json.content}]`;
+
+        return json.content;
       }
 
       return null;
     } catch (e) {
       // If we can't parse as JSON, return the raw line
-      console.warn('Failed to parse LlamaStack response:', e);
+      console.warn('Failed to parse LlamaStack response:', {
+        error: e,
+        rawLine: line,
+        lineLength: line.length,
+        lineType: typeof line,
+      });
       return null;
     }
   },

@@ -541,7 +541,17 @@ async def chat(
 
             except Exception as e:
                 log.error(f"Error in stream: {str(e)}")
-                yield (f'data: {{"type":"error","content":"Error: {str(e)}"}}\n\n')
+
+                # Handle specific websearch tool error with user-friendly message
+                error_message = str(e)
+                if "Tool group 'builtin::websearch' not found" in error_message:
+                    error_message = (
+                        "This assistant is not available right now. It needs internet search tools "
+                        "(such as Tavily) that aren't set up yet. Please try a different assistant "
+                        "or contact your administrator."
+                    )
+
+                yield (f'data: {{"type":"error","content":"{error_message}"}}\n\n')
 
         return StreamingResponse(generate_response(), media_type="text/event-stream")
 
