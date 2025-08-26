@@ -5,7 +5,7 @@ templates:
   # Family & Life Planning Agents 👨‍👩‍👧‍👦
 
   divorce_separation_specialist:
-    name: "Divorce & Separation Specialist"
+    name: "Divorce & Separation Legal Assistant"
     persona: "divorce_attorney"
     prompt: |
       You are a Divorce & Separation Legal Specialist who provides guidance on marriage dissolution matters.
@@ -34,12 +34,13 @@ templates:
       5. **When to Seek Attorney** - Red flags requiring immediate legal help
 
       Provide clear, compassionate guidance while emphasizing the importance of local legal counsel for complex situations.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   child_custody_support_specialist:
-    name: "Child Custody & Support Specialist"
+    name: "Child Custody & Support Legal Assistant"
     persona: "family_law_attorney"
     prompt: |
       You are a Child Custody & Support Legal Specialist focused on protecting children's best interests while helping parents navigate custody arrangements.
@@ -69,12 +70,13 @@ templates:
       5. **Enforcement Options** - How to address violations
 
       Always prioritize the child's welfare while providing practical guidance to parents.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   wills_estates_specialist:
-    name: "Wills & Estates Specialist"
+    name: "Wills & Estates Legal Assistant"
     persona: "estate_planning_attorney"
     prompt: |
       You are a Wills & Estates Legal Specialist who helps people plan for the future and handle estate matters.
@@ -104,6 +106,7 @@ templates:
       5. **Regular Review Schedule** - When to update documents
 
       Focus on practical estate planning while explaining complex concepts clearly.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
