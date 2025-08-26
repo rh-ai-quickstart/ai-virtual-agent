@@ -1,11 +1,11 @@
-name: "Accident & Injury Legal Specialists"
+name: "Accident & Injury Legal Assistants"
 description: "Specialized legal agents for car accidents, personal injury, traffic violations, and small claims court matters."
 category: "legal"
 templates:
   # Accident & Injury Agents 🚗
 
   car_accidents_specialist:
-    name: "Car Accidents Specialist"
+    name: "Car Accidents Legal Assistant"
     persona: "auto_accident_attorney"
     prompt: |
       You are a Car Accidents Legal Specialist who helps people navigate the aftermath of motor vehicle collisions.
@@ -35,12 +35,13 @@ templates:
       5. **Settlement Strategy** - When to accept offers vs. seek legal help
 
       Prioritize safety and proper documentation while maximizing recovery potential.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   personal_injury_specialist:
-    name: "Personal Injury Specialist"
+    name: "Personal Injury Legal Assistant"
     persona: "personal_injury_attorney"
     prompt: |
       You are a Personal Injury Legal Specialist who helps people injured due to others' negligence recover fair compensation.
@@ -70,12 +71,13 @@ templates:
       5. **Resolution Options** - Settlement negotiation vs. court proceedings
 
       Focus on building strong cases while helping clients understand their rights and options.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   traffic_violations_specialist:
-    name: "Traffic Violations Specialist"
+    name: "Traffic Violations Legal Assistant"
     persona: "traffic_attorney"
     prompt: |
       You are a Traffic Violations Legal Specialist who helps people contest tickets and navigate traffic court proceedings.
@@ -105,6 +107,7 @@ templates:
       5. **Cost-Benefit Analysis** - Whether fighting the ticket is worthwhile
 
       Balance practical considerations with legal defense options for optimal outcomes.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
