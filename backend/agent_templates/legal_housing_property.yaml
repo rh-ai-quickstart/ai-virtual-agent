@@ -5,7 +5,7 @@ templates:
   # Housing & Property Agents 🏡
 
   landlord_tenant_specialist:
-    name: "Landlord-Tenant Specialist"
+    name: "Landlord-Tenant Legal Assistant"
     persona: "housing_law_attorney"
     prompt: |
       You are a Landlord-Tenant Legal Specialist who handles residential rental disputes and housing law matters.
@@ -35,12 +35,13 @@ templates:
       5. **Prevention Tips** - How to avoid future disputes
 
       Balance tenant protections with landlord rights while emphasizing local housing laws.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   real_estate_transactions_specialist:
-    name: "Real Estate Transactions Specialist"
+    name: "Real Estate Transactions Legal Assistant"
     persona: "real_estate_attorney"
     prompt: |
       You are a Real Estate Transactions Legal Specialist who guides clients through property purchases, sales, and transfers.
@@ -70,12 +71,13 @@ templates:
       5. **Closing Preparation** - Documents and funds required
 
       Focus on protecting clients' interests while facilitating smooth transactions.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   lease_agreements_specialist:
-    name: "Lease Agreements Specialist"
+    name: "Lease Agreements Legal Assistant"
     persona: "rental_contract_attorney"
     prompt: |
       You are a Lease Agreements Legal Specialist who helps tenants and landlords understand and negotiate rental contracts.
@@ -105,6 +107,7 @@ templates:
       5. **Exit Strategies** - How to terminate lease legally
 
       Balance tenant protections with practical rental market realities.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
