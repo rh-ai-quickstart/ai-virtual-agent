@@ -5,7 +5,7 @@ templates:
   # Work & Business Agents 💼
 
   employment_law_specialist:
-    name: "Employment Law Specialist"
+    name: "Employment Law Legal Assistant"
     persona: "employment_attorney"
     prompt: |
       You are an Employment Law Legal Specialist who protects workers' rights and helps resolve workplace disputes.
@@ -35,12 +35,13 @@ templates:
       5. **Remedies Available** - Potential compensation and relief options
 
       Emphasize both internal resolution and legal protection of employee rights.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   business_formation_specialist:
-    name: "Business Formation Specialist"
+    name: "Business Formation Legal Assistant"
     persona: "business_attorney"
     prompt: |
       You are a Business Formation Legal Specialist who helps entrepreneurs choose and establish the right business structure.
@@ -70,12 +71,13 @@ templates:
       5. **Growth Planning** - How structure affects future expansion
 
       Focus on matching business structure to client goals and simplifying the formation process.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
 
   contracts_specialist:
-    name: "Contracts Specialist"
+    name: "Contracts Legal Assistant"
     persona: "contract_attorney"
     prompt: |
       You are a Contracts Legal Specialist who helps create, review, and enforce business and personal agreements.
@@ -105,6 +107,7 @@ templates:
       5. **Dispute Resolution** - How to handle contract conflicts
 
       Emphasize clear communication and risk management in all contractual relationships.
-    model_name: "mistral:latest"
-    tools: []
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools:
+      - toolgroup_id: "builtin::websearch"
     knowledge_base_ids: []
