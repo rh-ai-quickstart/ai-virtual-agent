@@ -24,12 +24,14 @@ import {
 import { EllipsisVIcon, TrashIcon } from '@patternfly/react-icons';
 import { useAgents, useTools } from '@/hooks';
 import { Fragment, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 
 interface AgentCardProps {
   agent: Agent;
+  isAssigned?: boolean;
 }
 
-export function AgentCard({ agent }: AgentCardProps) {
+export function AgentCard({ agent, isAssigned }: AgentCardProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -37,6 +39,8 @@ export function AgentCard({ agent }: AgentCardProps) {
   // Use custom hooks
   const { tools } = useTools();
   const { deleteAgent, isDeleting } = useAgents();
+  const navigate = useNavigate();
+  const isAssignedToUser: boolean = !!isAssigned;
 
   const handleDeleteAgent = () => {
     void (async () => {
@@ -61,8 +65,25 @@ export function AgentCard({ agent }: AgentCardProps) {
     setExpanded(!expanded);
   };
 
+  const handleChatClick = () => {
+    if (!isAssignedToUser) return;
+    void navigate({ to: '/', search: { agentId: agent.id } });
+  };
+
   const headerActions = (
-    <Fragment>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleChatClick();
+        }}
+        aria-label="Chat with agent"
+        isDisabled={!isAssignedToUser}
+      >
+        Chat
+      </Button>
       <Dropdown
         isOpen={dropdownOpen}
         onOpenChange={(isOpen: boolean) => setDropdownOpen(isOpen)}
@@ -101,33 +122,13 @@ export function AgentCard({ agent }: AgentCardProps) {
           </DropdownItem>
         </DropdownList>
       </Dropdown>
-      <Modal
-        isOpen={modalOpen}
-        onClose={toggleModal}
-        variant="small"
-        aria-labelledby="delete-agent-modal-title"
-        aria-describedby="delete-agent-modal-desc"
-      >
-        <ModalHeader title="Delete Agent" labelId="delete-agent-modal-title" />
-        <ModalBody id="delete-agent-modal-desc">
-          Are you sure you want to delete this AI agent? This action cannot be undone.
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="link" onClick={toggleModal}>
-            Cancel
-          </Button>
-          <Button isLoading={isDeleting} onClick={handleDeleteAgent} variant="danger">
-            Delete
-          </Button>
-        </ModalFooter>
-      </Modal>
-    </Fragment>
+    </div>
   );
   return (
     <Card id={`expandable-agent-card-${agent.id}`} isExpanded={expanded} className="pf-v6-u-mb-md">
       <Fragment>
         <CardHeader
-          actions={{ actions: headerActions }}
+          actions={{ actions: headerActions, hasNoOffset: true }}
           onExpand={toggleExpanded}
           toggleButtonProps={{
             id: `toggle-agent-button-${agent.id}`,
@@ -151,6 +152,26 @@ export function AgentCard({ agent }: AgentCardProps) {
             </Flex>
           </CardTitle>
         </CardHeader>
+        <Modal
+          isOpen={modalOpen}
+          onClose={toggleModal}
+          variant="small"
+          aria-labelledby="delete-agent-modal-title"
+          aria-describedby="delete-agent-modal-desc"
+        >
+          <ModalHeader title="Delete Agent" labelId="delete-agent-modal-title" />
+          <ModalBody id="delete-agent-modal-desc">
+            Are you sure you want to delete this AI agent? This action cannot be undone.
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="link" onClick={toggleModal}>
+              Cancel
+            </Button>
+            <Button isLoading={isDeleting} onClick={handleDeleteAgent} variant="danger">
+              Delete
+            </Button>
+          </ModalFooter>
+        </Modal>
         <CardExpandableContent>
           <CardBody>
             <Flex direction={{ default: 'column' }}>

@@ -70,7 +70,7 @@ function OAuthSignIn() {
             <Button
               variant="secondary"
               component="a"
-              href="https://github.com/rh-ai-kickstart/ai-virtual-agent/blob/main/README.md"
+              href="https://github.com/rh-ai-quickstart/ai-virtual-agent/blob/main/README.md"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -98,7 +98,7 @@ function OAuthSignIn() {
         <p>
           <strong>Need help?</strong> Check the{' '}
           <a
-            href="https://github.com/rh-ai-kickstart/ai-virtual-agent"
+            href="https://github.com/rh-ai-quickstart/ai-virtual-agent"
             target="_blank"
             rel="noopener noreferrer"
           >

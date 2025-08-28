@@ -1,19 +1,26 @@
 import { Chat } from '@/components/chat';
 import { Page, PageSection } from '@patternfly/react-core';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useSearch } from '@tanstack/react-router';
 import { Masthead } from '../../components/masthead';
 
 export const Route = createFileRoute('/_protected/')({
   component: ChatPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      agentId: (search.agentId as string) ?? undefined,
+    };
+  },
 });
 
 const pageId = 'primary-app-container';
 
 function ChatPage() {
+  const search = useSearch({ from: '/_protected/' });
+
   return (
     <Page mainContainerId={pageId} masthead={<Masthead />}>
       <PageSection hasBodyWrapper={false}>
-        <Chat />
+        <Chat preSelectedAgentId={search.agentId} />
       </PageSection>
     </Page>
   );

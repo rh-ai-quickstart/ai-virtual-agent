@@ -42,18 +42,35 @@ export function Agents() {
 
   return (
     <PageSection>
-      <Tabs activeKey={activeTabKey} onSelect={handleTabClick} aria-label="Agent management tabs">
-        <Tab eventKey={0} title={<TabTitleText>My Agents</TabTitleText>}>
-          <div style={{ padding: '24px 0' }}>
-            <MyAgents />
-          </div>
-        </Tab>
-        <Tab eventKey={1} title={<TabTitleText>Agent Templates</TabTitleText>}>
-          <div style={{ padding: '24px 0' }}>
-            <AgentTemplates />
-          </div>
-        </Tab>
-      </Tabs>
+      <div style={{ position: 'relative' }}>
+        <style>{`
+          .agents-page-tabs .pf-v6-c-tabs__item.pf-m-current .pf-v6-c-tabs__link {
+            color: var(--pf-v6-global--primary-color--100, #0066cc) !important;
+            border-bottom-color: var(--pf-v6-global--primary-color--100, #0066cc) !important;
+            border-bottom-width: 2px !important;
+          }
+          .agents-page-tabs .pf-v6-c-tabs__item.pf-m-current {
+            border-bottom: 2px solid var(--pf-v6-global--primary-color--100, #0066cc) !important;
+          }
+        `}</style>
+        <Tabs
+          activeKey={activeTabKey}
+          onSelect={handleTabClick}
+          aria-label="Agent management tabs"
+          className="agents-page-tabs"
+        >
+          <Tab eventKey={0} title={<TabTitleText>My Agents</TabTitleText>}>
+            <div style={{ padding: '24px 0' }}>
+              <MyAgents />
+            </div>
+          </Tab>
+          <Tab eventKey={1} title={<TabTitleText>Agent Templates</TabTitleText>}>
+            <div style={{ padding: '24px 0' }}>
+              <AgentTemplates />
+            </div>
+          </Tab>
+        </Tabs>
+      </div>
     </PageSection>
   );
 }
@@ -127,22 +144,39 @@ function AgentTemplates() {
       return results;
     },
     onSuccess: async (results) => {
-      for (const result of results) {
-        if (result.status === 'success') {
-          setDeployProgress((prev) => [...prev, `✅ Deployed ${result.agent_name}`]);
-        } else {
-          setDeployProgress((prev) => [
-            ...prev,
-            `❌ Failed to deploy ${result.agent_name}: ${result.message}`,
-          ]);
+      const allSkipped = results.length > 0 && results.every((r) => r.status === 'skipped');
+
+      if (allSkipped) {
+        setDeployProgress([
+          `ℹ️ Agents from this suite have already been deployed. Check 'My Agents' page.`,
+        ]);
+      } else {
+        for (const result of results) {
+          if (result.status === 'success') {
+            setDeployProgress((prev) => [...prev, `✅ Deployed ${result.agent_name}`]);
+          } else if (result.status === 'skipped') {
+            setDeployProgress((prev) => [
+              ...prev,
+              `ℹ️ Skipped ${result.agent_name}: ${result.message}`,
+            ]);
+          } else {
+            setDeployProgress((prev) => [
+              ...prev,
+              `❌ Failed to deploy ${result.agent_name}: ${result.message}`,
+            ]);
+          }
         }
       }
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      setTimeout(() => {
-        setShowDeployModal(false);
-        setDeployProgress([]);
-        setSelectedSuite(null);
-      }, 2000);
+      // Only auto-close if at least one success occurred
+      const anySuccess = results.some((r) => r.status === 'success');
+      if (anySuccess) {
+        setTimeout(() => {
+          setShowDeployModal(false);
+          setDeployProgress([]);
+          setSelectedSuite(null);
+        }, 2000);
+      }
     },
     onError: (error) => {
       setDeployProgress((prev) => [

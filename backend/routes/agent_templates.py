@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from .. import models, schemas
+from ..api.llamastack import get_client_from_request
 from ..database import AsyncSessionLocal
 from ..routes.knowledge_bases import create_knowledge_base
 from ..routes.virtual_assistants import create_virtual_assistant
@@ -47,6 +48,7 @@ class AgentTemplate(BaseModel):
     tools: List[Dict[str, str]]
     knowledge_base_ids: List[str]
     knowledge_base_config: Optional[Dict] = None
+    demo_questions: Optional[List[str]] = None
 
 
 class TemplateInitializationRequest(BaseModel):
@@ -233,6 +235,52 @@ async def initialize_agent_from_template(
     template = ALL_AGENT_TEMPLATES[request.template_name]
 
     try:
+        # Compute target agent name early for messages and duplicate checks
+        agent_name = request.custom_name or template.name
+
+        # Duplicate check: simple, early return by template_id
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(models.AgentMetadata)
+                .where(models.AgentMetadata.template_id == request.template_name)
+                .limit(1)
+            )
+            existing_metadata = result.scalars().first()
+            if existing_metadata:
+                # Verify the agent still exists in LlamaStack; if gone, clean stale metadata
+                try:
+                    client = get_client_from_request(http_request)
+                    await client.agents.retrieve(agent_id=existing_metadata.agent_id)
+                    logger.info(
+                        f"Agent already deployed for template {request.template_name}: {existing_metadata.agent_id}"
+                    )
+                    return TemplateInitializationResponse(
+                        agent_id="",
+                        agent_name=agent_name,
+                        persona=template.persona,
+                        knowledge_base_created=False,
+                        knowledge_base_name=None,
+                        status="skipped",
+                        message=(
+                            f"Agent from template '{request.template_name}' is already deployed. "
+                            f"Check your 'My Agents' page."
+                        ),
+                    )
+                except Exception:
+                    logger.warning(
+                        "Stale metadata for template %s and agent %s. "
+                        "Deleting and proceeding.",
+                        request.template_name,
+                        existing_metadata.agent_id,
+                    )
+                    try:
+                        await db.delete(existing_metadata)
+                        await db.commit()
+                    except Exception as cleanup_error:
+                        logger.warning(
+                            f"Failed to delete stale metadata for template {request.template_name}: {cleanup_error}"
+                        )
+
         # Step 1: Create knowledge base if requested
         knowledge_base_created = False
         knowledge_base_name = None
@@ -276,7 +324,6 @@ async def initialize_agent_from_template(
                 # Continue without knowledge base
 
         # Step 2: Create agent
-        agent_name = request.custom_name or template.name
         agent_prompt = request.custom_prompt or template.prompt
 
         # Convert template tools to schema format
@@ -311,21 +358,7 @@ async def initialize_agent_from_template(
 
             # Persist agent metadata for suite/template grouping
             try:
-                # Find suite that contains this template
-                suite_id: Optional[str] = None
-                suite_name: Optional[str] = None
-                category: Optional[str] = None
-
-                for sid, suite_cfg in ALL_SUITES.items():
-                    if request.template_name in suite_cfg.get("templates", {}):
-                        suite_id = sid
-                        suite_name = suite_cfg.get("name")
-                        category = suite_cfg.get("category")
-                        break
-
-                # Fallback: suite may be None if initialized outside known suites
-                from sqlalchemy import select
-
+                # Persist normalized metadata link between agent and template
                 existing = await db.execute(
                     select(models.AgentMetadata).where(
                         models.AgentMetadata.agent_id == created_agent.id
@@ -335,22 +368,15 @@ async def initialize_agent_from_template(
 
                 if existing_meta:
                     existing_meta.template_id = request.template_name
-                    existing_meta.template_name = template.name
-                    existing_meta.suite_id = suite_id
-                    existing_meta.suite_name = suite_name
-                    existing_meta.category = category
                 else:
                     db.add(
                         models.AgentMetadata(
                             agent_id=created_agent.id,
                             template_id=request.template_name,
-                            template_name=template.name,
-                            suite_id=suite_id,
-                            suite_name=suite_name,
-                            category=category,
                         )
                     )
                 await db.commit()
+
             except Exception as meta_error:
                 logger.warning(
                     f"Failed to persist agent metadata for {created_agent.id}: "

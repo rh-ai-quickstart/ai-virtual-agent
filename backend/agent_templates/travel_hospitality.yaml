@@ -11,6 +11,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "travel_agent_kb"
+    demo_questions:
+      - "What are the best flight options to Tokyo next month under $800?"
+      - "Can you suggest a 7-day Italy itinerary with hotels and trains?"
+      - "Do I need a visa or vaccines for a trip to Thailand this summer?"
+      - "Find all-inclusive beach resorts in Mexico for two adults in May."
     # knowledge_base_config:
     #   name: "Travel Agent Reference"
     #   version: "1.0"
@@ -31,6 +36,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "hotel_concierge_kb"
+    demo_questions:
+      - "Can you book a table for two at a top-rated Italian restaurant nearby?"
+      - "What are the best family-friendly attractions within walking distance?"
+      - "Can you arrange airport pickup tomorrow at 8 AM for room 512?"
+      - "Do you have recommendations for a late-night spa appointment?"
     # knowledge_base_config:
     #   name: "Hotel Concierge Reference"
     #   version: "1.0"
@@ -51,6 +61,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "tour_guide_kb"
+    demo_questions:
+      - "What must-see landmarks can I cover in a 1-day walking tour?"
+      - "Tell me a brief history of the old town and its main cathedral."
+      - "Can you suggest a kid-friendly museum route with lunch options?"
+      - "What local customs should I know before visiting religious sites?"
     # knowledge_base_config:
     #   name: "Tour Guide Reference"
     #   version: "1.0"

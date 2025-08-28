@@ -25,6 +25,8 @@ import {
   Modal,
   ModalVariant,
   Button,
+  Alert,
+  AlertActionCloseButton,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -47,6 +49,7 @@ import botAvatar from '../assets/img/bot-avatar.svg';
 import userAvatar from '../assets/img/user-avatar.svg';
 import { ATTACHMENTS_API_ENDPOINT } from '@/config/api';
 import { SimpleContentItem } from '@/types/chat';
+import { getTemplateDetails } from '@/services/agent-templates';
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -70,7 +73,11 @@ const footnoteProps = {
   },
 };
 
-export function Chat() {
+interface ChatProps {
+  preSelectedAgentId?: string;
+}
+
+export function Chat({ preSelectedAgentId }: ChatProps = {}) {
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
@@ -78,7 +85,11 @@ export function Chat() {
     Conversation[] | { [key: string]: Conversation[] }
   >([]);
   const [announcement, setAnnouncement] = useState<string>('');
+  const [noAgentsWarning, setNoAgentsWarning] = useState<string | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
+  const [demoQuestions, setDemoQuestions] = useState<string[]>([]);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const composerRef = React.useRef<HTMLDivElement>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const scrollToBottomRef = React.useRef<HTMLDivElement>(null);
@@ -161,6 +172,43 @@ export function Chat() {
 
   const displayMode = ChatbotDisplayMode.embedded;
 
+  // Track message composer width to align suggestions with it
+  useEffect(() => {
+    // Keeping observer attached in case of future width-based logic
+    if (!composerRef.current) return;
+    const el = composerRef.current;
+    const ro = new ResizeObserver(() => {});
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Load demo questions for the selected agent (if template-backed)
+  useEffect(() => {
+    const loadDemoQuestions = async () => {
+      try {
+        const templateName = selectedAgentObj?.template_id || selectedAgentObj?.template_name;
+        if (!templateName) {
+          setDemoQuestions([]);
+          return;
+        }
+        const details = await getTemplateDetails(templateName);
+        const questions = Array.isArray(details.demo_questions) ? details.demo_questions : [];
+        setDemoQuestions(questions);
+      } catch (e) {
+        console.warn('Failed to load demo questions:', e);
+        setDemoQuestions([]);
+      }
+    };
+    void loadDemoQuestions();
+  }, [selectedAgentObj]);
+
+  // Hide demo questions after the first message is present
+  useEffect(() => {
+    if (chatMessages.length > 0 && demoQuestions.length > 0) {
+      setDemoQuestions([]);
+    }
+  }, [chatMessages.length, demoQuestions.length]);
+
   const onSelectAgent = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
     value: string | number | undefined
@@ -169,6 +217,7 @@ export function Chat() {
       const agentId = value.toString();
       console.log('Agent selected:', agentId);
       setSelectedAgent(agentId);
+      if (noAgentsWarning) setNoAgentsWarning(null);
     }
   };
 
@@ -396,14 +445,26 @@ export function Chat() {
         console.log('Fetching agents for user:', currentUser.id);
         const agents = await fetchUserAgents(currentUser.id);
         setAvailableAgents(agents);
+
         if (agents.length > 0) {
-          const firstAgent = agents[0].id;
-          console.log('Setting first agent:', firstAgent);
-          setSelectedAgent(firstAgent);
+          let agentToSelect: string;
+
+          // Pre-select agent if requested and available; otherwise use first available
+          if (preSelectedAgentId && agents.some((a) => a.id === preSelectedAgentId)) {
+            agentToSelect = preSelectedAgentId;
+            console.log('Setting pre-selected agent:', agentToSelect);
+          } else {
+            // No specific agent requested, use first available
+            agentToSelect = agents[0].id;
+            console.log('Setting first available agent:', agentToSelect);
+          }
+
+          setSelectedAgent(agentToSelect);
           // Don't fetch sessions here - let the selectedAgent useEffect handle it
         } else {
           console.log('No agents found for user:', currentUser.id);
           setAnnouncement('No agents assigned to this user');
+          setNoAgentsWarning('No agents are assigned to your account. Please contact an admin.');
         }
       } catch (err) {
         console.error('Error fetching user agents:', err);
@@ -412,7 +473,7 @@ export function Chat() {
     };
 
     void fetchAgentsData();
-  }, [currentUser]);
+  }, [currentUser, preSelectedAgentId]);
 
   // Handle selectedAgent changes - fetch sessions for the new agent
   useEffect(() => {
@@ -498,140 +559,210 @@ export function Chat() {
   }
 
   return (
-    <Chatbot displayMode={displayMode}>
-      <ChatbotConversationHistoryNav
-        displayMode={displayMode}
-        onDrawerToggle={() => {
-          setIsDrawerOpen(!isDrawerOpen);
-        }}
-        isDrawerOpen={isDrawerOpen}
-        setIsDrawerOpen={setIsDrawerOpen}
-        activeItemId={sessionId || undefined}
-        onSelectActiveItem={onSelectActiveItem}
-        conversations={conversations}
-        onNewChat={onNewChat}
-        handleTextInputChange={(value: string) => {
-          if (value === '') {
-            // Convert sessions to conversations format
-            const conversations = chatSessions.map((session) => ({
-              id: session.id,
-              text: session.title,
-              description: session.agent_name,
-              timestamp: new Date(session.updated_at).toLocaleDateString(),
-              menuItems: createSessionMenuItems(session.id),
-            }));
-            setConversations(conversations);
-          }
-          const newConversations = findMatchingItems(value);
-          setConversations(newConversations);
-        }}
-        drawerContent={
-          <Fragment>
-            <ChatbotHeader>
-              <ChatbotHeaderMain>
-                <ChatbotHeaderMenu
-                  ref={historyRef}
-                  aria-expanded={isDrawerOpen}
-                  onMenuToggle={() => setIsDrawerOpen(!isDrawerOpen)}
-                />
-                <ChatbotHeaderTitle>Chat</ChatbotHeaderTitle>
-              </ChatbotHeaderMain>
-              <ChatbotHeaderActions>
-                <ChatbotHeaderSelectorDropdown
-                  value={
-                    availableAgents.find((agent) => agent.id === selectedAgent)?.name ||
-                    'Select Agent'
-                  }
-                  onSelect={onSelectAgent}
-                  tooltipContent="Select Agent"
-                >
-                  <DropdownList>
-                    {availableAgents.map((agent) => (
-                      <DropdownItem value={agent.id} key={agent.id}>
-                        {agent.name}
-                      </DropdownItem>
-                    ))}
-                  </DropdownList>
-                </ChatbotHeaderSelectorDropdown>
-              </ChatbotHeaderActions>
-            </ChatbotHeader>
-            <ChatbotContent>
-              <MessageBox announcement={announcement}>
-                {messages.map((message, index) => {
-                  if (index === messages.length - 1) {
-                    return (
-                      <Fragment key={message.id}>
-                        <div ref={scrollToBottomRef}></div>
-                        <Message key={message.id} {...message} />
-                      </Fragment>
-                    );
-                  }
-                  return <Message key={message.id} {...message} />;
-                })}
-              </MessageBox>
-            </ChatbotContent>
-            <ChatbotFooter>
-              <Panel variant="secondary">
-                <PanelMain>
-                  <PanelMainBody>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        paddingTop: '0.5em',
-                        paddingBottom: '0.5em',
-                      }}
-                    >
-                      {attachedFiles.map((file, index) => (
-                        <div key={file.name} style={{ margin: '0.5em' }}>
-                          <FileDetailsLabel
-                            fileName={file.name}
-                            onClose={() => {
-                              setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
-                            }}
-                          />
-                        </div>
+    <Fragment>
+      {noAgentsWarning && (
+        <Alert
+          variant="warning"
+          isInline
+          title={noAgentsWarning}
+          actionClose={<AlertActionCloseButton onClose={() => setNoAgentsWarning(null)} />}
+          style={{ marginBottom: '8px' }}
+        />
+      )}
+      <Chatbot displayMode={displayMode}>
+        <ChatbotConversationHistoryNav
+          displayMode={displayMode}
+          onDrawerToggle={() => {
+            setIsDrawerOpen(!isDrawerOpen);
+          }}
+          isDrawerOpen={isDrawerOpen}
+          setIsDrawerOpen={setIsDrawerOpen}
+          activeItemId={sessionId || undefined}
+          onSelectActiveItem={onSelectActiveItem}
+          conversations={conversations}
+          onNewChat={onNewChat}
+          handleTextInputChange={(value: string) => {
+            if (value === '') {
+              // Convert sessions to conversations format
+              const conversations = chatSessions.map((session) => ({
+                id: session.id,
+                text: session.title,
+                description: session.agent_name,
+                timestamp: new Date(session.updated_at).toLocaleDateString(),
+                menuItems: createSessionMenuItems(session.id),
+              }));
+              setConversations(conversations);
+            }
+            const newConversations = findMatchingItems(value);
+            setConversations(newConversations);
+          }}
+          drawerContent={
+            <Fragment>
+              <ChatbotHeader>
+                <ChatbotHeaderMain>
+                  <ChatbotHeaderMenu
+                    ref={historyRef}
+                    aria-expanded={isDrawerOpen}
+                    onMenuToggle={() => setIsDrawerOpen(!isDrawerOpen)}
+                  />
+                  <ChatbotHeaderTitle>Chat</ChatbotHeaderTitle>
+                </ChatbotHeaderMain>
+                <ChatbotHeaderActions>
+                  <ChatbotHeaderSelectorDropdown
+                    value={
+                      availableAgents.find((agent) => agent.id === selectedAgent)?.name ||
+                      'Select Agent'
+                    }
+                    onSelect={onSelectAgent}
+                    tooltipContent="Select Agent"
+                  >
+                    <DropdownList>
+                      {availableAgents.map((agent) => (
+                        <DropdownItem value={agent.id} key={agent.id}>
+                          {agent.name}
+                        </DropdownItem>
                       ))}
+                    </DropdownList>
+                  </ChatbotHeaderSelectorDropdown>
+                </ChatbotHeaderActions>
+              </ChatbotHeader>
+              <ChatbotContent>
+                {demoQuestions.length > 0 && (
+                  <div style={{ padding: '8px 16px' }}>
+                    <div style={{ marginLeft: '16px', maxWidth: '960px' }}>
+                      <div
+                        style={{
+                          marginBottom: '8px',
+                          color: 'var(--pf-v6-global--Color--200, #6A6E73)',
+                          textAlign: 'left',
+                        }}
+                      >
+                        Suggested questions
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        {demoQuestions.map((q, idx) => (
+                          <Button
+                            key={`demo-q-${idx}`}
+                            variant="plain"
+                            onClick={() => {
+                              void handleSendMessage(q);
+                              setDemoQuestions([]);
+                            }}
+                            isDisabled={!selectedAgent}
+                            size="sm"
+                            style={{
+                              backgroundColor: 'var(--pf-v6-global--BackgroundColor--100, #ffffff)',
+                              color: 'var(--pf-v6-global--Color--100, #151515)',
+                              border:
+                                hoveredIdx === idx
+                                  ? '1px solid var(--pf-v6-global--BorderColor--200, #8a8d90)'
+                                  : '1px solid var(--pf-v6-global--BorderColor--100, #d2d2d2)',
+                              borderRadius: '9999px',
+                              padding: '6px 12px',
+                              boxShadow:
+                                hoveredIdx === idx
+                                  ? '0 1px 3px rgba(0,0,0,0.2)'
+                                  : '0 1px 2px rgba(0,0,0,0.06)',
+                              transitionProperty: 'background-color, border-color, box-shadow',
+                              transitionDuration: '120ms',
+                              transitionTimingFunction: 'ease',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={() => setHoveredIdx(idx)}
+                            onMouseLeave={() => setHoveredIdx(null)}
+                            aria-label={`Suggested question: ${q}`}
+                          >
+                            {q}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                    <MessageBar
-                      onSendMessage={handleSendMessage as (message: string | number) => void}
-                      hasMicrophoneButton
-                      isSendButtonDisabled={isLoading || !selectedAgent}
-                      value={input}
-                      onChange={handleInputChange}
-                      handleAttach={handleAttach}
-                    />
-                  </PanelMainBody>
-                </PanelMain>
-              </Panel>
-              <ChatbotFootnote {...footnoteProps} />
-            </ChatbotFooter>
-          </Fragment>
-        }
-      ></ChatbotConversationHistoryNav>
-      <Modal
-        variant={ModalVariant.small}
-        title="Confirm Delete"
-        isOpen={isDeleteModalOpen}
-        onClose={cancelDeleteSession}
-      >
-        <ModalHeader title="Delete Session" labelId="delete-session-modal-title" />
-        <ModalBody id="delete-session-modal-desc">
-          Are you sure you want to delete this session?
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="link" onClick={cancelDeleteSession}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            isLoading={deleteSessionMutation.isPending}
-            onClick={confirmDeleteSession}
-          >
-            Delete
-          </Button>
-        </ModalFooter>
-      </Modal>
-    </Chatbot>
+                  </div>
+                )}
+                <MessageBox announcement={announcement}>
+                  {messages.map((message, index) => {
+                    if (index === messages.length - 1) {
+                      return (
+                        <Fragment key={message.id}>
+                          <div ref={scrollToBottomRef}></div>
+                          <Message key={message.id} {...message} />
+                        </Fragment>
+                      );
+                    }
+                    return <Message key={message.id} {...message} />;
+                  })}
+                </MessageBox>
+              </ChatbotContent>
+              <ChatbotFooter>
+                <Panel variant="secondary" ref={composerRef}>
+                  <PanelMain>
+                    <PanelMainBody>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          paddingTop: '0.5em',
+                          paddingBottom: '0.5em',
+                        }}
+                      >
+                        {attachedFiles.map((file, index) => (
+                          <div key={file.name} style={{ margin: '0.5em' }}>
+                            <FileDetailsLabel
+                              fileName={file.name}
+                              onClose={() => {
+                                setAttachedFiles(attachedFiles.filter((_, i) => i !== index));
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <MessageBar
+                        onSendMessage={handleSendMessage as (message: string | number) => void}
+                        hasMicrophoneButton
+                        isSendButtonDisabled={isLoading || !selectedAgent}
+                        value={input}
+                        onChange={handleInputChange}
+                        handleAttach={handleAttach}
+                      />
+                    </PanelMainBody>
+                  </PanelMain>
+                </Panel>
+                <ChatbotFootnote {...footnoteProps} />
+              </ChatbotFooter>
+            </Fragment>
+          }
+        ></ChatbotConversationHistoryNav>
+        <Modal
+          variant={ModalVariant.small}
+          title="Confirm Delete"
+          isOpen={isDeleteModalOpen}
+          onClose={cancelDeleteSession}
+        >
+          <ModalHeader title="Delete Session" labelId="delete-session-modal-title" />
+          <ModalBody id="delete-session-modal-desc">
+            Are you sure you want to delete this session?
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="link" onClick={cancelDeleteSession}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={deleteSessionMutation.isPending}
+              onClick={confirmDeleteSession}
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </Modal>
+      </Chatbot>
+    </Fragment>
   );
 }

@@ -11,6 +11,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "customer_service_kb"
+    demo_questions:
+      - "What are the fees and daily limits for standard checking accounts?"
+      - "How long do ACH, wire, and mobile check deposits take to clear?"
+      - "How do I dispute a card charge and what is the expected timeline?"
+      - "What ID is required to open a joint savings account?"
     # knowledge_base_config:
     #   name: "Customer Service Reference"
     #   version: "1.0"
@@ -31,6 +36,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "lending_kb"
+    demo_questions:
+      - "What documents are needed for a small business term loan application?"
+      - "How do I calculate DTI and DSCR for this borrower scenario?"
+      - "What are the FHA vs. conventional underwriting differences for income?"
+      - "What conditions should I include before issuing a commitment letter?"
     # knowledge_base_config:
     #   name: "Lending Policy Reference"
     #   version: "1.0"
@@ -51,6 +61,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "fraud_kb"
+    demo_questions:
+      - "Which red flags suggest structuring in recent cash deposits?"
+      - "How do I decide whether to escalate an OFAC potential match?"
+      - "What are the SAR filing thresholds and timelines for AML cases?"
+      - "What steps should I take to verify a suspected account takeover?"
     # knowledge_base_config:
     #   name: "Fraud Detection Reference"
     #   version: "1.0"

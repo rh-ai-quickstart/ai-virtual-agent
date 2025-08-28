@@ -24,6 +24,7 @@ class AgentTemplate(BaseModel):
     tools: List[Dict[str, str]]
     knowledge_base_ids: List[str]
     knowledge_base_config: Optional[Dict] = None
+    demo_questions: Optional[List[str]] = None
 
 
 logger = get_logger(__name__)
@@ -77,6 +78,7 @@ def convert_yaml_template_to_agent_template(
         tools=yaml_template["tools"],
         knowledge_base_ids=yaml_template["knowledge_base_ids"],
         knowledge_base_config=yaml_template.get("knowledge_base_config"),
+        demo_questions=yaml_template.get("demo_questions"),
     )
 
 

@@ -11,6 +11,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "commercial_banking_kb"
+    demo_questions:
+      - "What financing options do you recommend for purchasing new equipment?"
+      - "How can I improve my business cash flow over the next quarter?"
+      - "What documents do I need to apply for a commercial line of credit?"
+      - "Can you compare merchant services pricing for my retail store?"
     knowledge_base_config:
       name: "Commercial Banking Reference"
       version: "1.0"
@@ -31,6 +36,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "business_advisory_kb"
+    demo_questions:
+      - "Can you help me draft a 12‑month growth plan for my startup?"
+      - "What KPIs should I track to improve profitability this year?"
+      - "How should I structure pricing for our new subscription product?"
+      - "What are effective strategies to reduce operating expenses by 10%?"
     knowledge_base_config:
       name: "Business Advisory Reference"
       version: "1.0"

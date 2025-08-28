@@ -11,6 +11,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "investment_kb"
+    demo_questions:
+      - "What is an appropriate asset allocation for a moderate risk profile?"
+      - "Can you review my portfolio’s diversification and fees?"
+      - "How should I rebalance given current market conditions?"
+      - "What are tax-efficient ways to harvest gains and losses this year?"
     # knowledge_base_config:
     #   name: "Investment Advisory Reference"
     #   version: "1.0"
@@ -31,6 +36,11 @@ templates:
       - toolgroup_id: "builtin::websearch"
     knowledge_base_ids:
       - "financial_planning_kb"
+    demo_questions:
+      - "How much do I need to retire at age 60 with $100k annual spend?"
+      - "What’s the best strategy to optimize 401(k), Roth, and HSA contributions?"
+      - "How do I plan for college costs for two kids in 10 and 13 years?"
+      - "What estate planning documents should I have in place right now?"
     # knowledge_base_config:
     #   name: "Financial Planning Reference"
     #   version: "1.0"

@@ -95,6 +95,8 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
       void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       void queryClient.invalidateQueries({ queryKey: ['users'] });
       void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Ensure agent assignment-dependent UIs (AgentList) refresh
+      void queryClient.invalidateQueries({ queryKey: ['agents', 'user', userId] });
     },
     onError: (error) => {
       console.error('Error adding agent:', error);
@@ -110,6 +112,8 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
       void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       void queryClient.invalidateQueries({ queryKey: ['users'] });
       void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Ensure agent assignment-dependent UIs (AgentList) refresh
+      void queryClient.invalidateQueries({ queryKey: ['agents', 'user', userId] });
     },
     onError: (error) => {
       console.error('Error removing agent:', error);

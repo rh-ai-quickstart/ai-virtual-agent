@@ -63,6 +63,7 @@ export interface AgentTemplate {
     source: string;
     source_configuration: string[];
   };
+  demo_questions?: string[];
 }
 
 export interface TemplateInitializationRequest {

@@ -13,6 +13,8 @@ import {
 } from '@patternfly/react-core';
 import { UserIcon } from '@patternfly/react-icons';
 import { useAgents } from '@/hooks';
+import { useCurrentUser } from '@/contexts/UserContext';
+import { useMemo } from 'react';
 import type { Agent } from '@/types/agent';
 import { SUITE_ICONS } from '@/utils/icons';
 
@@ -20,7 +22,13 @@ import { SUITE_ICONS } from '@/utils/icons';
 
 export function AgentList() {
   // Use custom agents hook
-  const { agents, isLoading: isLoadingAgents, error: agentsError } = useAgents();
+  const { agents, isLoading: isLoadingAgents, error: agentsError, useUserAgents } = useAgents();
+  const { currentUser } = useCurrentUser();
+  const assignedAgentsQuery = useUserAgents(currentUser?.id ?? '');
+  const assignedIds = useMemo(
+    () => new Set((assignedAgentsQuery.data ?? []).map((a) => a.id)),
+    [assignedAgentsQuery.data]
+  );
 
   return (
     <div>
@@ -57,7 +65,11 @@ export function AgentList() {
                         (a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? '')
                       )
                       .map((agent) => (
-                        <AgentCard key={agent.id} agent={agent} />
+                        <AgentCard
+                          key={agent.id}
+                          agent={agent}
+                          isAssigned={assignedIds.has(agent.id)}
+                        />
                       ))}
                   </Flex>
                 </CardBody>
@@ -78,7 +90,6 @@ function groupAgentsBySuite(
     { suiteId: string | undefined; suiteName: string | undefined; agents: Agent[] }
   >();
   for (const agent of agents) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const key: string = agent.suite_id ?? '__uncategorized__';
     const existing:
       | { suiteId: string | undefined; suiteName: string | undefined; agents: Agent[] }
@@ -100,9 +111,8 @@ function groupAgentsBySuite(
         suiteName: string | undefined;
         agents: Agent[];
       } = {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         suiteId: agent.suite_id ?? undefined,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         suiteName: agent.suite_name ?? undefined,
         agents: [agent],
       };
