@@ -22,6 +22,7 @@ function AdminPages() {
         <p>Your current role: {currentUser?.role || 'None'}</p>
         <Link
           to="/"
+          search={{ agentId: '' }}
           style={{
             padding: '10px 20px',
             backgroundColor: '#007bff',

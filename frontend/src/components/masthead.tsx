@@ -74,7 +74,7 @@ export function Masthead({
     <Nav variant="horizontal" aria-label="Main Nav">
       <NavList>
         <NavItem itemId={0} isActive={location.pathname == '/'} to="#">
-          <Link to="/">
+          <Link to="/" search={{ agentId: '' }}>
             <Flex
               direction={{ default: 'row' }}
               alignItems={{ default: 'alignItemsCenter' }}
