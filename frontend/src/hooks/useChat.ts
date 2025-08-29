@@ -180,7 +180,29 @@ export function useChat(
         });
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.statusText}`);
+          console.error('API response not ok:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+          });
+          // Try to get error details from response body
+          try {
+            const errorText = await response.text();
+            console.error('Error response body:', errorText);
+
+            // Handle specific error cases with user-friendly messages
+            if (errorText.includes('Session ID is required')) {
+              throw new Error(
+                'Please select or create a chat session first before sending messages.'
+              );
+            }
+
+            throw new Error(
+              `API error (${response.status}): ${response.statusText} - ${errorText}`
+            );
+          } catch (_parseError) {
+            throw new Error(`API error (${response.status}): ${response.statusText}`);
+          }
         }
 
         if (!response.body) {
@@ -218,6 +240,7 @@ export function useChat(
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
+              console.log('Received data line:', data); // Debug logging
 
               if (data === '[DONE]') {
                 // Stream finished
@@ -271,7 +294,23 @@ export function useChat(
         }
       } catch (error) {
         console.error('Chat error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error details:', {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
+        let errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Handle the specific "malformed response" case with websearch tool error
+        if (
+          errorMessage.includes('malformed response') ||
+          errorMessage.includes('Received malformed response')
+        ) {
+          errorMessage =
+            'Web search tool not found in LlamaStack. The selected agent requires web search capabilities that are not currently configured in the AI service. Please select an agent without web search tools or contact your administrator to configure the missing tools.';
+        }
+
         options?.onError?.(new Error(errorMessage));
 
         // Remove the loading assistant message on error
