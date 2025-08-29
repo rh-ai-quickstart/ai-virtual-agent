@@ -16,7 +16,7 @@ import {
   Label,
   Spinner,
 } from '@patternfly/react-core';
-import { HomeIcon } from '@patternfly/react-icons';
+import { HomeIcon, RobotIcon, CubeIcon } from '@patternfly/react-icons';
 import { SUITE_ICONS, CATEGORY_ICONS } from '@/utils/icons';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -59,12 +59,28 @@ export function Agents() {
           aria-label="Agent management tabs"
           className="agents-page-tabs"
         >
-          <Tab eventKey={0} title={<TabTitleText>My Agents</TabTitleText>}>
+          <Tab
+            eventKey={0}
+            title={
+              <TabTitleText>
+                <RobotIcon style={{ marginRight: '8px' }} />
+                My Agents
+              </TabTitleText>
+            }
+          >
             <div style={{ padding: '24px 0' }}>
               <MyAgents />
             </div>
           </Tab>
-          <Tab eventKey={1} title={<TabTitleText>Agent Templates</TabTitleText>}>
+          <Tab
+            eventKey={1}
+            title={
+              <TabTitleText>
+                <CubeIcon style={{ marginRight: '8px' }} />
+                Agent Templates
+              </TabTitleText>
+            }
+          >
             <div style={{ padding: '24px 0' }}>
               <AgentTemplates />
             </div>

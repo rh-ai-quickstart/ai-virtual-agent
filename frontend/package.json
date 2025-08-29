@@ -18,11 +18,11 @@
     "*.{js,jsx,ts,tsx}": "eslint --fix"
   },
   "dependencies": {
-    "@patternfly/chatbot": "^2.2.1",
-    "@patternfly/react-core": "^6.2.1",
-    "@patternfly/react-icons": "^6.2.2",
-    "@patternfly/react-styles": "^6.2.1",
-    "@patternfly/react-tokens": "^6.2.1",
+    "@patternfly/chatbot": "^6.3.2",
+    "@patternfly/react-core": "^6.3.1",
+    "@patternfly/react-icons": "^6.3.1",
+    "@patternfly/react-styles": "^6.3.1",
+    "@patternfly/react-tokens": "^6.3.1",
     "@tanstack/react-form": "^1.9.1",
     "@tanstack/react-query": "^5.75.5",
     "@tanstack/react-router": "^1.119.0",
