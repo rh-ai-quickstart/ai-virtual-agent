@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from ..utils.feature_flags import is_attachments_feature_enabled
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -61,7 +62,7 @@ def _get_s3():
         _bucket = bucket_obj
 
         # Ensure bucket exists once on first real use (no import-time side effects)
-        if os.getenv("DISABLE_ATTACHMENTS") != "true" and not _bucket_initialized:
+        if is_attachments_feature_enabled() and not _bucket_initialized:
             try:
                 client.head_bucket(Bucket=ATTACHMENTS_BUCKET_NAME)
             except ClientError:
