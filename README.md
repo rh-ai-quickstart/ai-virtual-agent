@@ -111,6 +111,7 @@ The platform integrates several components:
 
 ### 🔧 **For Integration**
 - **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **[Oracle MCP Setup](docs/oracle-mcp-setup.md)** - Oracle Database analytics integration
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
