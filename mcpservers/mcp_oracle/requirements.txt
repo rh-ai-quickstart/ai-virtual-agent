@@ -1,0 +1,22 @@
+# MCP Oracle Server Dependencies
+# All dependencies use permissive licenses (Apache 2.0, MIT, BSD)
+
+# Core MCP functionality
+mcp[cli]==1.1.1              # Apache 2.0 License
+
+# Oracle database connectivity  
+oracledb==2.4.1               # Apache 2.0 License (Oracle Free Use Terms and Conditions)
+
+# Data validation and settings
+pydantic==2.9.2               # MIT License
+pydantic-settings==2.6.1     # MIT License
+
+# Web framework (for health checks)
+fastapi==0.115.4              # MIT License
+uvicorn==0.32.0               # BSD License
+
+# Environment file loading
+python-dotenv==1.0.1          # BSD License
+
+# Logging and utilities
+structlog==24.4.0             # Apache 2.0 License
