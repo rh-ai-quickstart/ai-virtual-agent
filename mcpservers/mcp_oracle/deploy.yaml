@@ -1,0 +1,108 @@
+---
+# Secret for Oracle MCP Server Configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oracle-mcp-secret
+  labels:
+    app: oracle-mcp
+type: Opaque
+stringData:
+  ORACLE_HOST: "oracle-service.an-oracle-23ai.svc.cluster.local"
+  ORACLE_PORT: "1521"
+  ORACLE_SERVICE_NAME: "FREEPDB1"
+  ORACLE_USERNAME: "tpcds"
+  ORACLE_PASSWORD: "password"
+  MCP_ORACLE_ENVIRONMENT: "development"
+
+---
+# Deployment for Oracle MCP Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oracle-mcp-deployment
+  labels:
+    app: oracle-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oracle-mcp
+  template:
+    metadata:
+      labels:
+        app: oracle-mcp
+    spec:
+      containers:
+        - name: oracle-mcp
+          image: quay.io/skattoju/oracle_mcp:latest
+          ports:
+            - containerPort: 8003
+          env:
+            - name: ORACLE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: ORACLE_HOST
+            - name: ORACLE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: ORACLE_PORT
+            - name: ORACLE_SERVICE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: ORACLE_SERVICE_NAME
+            - name: ORACLE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: ORACLE_USERNAME
+            - name: ORACLE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: ORACLE_PASSWORD
+            - name: MCP_ORACLE_ENVIRONMENT
+              valueFrom:
+                secretKeyRef:
+                  name: oracle-mcp-secret
+                  key: MCP_ORACLE_ENVIRONMENT
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+---
+# Service for Oracle MCP Server
+apiVersion: v1
+kind: Service
+metadata:
+  name: oracle-mcp-service
+  labels:
+    app: oracle-mcp
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8003
+      targetPort: 8003
+      protocol: TCP
+      name: http
+  selector:
+    app: oracle-mcp

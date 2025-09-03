@@ -1,11 +1,10 @@
 import asyncio
 import structlog
 from typing import Any, Dict, List, Optional
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.server.models import InitializationOptions
+from mcp.server import Server, InitializationOptions
+from mcp.server.stdio import stdio_server  
 from mcp.types import Tool, TextContent
-from .database import get_oracle_connection, settings, test_connection
+from database import get_oracle_connection, settings, test_connection
 
 # Configure structured logging
 structlog.configure(
@@ -28,190 +27,6 @@ structlog.configure(
 
 logger = structlog.get_logger(__name__)
 server = Server("mcp-oracle")
-
-@server.list_tools()
-async def list_tools() -> List[Tool]:
-    """List available tools."""
-    return [
-        Tool(
-            name="health_check",
-            description="Health check endpoint for monitoring Oracle MCP server status",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_tpcds_summary", 
-            description="Get summary of TPC-DS tables and row counts",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_customer_insights",
-            description="Get customer demographic insights from TPC-DS data",
-            inputSchema={
-                "type": "object", 
-                "properties": {
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of customers to return (1-10000)",
-                        "default": 100
-                    }
-                },
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_sales_analytics",
-            description="Get sales analytics from TPC-DS store sales data",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "start_date": {
-                        "type": "string",
-                        "description": "Start date in YYYY-MM-DD format",
-                        "default": "2020-01-01"
-                    },
-                    "end_date": {
-                        "type": "string", 
-                        "description": "End date in YYYY-MM-DD format",
-                        "default": "2023-12-31"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of sales records to return (1-50000)",
-                        "default": 1000
-                    }
-                },
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_top_selling_products",
-            description="Get top-selling products by revenue or quantity",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of products to return (1-100)",
-                        "default": 10
-                    },
-                    "time_period": {
-                        "type": "string",
-                        "description": "Time period: all, last_year, last_quarter, last_month",
-                        "default": "all"
-                    },
-                    "metric": {
-                        "type": "string",
-                        "description": "Metric to sort by: revenue or quantity",
-                        "default": "revenue"
-                    }
-                },
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_inventory_insights",
-            description="Get inventory analysis with low stock alerts",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "low_stock_threshold": {
-                        "type": "integer",
-                        "description": "Threshold for low stock alerts (1-10000)",
-                        "default": 100
-                    }
-                },
-                "required": []
-            }
-        ),
-        Tool(
-            name="get_store_performance",
-            description="Get store performance analysis and comparison",
-            inputSchema={
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        ),
-        Tool(
-            name="execute_custom_query",
-            description="Execute custom SQL queries with safety constraints",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "sql_query": {
-                        "type": "string",
-                        "description": "SQL SELECT query to execute"
-                    },
-                    "max_rows": {
-                        "type": "integer",
-                        "description": "Maximum number of rows to return (1-10000)",
-                        "default": 1000
-                    }
-                },
-                "required": ["sql_query"]
-            }
-        ),
-        Tool(
-            name="get_kpi_dashboard",
-            description="Get key performance indicators dashboard",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "date_range": {
-                        "type": "string",
-                        "description": "Date range: all, last_month, last_quarter, last_year, ytd",
-                        "default": "last_month"
-                    }
-                },
-                "required": []
-            }
-        )
-    ]
-
-@server.call_tool()
-async def call_tool(name: str, arguments: dict) -> List[TextContent]:
-    """Handle tool calls."""
-    if name == "health_check":
-        result = await health_check()
-    elif name == "get_tpcds_summary":
-        result = await get_tpcds_summary()
-    elif name == "get_customer_insights":
-        limit = arguments.get("limit", 100)
-        result = await get_customer_insights(limit)
-    elif name == "get_sales_analytics":
-        start_date = arguments.get("start_date", "2020-01-01")
-        end_date = arguments.get("end_date", "2023-12-31")
-        limit = arguments.get("limit", 1000)
-        result = await get_sales_analytics(start_date, end_date, limit)
-    elif name == "get_top_selling_products":
-        limit = arguments.get("limit", 10)
-        time_period = arguments.get("time_period", "all")
-        metric = arguments.get("metric", "revenue")
-        result = await get_top_selling_products(limit, time_period, metric)
-    elif name == "get_inventory_insights":
-        low_stock_threshold = arguments.get("low_stock_threshold", 100)
-        result = await get_inventory_insights(low_stock_threshold)
-    elif name == "get_store_performance":
-        result = await get_store_performance()
-    elif name == "execute_custom_query":
-        sql_query = arguments.get("sql_query", "")
-        max_rows = arguments.get("max_rows", 1000)
-        result = await execute_custom_query(sql_query, max_rows)
-    elif name == "get_kpi_dashboard":
-        date_range = arguments.get("date_range", "last_month")
-        result = await get_kpi_dashboard(date_range)
-    else:
-        raise ValueError(f"Unknown tool: {name}")
-    
-    return [TextContent(type="text", text=str(result))]
 
 async def health_check() -> Dict[str, Any]:
     """Health check endpoint for monitoring Oracle MCP server status."""
@@ -741,17 +556,8 @@ async def execute_custom_query(
         
         # Add ROWNUM limit if not present
         if "ROWNUM" not in query_upper and "FETCH" not in query_upper:
-            if "WHERE" in query_upper:
-                # Insert ROWNUM condition after the first WHERE
-                where_pos = sql_query.upper().find("WHERE")
-                sql_query = sql_query[:where_pos + 5] + f" ROWNUM <= {max_rows} AND" + sql_query[where_pos + 5:]
-            else:
-                # Add WHERE clause at the end, before ORDER BY if present
-                if "ORDER BY" in query_upper:
-                    order_pos = sql_query.upper().find("ORDER BY")
-                    sql_query = sql_query[:order_pos] + f" WHERE ROWNUM <= {max_rows} " + sql_query[order_pos:]
-                else:
-                    sql_query += f" WHERE ROWNUM <= {max_rows}"
+            # Use subquery approach to avoid complex SQL parsing
+            sql_query = f"SELECT * FROM ({sql_query}) WHERE ROWNUM <= {max_rows}"
         
         with get_oracle_connection() as conn:
             with conn.cursor() as cursor:
@@ -919,6 +725,142 @@ async def get_kpi_dashboard(date_range: str = "last_month") -> Dict[str, Any]:
         }
         logger.error("KPI dashboard failed", error=str(e))
         return error_result
+
+@server.list_tools()
+async def list_tools() -> List[Tool]:
+    """List all available Oracle analytics tools."""
+    return [
+        Tool(
+            name="health_check",
+            description="Health check endpoint for monitoring Oracle MCP server status.",
+            inputSchema={"type": "object", "properties": {}}
+        ),
+        Tool(
+            name="get_tpcds_summary",
+            description="Get summary of TPC-DS tables and row counts.",
+            inputSchema={"type": "object", "properties": {}}
+        ),
+        Tool(
+            name="get_customer_insights",
+            description="Get customer demographic insights from TPC-DS data.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 100, "description": "Maximum number of customers to return (1-10000)"}
+                }
+            }
+        ),
+        Tool(
+            name="get_sales_analytics",
+            description="Get sales analytics from TPC-DS store sales data.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "default": "2020-01-01", "description": "Start date (YYYY-MM-DD)"},
+                    "end_date": {"type": "string", "default": "2023-12-31", "description": "End date (YYYY-MM-DD)"},
+                    "limit": {"type": "integer", "default": 1000, "description": "Maximum number of sales records (1-50000)"}
+                }
+            }
+        ),
+        Tool(
+            name="get_top_selling_products",
+            description="Get top-selling products by revenue or quantity.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "default": 10, "description": "Number of top products (1-100)"},
+                    "time_period": {"type": "string", "default": "all", "enum": ["all", "last_year", "last_quarter", "last_month"]},
+                    "metric": {"type": "string", "default": "revenue", "enum": ["revenue", "quantity"]}
+                }
+            }
+        ),
+        Tool(
+            name="get_inventory_insights",
+            description="Get inventory analysis with low stock alerts.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "low_stock_threshold": {"type": "integer", "default": 100, "description": "Low stock threshold (1-10000)"}
+                }
+            }
+        ),
+        Tool(
+            name="get_store_performance",
+            description="Get store performance analysis and comparison.",
+            inputSchema={"type": "object", "properties": {}}
+        ),
+        Tool(
+            name="execute_custom_query",
+            description="Execute custom SQL queries with safety constraints.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "sql_query": {"type": "string", "description": "SELECT SQL query to execute"},
+                    "max_rows": {"type": "integer", "default": 1000, "description": "Maximum rows to return (1-10000)"}
+                },
+                "required": ["sql_query"]
+            }
+        ),
+        Tool(
+            name="get_kpi_dashboard",
+            description="Get key performance indicators dashboard.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "date_range": {"type": "string", "default": "last_month", "enum": ["all", "last_month", "last_quarter", "last_year", "ytd"]}
+                }
+            }
+        )
+    ]
+
+@server.call_tool()
+async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+    """Handle tool calls for Oracle analytics functions."""
+    try:
+        if name == "health_check":
+            result = await health_check()
+        elif name == "get_tpcds_summary":
+            result = await get_tpcds_summary()
+        elif name == "get_customer_insights":
+            limit = arguments.get("limit", 100)
+            result = await get_customer_insights(limit=limit)
+        elif name == "get_sales_analytics":
+            start_date = arguments.get("start_date", "2020-01-01")
+            end_date = arguments.get("end_date", "2023-12-31")
+            limit = arguments.get("limit", 1000)
+            result = await get_sales_analytics(start_date=start_date, end_date=end_date, limit=limit)
+        elif name == "get_top_selling_products":
+            limit = arguments.get("limit", 10)
+            time_period = arguments.get("time_period", "all")
+            metric = arguments.get("metric", "revenue")
+            result = await get_top_selling_products(limit=limit, time_period=time_period, metric=metric)
+        elif name == "get_inventory_insights":
+            low_stock_threshold = arguments.get("low_stock_threshold", 100)
+            result = await get_inventory_insights(low_stock_threshold=low_stock_threshold)
+        elif name == "get_store_performance":
+            result = await get_store_performance()
+        elif name == "execute_custom_query":
+            sql_query = arguments.get("sql_query")
+            max_rows = arguments.get("max_rows", 1000)
+            if not sql_query:
+                raise ValueError("sql_query parameter is required")
+            result = await execute_custom_query(sql_query=sql_query, max_rows=max_rows)
+        elif name == "get_kpi_dashboard":
+            date_range = arguments.get("date_range", "last_month")
+            result = await get_kpi_dashboard(date_range=date_range)
+        else:
+            raise ValueError(f"Unknown tool: {name}")
+        
+        return [TextContent(type="text", text=str(result))]
+        
+    except Exception as e:
+        logger.error(f"Tool call failed", tool=name, error=str(e))
+        error_result = {
+            "status": "error",
+            "error": str(e),
+            "tool": name
+        }
+        return [TextContent(type="text", text=str(error_result))]
 
 async def run_startup_tasks():
     """Startup tasks for MCP Oracle server."""
