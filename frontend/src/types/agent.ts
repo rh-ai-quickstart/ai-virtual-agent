@@ -92,4 +92,5 @@ export interface SuiteDetails {
   title: string;
   agents: string[];
   agentCount: number;
+  templateIds?: string[];
 }

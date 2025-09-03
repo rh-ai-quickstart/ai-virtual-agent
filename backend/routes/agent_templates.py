@@ -177,6 +177,9 @@ async def get_suite_details(suite_name: str):
         "category": suite["category"],
         "agent_count": len(templates),
         "agent_names": agent_names,
+        # Also include the underlying template IDs so the UI can deploy a subset
+        # of agents from the suite by calling the single-template initialize API.
+        "template_ids": list(templates.keys()),
     }
 
 
@@ -262,7 +265,7 @@ async def initialize_agent_from_template(
                         knowledge_base_name=None,
                         status="skipped",
                         message=(
-                            f"Agent from template '{request.template_name}' is already deployed. "
+                            f"Agent '{agent_name}' is already deployed. "
                             f"Check your 'My Agents' page."
                         ),
                     )

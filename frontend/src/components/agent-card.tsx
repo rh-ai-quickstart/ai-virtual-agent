@@ -6,6 +6,7 @@ import {
   CardExpandableContent,
   CardHeader,
   CardTitle,
+  Tooltip,
   Dropdown,
   DropdownItem,
   DropdownList,
@@ -72,18 +73,36 @@ export function AgentCard({ agent, isAssigned }: AgentCardProps) {
 
   const headerActions = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleChatClick();
-        }}
-        aria-label="Chat with agent"
-        isDisabled={!isAssignedToUser}
-      >
-        Chat
-      </Button>
+      {!isAssignedToUser ? (
+        <Tooltip content="This agent isn't assigned to you. Assign it to chat.">
+          <span style={{ display: 'inline-block' }}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleChatClick();
+              }}
+              aria-label="Chat with agent"
+              isDisabled
+            >
+              Chat
+            </Button>
+          </span>
+        </Tooltip>
+      ) : (
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleChatClick();
+          }}
+          aria-label="Chat with agent"
+        >
+          Chat
+        </Button>
+      )}
       <Dropdown
         isOpen={dropdownOpen}
         onOpenChange={(isOpen: boolean) => setDropdownOpen(isOpen)}
@@ -163,7 +182,7 @@ export function AgentCard({ agent, isAssigned }: AgentCardProps) {
           <ModalBody id="delete-agent-modal-desc">
             Are you sure you want to delete this AI agent? This action cannot be undone.
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter className="pf-v6-u-justify-content-flex-end">
             <Button variant="link" onClick={toggleModal}>
               Cancel
             </Button>

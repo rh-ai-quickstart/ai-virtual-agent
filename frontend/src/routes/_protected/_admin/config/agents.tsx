@@ -15,6 +15,11 @@ import {
   Button,
   Label,
   Spinner,
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Checkbox,
 } from '@patternfly/react-core';
 import { HomeIcon, RobotIcon, CubeIcon } from '@patternfly/react-icons';
 import { SUITE_ICONS, CATEGORY_ICONS } from '@/utils/icons';
@@ -26,6 +31,7 @@ import {
   getSuiteDetails as getSuiteDetailsApi,
   initializeSuite,
   getCategoriesInfo,
+  initializeAgentFromTemplate,
 } from '@/services/agent-templates';
 
 export const Route = createFileRoute('/_protected/_admin/config/agents')({
@@ -53,40 +59,40 @@ export function Agents() {
             border-bottom: 2px solid var(--pf-v6-global--primary-color--100, #0066cc) !important;
           }
         `}</style>
-        <Tabs
-          activeKey={activeTabKey}
-          onSelect={handleTabClick}
-          aria-label="Agent management tabs"
-          className="agents-page-tabs"
-        >
-          <Tab
-            eventKey={0}
-            title={
-              <TabTitleText>
-                <RobotIcon style={{ marginRight: '8px' }} />
-                My Agents
-              </TabTitleText>
-            }
-          >
-            <div style={{ padding: '24px 0' }}>
-              <MyAgents />
-            </div>
-          </Tab>
-          <Tab
-            eventKey={1}
-            title={
-              <TabTitleText>
-                <CubeIcon style={{ marginRight: '8px' }} />
-                Agent Templates
-              </TabTitleText>
-            }
-          >
-            <div style={{ padding: '24px 0' }}>
-              <AgentTemplates />
-            </div>
-          </Tab>
-        </Tabs>
       </div>
+      <Tabs
+        className="agents-page-tabs"
+        activeKey={activeTabKey}
+        onSelect={handleTabClick}
+        aria-label="Agent management tabs"
+      >
+        <Tab
+          eventKey={0}
+          title={
+            <TabTitleText>
+              <RobotIcon style={{ marginRight: '8px' }} />
+              My Agents
+            </TabTitleText>
+          }
+        >
+          <div style={{ padding: '24px 0' }}>
+            <MyAgents />
+          </div>
+        </Tab>
+        <Tab
+          eventKey={1}
+          title={
+            <TabTitleText>
+              <CubeIcon style={{ marginRight: '8px' }} />
+              Agent Templates
+            </TabTitleText>
+          }
+        >
+          <div style={{ padding: '24px 0' }}>
+            <AgentTemplates />
+          </div>
+        </Tab>
+      </Tabs>
     </PageSection>
   );
 }
@@ -96,8 +102,10 @@ export function Agents() {
 // Agent Templates Component
 function AgentTemplates() {
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showSelectionModal, setShowSelectionModal] = useState(false);
   const [selectedSuite, setSelectedSuite] = useState<string | null>(null);
   const [deployProgress, setDeployProgress] = useState<string[]>([]);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   // Query for suites by category
@@ -113,7 +121,7 @@ function AgentTemplates() {
   });
 
   // Query for suite details
-  const { data: suiteDetailsMap } = useQuery({
+  const { data: suiteDetailsMap } = useQuery<Record<string, SuiteDetails>>({
     queryKey: ['suite-details', suitesByCategory],
     queryFn: async () => {
       if (!suitesByCategory) return {};
@@ -130,6 +138,7 @@ function AgentTemplates() {
               icon: SUITE_ICONS[suiteId] || <HomeIcon style={{ color: '#8A2BE2' }} />,
               agents: details.agent_names,
               agentCount: details.agent_count,
+              templateIds: details.template_ids,
               category,
             };
           } catch (error) {
@@ -160,39 +169,22 @@ function AgentTemplates() {
       return results;
     },
     onSuccess: async (results) => {
-      const allSkipped = results.length > 0 && results.every((r) => r.status === 'skipped');
-
-      if (allSkipped) {
-        setDeployProgress([
-          `ℹ️ Agents from this suite have already been deployed. Check 'My Agents' page.`,
-        ]);
-      } else {
-        for (const result of results) {
-          if (result.status === 'success') {
-            setDeployProgress((prev) => [...prev, `✅ Deployed ${result.agent_name}`]);
-          } else if (result.status === 'skipped') {
-            setDeployProgress((prev) => [
-              ...prev,
-              `ℹ️ Skipped ${result.agent_name}: ${result.message}`,
-            ]);
-          } else {
-            setDeployProgress((prev) => [
-              ...prev,
-              `❌ Failed to deploy ${result.agent_name}: ${result.message}`,
-            ]);
-          }
+      for (const result of results) {
+        if (result.status === 'success') {
+          setDeployProgress((prev) => [...prev, `✅ Deployed ${result.agent_name}`]);
+        } else if (result.status === 'skipped') {
+          setDeployProgress((prev) => [
+            ...prev,
+            `ℹ️ ${result.message || `Already deployed ${result.agent_name} — skipped`}`,
+          ]);
+        } else {
+          setDeployProgress((prev) => [
+            ...prev,
+            `❌ Failed to deploy ${result.agent_name}: ${result.message}`,
+          ]);
         }
       }
       await queryClient.invalidateQueries({ queryKey: ['agents'] });
-      // Only auto-close if at least one success occurred
-      const anySuccess = results.some((r) => r.status === 'success');
-      if (anySuccess) {
-        setTimeout(() => {
-          setShowDeployModal(false);
-          setDeployProgress([]);
-          setSelectedSuite(null);
-        }, 2000);
-      }
     },
     onError: (error) => {
       setDeployProgress((prev) => [
@@ -204,8 +196,14 @@ function AgentTemplates() {
 
   const handleDeploySuite = (suiteId: string) => {
     setSelectedSuite(suiteId);
-    setShowDeployModal(true);
-    deployMutation.mutate(suiteId);
+    // Preselect all templates for this suite
+    const suite: SuiteDetails | undefined = suiteDetailsMap?.[suiteId];
+    if (suite && Array.isArray(suite.templateIds)) {
+      setSelectedTemplateIds([...suite.templateIds]);
+    } else {
+      setSelectedTemplateIds([]);
+    }
+    setShowSelectionModal(true);
   };
 
   const getSuiteDetails = (suiteId: string): SuiteDetails | null => {
@@ -383,7 +381,134 @@ function AgentTemplates() {
           );
         })}
 
-      {/* Deploy Modal */}
+      {/* Selection Modal */}
+      {showSelectionModal && selectedSuite && (
+        <Modal
+          isOpen={showSelectionModal}
+          onClose={() => setShowSelectionModal(false)}
+          variant="medium"
+          aria-labelledby="deploy-suite-select-title"
+        >
+          <ModalHeader
+            title={`Deploy ${selectedSuite
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (l) => l.toUpperCase())}`}
+            labelId="deploy-suite-select-title"
+          />
+          <ModalBody>
+            {(() => {
+              const suite = suiteDetailsMap?.[selectedSuite];
+              const ids: string[] = suite?.templateIds ?? [];
+              const names: string[] = suite?.agents ?? [];
+              const pairs: Array<{ id: string; name: string }> = ids.map(
+                (id: string, idx: number) => ({ id, name: names[idx] ?? id })
+              );
+              const allSelected: boolean =
+                selectedTemplateIds.length === pairs.length && pairs.length > 0;
+              return (
+                <div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <Checkbox
+                      id="select-all-templates"
+                      label={`Select All (${pairs.length} agents)`}
+                      isChecked={allSelected}
+                      onChange={(_event, checked: boolean) => {
+                        setSelectedTemplateIds(checked ? pairs.map((p) => p.id) : []);
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {pairs.map((pair: { id: string; name: string }) => (
+                      <div
+                        key={pair.id}
+                        style={{ border: '1px solid #d2d2d2', borderRadius: 6, padding: 12 }}
+                      >
+                        <Checkbox
+                          id={`template-${pair.id}`}
+                          label={pair.name}
+                          isChecked={selectedTemplateIds.includes(pair.id)}
+                          onChange={(_event, checked: boolean) => {
+                            setSelectedTemplateIds((prev: string[]) => {
+                              if (checked) return Array.from(new Set([...prev, pair.id]));
+                              return prev.filter((id: string) => id !== pair.id);
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </ModalBody>
+          <ModalFooter className="pf-v6-u-justify-content-flex-end">
+            <Button variant="link" onClick={() => setShowSelectionModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedSuite) return;
+                setShowSelectionModal(false);
+                setShowDeployModal(true);
+                deployMutation.mutate(selectedSuite);
+              }}
+              isDisabled={deployMutation.isPending || selectedTemplateIds.length === 0}
+            >
+              Deploy All
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                void (async () => {
+                  if (!selectedSuite) return;
+                  setShowSelectionModal(false);
+                  setShowDeployModal(true);
+                  setDeployProgress([]);
+                  try {
+                    const ids: string[] = selectedTemplateIds;
+                    for (const id of ids) {
+                      try {
+                        const result = await initializeAgentFromTemplate({
+                          template_name: id,
+                          include_knowledge_base: true,
+                        });
+                        if (result.status === 'success') {
+                          setDeployProgress((prev: string[]) => [
+                            ...prev,
+                            `✅ Deployed ${result.agent_name}`,
+                          ]);
+                        } else if (result.status === 'skipped') {
+                          setDeployProgress((prev: string[]) => [
+                            ...prev,
+                            `ℹ️ ${result.message || `Already deployed ${result.agent_name} — skipped`}`,
+                          ]);
+                        } else {
+                          setDeployProgress((prev: string[]) => [
+                            ...prev,
+                            `❌ Failed to deploy ${result.agent_name}: ${result.message}`,
+                          ]);
+                        }
+                      } catch (e) {
+                        setDeployProgress((prev: string[]) => [
+                          ...prev,
+                          `❌ Failed to deploy ${id}: ${e instanceof Error ? e.message : 'Unknown error'}`,
+                        ]);
+                      }
+                    }
+                    await queryClient.invalidateQueries({ queryKey: ['agents'] });
+                  } finally {
+                  }
+                })();
+              }}
+              isDisabled={selectedTemplateIds.length === 0}
+            >
+              {`Deploy Selected (${selectedTemplateIds.length})`}
+            </Button>
+          </ModalFooter>
+        </Modal>
+      )}
+
+      {/* Deploy Progress Modal */}
       {showDeployModal && (
         <div
           style={{
@@ -422,7 +547,9 @@ function AgentTemplates() {
                         ? '#3E8635'
                         : progress.includes('❌')
                           ? '#C9190B'
-                          : '#6A6E73',
+                          : progress.includes('ℹ️')
+                            ? '#0066CC'
+                            : '#6A6E73',
                     }}
                   >
                     {progress}

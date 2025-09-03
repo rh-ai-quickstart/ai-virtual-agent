@@ -127,6 +127,7 @@ export async function getSuiteDetails(suiteId: string): Promise<{
   category: string;
   agent_count: number;
   agent_names: string[];
+  template_ids?: string[];
 }> {
   const response = await fetch(`/api/agent_templates/suites/${suiteId}/details`);
   if (!response.ok) {
@@ -139,6 +140,7 @@ export async function getSuiteDetails(suiteId: string): Promise<{
     category: string;
     agent_count: number;
     agent_names: string[];
+    template_ids?: string[];
   }>;
 }
 
