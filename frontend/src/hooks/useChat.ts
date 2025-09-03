@@ -240,7 +240,7 @@ export function useChat(
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6).trim();
-              console.log('Received data line:', data); // Debug logging
+              if (import.meta.env.DEV) console.log('Received data line:', data); // Debug logging
 
               if (data === '[DONE]') {
                 // Stream finished
