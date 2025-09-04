@@ -28,7 +28,7 @@ POSTGRES_DBNAME ?= rag_blueprint
 MINIO_USER ?= minio_rag_user
 MINIO_PASSWORD ?= minio_rag_password
 HF_TOKEN ?=
-AI_VIRTUAL_AGENT_CHART := .
+AI_VIRTUAL_AGENT_CHART := helm
 AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
 
@@ -126,7 +126,7 @@ install-namespace: ## Create and configure deployment namespace
 	@oc project $(NAMESPACE) &> /dev/null ||:
 
 install: install-namespace deps ## Install the AI Virtual Agent deployment
-	@../local/dev/install_with_env.sh $(NAMESPACE) $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART)
+	@./scripts/install_with_env.sh $(NAMESPACE) $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART)
 
 	@echo "Waiting for model services and llamastack to deploy. It may take around 10-15 minutes depending on the size of the model..."
 	@oc rollout status deploy/ai-virtual-agent -n $(NAMESPACE)

@@ -45,16 +45,16 @@ services:
 
   # LlamaStack service
   llamastack:
-    image: llamastack/distribution-ollama:latest
+    image: llamastack/distribution-starter:0.2.18
     container_name: llamastack-dev
     platform: linux/amd64
     restart: unless-stopped
     ports:
       - '${LLAMASTACK_PORT:-8321}:8321'
     volumes:
-      - ~/.llama:/root/.llama
-      - ${PWD}/deploy/local/dev/local_llamastack_server/run.yaml:/run.yaml
-    command: ["--yaml-config", "/run.yaml", "--port", "8321"]
+      - ~/.llama:/root/.llama:Z
+      - ${PWD}/deploy/local/dev/local_llamastack_server/run.yaml:/run.yaml:Z
+    command: ["python", "-m", "llama_stack.core.server.server", "/run.yaml"]
     networks:
       - ai-va-network
     healthcheck:
@@ -79,7 +79,7 @@ services:
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:
-      - ../../backend:/app/backend:rw
+      - ../../backend:/app/backend:Z
     depends_on:
       db:
         condition: service_healthy
@@ -106,7 +106,7 @@ services:
     ports:
       - '${FRONTEND_PORT:-5173}:5173'
     volumes:
-      - ../../frontend:/app:rw
+      - ../../frontend:/app:Z
       - /app/node_modules
     depends_on:
       backend:

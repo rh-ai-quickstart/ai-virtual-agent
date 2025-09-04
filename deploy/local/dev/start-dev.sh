@@ -22,7 +22,7 @@ fi
 # Check if podman compose is available
 if ! podman compose --help &> /dev/null; then
     echo "❌ Error: podman compose is not available"
-    echo "Please ensure you have podman-compose installed or use 'podman-compose' instead"
+    echo "Please ensure you have podman-compose installed"
     exit 1
 fi
 

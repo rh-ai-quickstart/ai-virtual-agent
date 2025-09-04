@@ -27,24 +27,25 @@ For local containerized development (without cluster):
 
 📖 **[→ See Local Development Guide](DEVELOPMENT.md)**
 
-### Installation
+### Local Development
 
-**Option 1: One-command setup**
-```bash
-git clone https://github.com/rh-ai-quickstart/ai-virtual-agent
-cd ai-virtual-agent
-make install dev
-```
+For local development setup:
 
-**Option 2: Step-by-step**
 ```bash
+# Navigate to local deployment directory
+cd deploy/local
+
+# Start all services with Docker Compose
+make dev-compose-up
+
+# Or start step-by-step:
 # 1. Start database (automatically initializes with permissions)
 podman compose up -d
 # or with Docker:
 # docker-compose up -d
 
 # 2. Start backend
-cd backend && python -m venv venv && source venv/bin/activate
+cd ../../backend && python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt && alembic upgrade head
 uvicorn main:app --reload &
 
@@ -59,12 +60,21 @@ cd ../frontend && npm install && npm run dev
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
 
-### Production Deployment
+### Cluster Deployment
 
 For production installation on Kubernetes/OpenShift:
 
 ```bash
-make install NAMESPACE=ai-virtual-agent
+# Navigate to cluster deployment directory
+cd deploy/cluster
+
+# Install with interactive prompts for configuration
+make install NAMESPACE=your-namespace
+
+# Or set environment variables and install
+export NAMESPACE=ai-virtual-agent
+export HF_TOKEN=your-huggingface-token
+make install
 ```
 
 📖 **[Full Installation Guide →](INSTALLING.md)**
@@ -77,8 +87,16 @@ ai-virtual-agent/
 ├── backend/            # FastAPI server with PostgreSQL
 ├── mcpservers/         # Custom MCP tool servers
 ├── docs/               # Architecture and API documentation
-├── helm/               # Kubernetes and Helm deployment
-├── scripts/            # Development and deployment scripts
+├── deploy/
+│   ├── cluster/        # Kubernetes/Helm cluster deployment
+│   │   ├── helm/       # Helm chart files
+│   │   ├── scripts/    # Cluster deployment scripts
+│   │   ├── Containerfile # Cluster container image
+│   │   └── Makefile    # Cluster deployment commands
+│   └── local/          # Local development deployment
+│       ├── compose.dev.yaml # Docker Compose for local dev
+│       ├── dev/        # Local development configs
+│       └── Makefile    # Local development commands
 └── tests/              # Integration test suite
 ```
 
@@ -136,18 +154,32 @@ const expert = await initializeAgentTemplate({
 
 ## Development Commands
 
+**Local Development:**
 ```bash
-# Start everything locally
-make dev
+cd deploy/local
 
-# Run tests
-make test
+# Start everything locally with Docker Compose
+make dev-compose-up
 
 # Stop all services
-make stop
+make dev-compose-down
 
 # Reset database
 make reset-db
+```
+
+**Cluster Deployment:**
+```bash
+cd deploy/cluster
+
+# Install on cluster
+make install NAMESPACE=your-namespace
+
+# Uninstall from cluster
+make uninstall NAMESPACE=your-namespace
+
+# Check status
+make install-status NAMESPACE=your-namespace
 ```
 
 > Note: All Makefile targets automatically load environment variables from a `.env` file in the repository root if it exists. No manual `export` is required for common workflows.

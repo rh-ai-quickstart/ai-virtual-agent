@@ -97,7 +97,7 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Lint chart
-        run: helm lint deploy/helm/
+        run: helm lint deploy/cluster/helm/
 
   pre-commit:
     name: Pre-commit hooks (backend)

@@ -48,6 +48,6 @@ repos:
         args: [--min-confidence=80]
       - id: helm-lint
         name: Helm lint
-        entry: helm lint ./deploy/helm
+        entry: helm lint ./deploy/cluster/helm
         language: system
         pass_filenames: false
