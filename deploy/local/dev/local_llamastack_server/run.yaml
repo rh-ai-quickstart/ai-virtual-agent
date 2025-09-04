@@ -35,6 +35,11 @@ providers:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config: {}
+  tool_runtime:
+  - provider_id: model-context-protocol
+    provider_type: remote::model-context-protocol
+    config:
+      url: http://192.168.2.199:8003
 metadata_store:
   namespace: null
   type: sqlite

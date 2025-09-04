@@ -2,7 +2,7 @@
 # All dependencies use permissive licenses (Apache 2.0, MIT, BSD)
 
 # Core MCP functionality
-mcp[cli]==1.1.1              # Apache 2.0 License
+mcp[cli]>=1.6.0              # Apache 2.0 License
 
 # Oracle database connectivity  
 oracledb==2.4.1               # Apache 2.0 License (Oracle Free Use Terms and Conditions)
@@ -16,3 +16,7 @@ python-dotenv==1.0.1          # BSD License
 
 # Logging and utilities
 structlog==24.4.0             # Apache 2.0 License
+
+# HTTP server
+fastapi==0.115.5              # MIT License
+uvicorn[standard]==0.32.1     # BSD License

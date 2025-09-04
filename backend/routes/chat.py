@@ -202,11 +202,33 @@ class Chat:
 
         try:
             for response in turn_response:
+                # DEBUG: Log raw response structure
+                logger.info(f"RAW LLAMASTACK RESPONSE: {response}")
+                logger.info(f"Response type: {type(response)}")
+                logger.info(f"Response attributes: {dir(response)}")
+                
+                # Handle error responses from LlamaStack
+                if hasattr(response, "error") and response.error:
+                    error_message = response.error.get("message", "Unknown error occurred")
+                    logger.error(f"LlamaStack returned error: {error_message}")
+                    yield json.dumps(
+                        {
+                            "type": "error",
+                            "content": f"LlamaStack error: {error_message}",
+                        }
+                    )
+                    return
+                
                 # Robust payload validation
-                if not hasattr(response, "event") or not hasattr(
+                if not hasattr(response, "event") or response.event is None or not hasattr(
                     response.event, "payload"
                 ):
                     logger.error(f"Invalid response structure: {response}")
+                    logger.error(f"Response has 'event' attr: {hasattr(response, 'event')}")
+                    logger.error(f"Event is None: {response.event is None if hasattr(response, 'event') else 'N/A'}")
+                    if hasattr(response, "event") and response.event is not None:
+                        logger.error(f"Event has 'payload' attr: {hasattr(response.event, 'payload')}")
+                        logger.error(f"Event attributes: {dir(response.event)}")
                     yield json.dumps(
                         {
                             "type": "error",
@@ -230,9 +252,13 @@ class Chat:
                 # Handle step completion
                 if payload.event_type == "step_complete":
                     step_details = payload.step_details
+                    logger.info(f"STEP COMPLETE DEBUG - Step type: {step_details.step_type}")
+                    logger.info(f"STEP COMPLETE DEBUG - Step details attributes: {dir(step_details)}")
 
                     if step_details.step_type == "inference":
                         # Process inference step with simplified logic
+                        logger.info(f"INFERENCE STEP DEBUG - Current content: '{current_step_content}'")
+                        logger.info(f"INFERENCE STEP DEBUG - Tool results: {tool_results}")
                         for chunk in self._process_inference_step_simple(
                             current_step_content, tool_results, final_answer
                         ):
@@ -241,6 +267,14 @@ class Chat:
 
                     elif step_details.step_type == "tool_execution":
                         # Process tool execution
+                        logger.info(f"TOOL EXECUTION DEBUG - Step details: {step_details}")
+                        logger.info(f"TOOL EXECUTION DEBUG - Has tool_calls: {hasattr(step_details, 'tool_calls')}")
+                        logger.info(f"TOOL EXECUTION DEBUG - Has tool_responses: {hasattr(step_details, 'tool_responses')}")
+                        if hasattr(step_details, 'tool_calls') and step_details.tool_calls:
+                            logger.info(f"TOOL EXECUTION DEBUG - Tool calls: {step_details.tool_calls}")
+                        if hasattr(step_details, 'tool_responses') and step_details.tool_responses:
+                            logger.info(f"TOOL EXECUTION DEBUG - Tool responses: {step_details.tool_responses}")
+                        
                         tool_results = self._process_tool_execution_simple(
                             step_details, tool_results
                         )
@@ -537,11 +571,20 @@ class Chat:
 
         try:
             for response in turn_response:
+                # DEBUG: Log raw response structure
+                logger.info(f"RAW LLAMASTACK RESPONSE (Regular): {response}")
+                logger.info(f"Response type: {type(response)}")
+                logger.info(f"Response attributes: {dir(response)}")
+                
                 # Robust payload validation (same as ReAct)
                 if not hasattr(response, "event") or not hasattr(
                     response.event, "payload"
                 ):
                     logger.error(f"Invalid response structure: {response}")
+                    logger.error(f"Response has 'event' attr: {hasattr(response, 'event')}")
+                    if hasattr(response, "event"):
+                        logger.error(f"Event has 'payload' attr: {hasattr(response.event, 'payload')}")
+                        logger.error(f"Event attributes: {dir(response.event)}")
                     yield json.dumps(
                         {
                             "type": "error",
@@ -612,9 +655,15 @@ class Chat:
                             )
                         current_step_content = ""
 
+                        logger.info(f"REGULAR AGENT TOOL EXECUTION DEBUG - Step details: {step_details}")
+                        logger.info(f"REGULAR AGENT TOOL EXECUTION DEBUG - Has tool_calls: {hasattr(step_details, 'tool_calls')}")
+                        logger.info(f"REGULAR AGENT TOOL EXECUTION DEBUG - Has tool_responses: {hasattr(step_details, 'tool_responses')}")
+
+                        # Process tool calls (invocations)
                         if step_details.tool_calls:
                             tool_call = step_details.tool_calls[0]
                             tool_name = str(tool_call.tool_name)
+                            logger.info(f"REGULAR AGENT TOOL CALL DEBUG - Tool name: {tool_name}")
                             yield json.dumps(
                                 {
                                     "type": "tool",
@@ -622,6 +671,119 @@ class Chat:
                                     "tool": {"name": tool_name},
                                 }
                             )
+                        
+                        # Process tool responses (actual results)
+                        if hasattr(step_details, "tool_responses") and step_details.tool_responses:
+                            for tool_response in step_details.tool_responses:
+                                tool_name = str(tool_response.tool_name)  # Ensure it's a string
+                                content = tool_response.content
+                                
+                                print(f"CLAUDE DEBUG: Tool response processing - Tool: {tool_name}, Content type: {type(content)}")
+                                logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Tool: {tool_name}, Content type: {type(content)}, Content: {str(content)[:200]}...")
+                                try:
+                                    # Extract text content from LlamaStack content objects
+                                    actual_content = None
+                                    
+                                    # Handle TextContentItem and similar LlamaStack objects
+                                    if hasattr(content, 'text'):
+                                        actual_content = content.text
+                                        logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Extracted text: {actual_content[:200]}...")
+                                    elif hasattr(content, 'content'):
+                                        actual_content = content.content
+                                        logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Extracted content: {actual_content[:200]}...")
+                                    elif isinstance(content, (list, dict)):
+                                        actual_content = content
+                                        logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Using dict/list directly")
+                                    elif isinstance(content, str):
+                                        actual_content = content
+                                        logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Using string directly")
+                                    else:
+                                        actual_content = str(content)
+                                        logger.info(f"REGULAR AGENT TOOL RESPONSE DEBUG - Converting to string: {actual_content[:200]}...")
+                                    
+                                    # Extract clean JSON content from TextContentItem wrappers
+                                    def extract_json_from_textcontentitem(content):
+                                        """Extract actual JSON from TextContentItem string representations"""
+                                        if isinstance(content, list) and len(content) > 0:
+                                            # Handle list of TextContentItem objects
+                                            first_item = content[0]
+                                            if isinstance(first_item, str) and 'TextContentItem(text=' in first_item:
+                                                # Extract text from TextContentItem(text='...', type='text')
+                                                import re
+                                                match = re.search(r"text='([^']+)'", first_item)
+                                                if match:
+                                                    return match.group(1).replace('\\\\n', '\n').replace('\\"', '"')
+                                            return str(first_item)
+                                        elif isinstance(content, str) and 'TextContentItem(text=' in content:
+                                            # Single TextContentItem string
+                                            import re
+                                            # Handle both single and double quotes around the text content
+                                            match = re.search(r"text='([^']*(?:\\'[^']*)*)'", content) or re.search(r'text="([^"]*(?:\\"[^"]*)*)"', content)
+                                            if match:
+                                                return match.group(1).replace('\\\\n', '\n').replace('\\"', '"').replace("\\'", "'")
+                                        return content
+                                    
+                                    # Extract the actual content
+                                    clean_content = extract_json_from_textcontentitem(actual_content)
+                                    
+                                    # Try to parse and format as JSON
+                                    try:
+                                        if isinstance(clean_content, str):
+                                            parsed_content = json.loads(clean_content)
+                                            formatted_content = json.dumps(parsed_content, indent=2)
+                                            yield json.dumps(
+                                                {
+                                                    "type": "tool_result",
+                                                    "content": f"**{str(tool_name)} result:**\n```json\n{formatted_content}\n```",
+                                                    "tool": {"name": str(tool_name)},
+                                                },
+                                                default=str
+                                            )
+                                        else:
+                                            # Fallback to original content formatting
+                                            yield json.dumps(
+                                                {
+                                                    "type": "tool_result", 
+                                                    "content": f"**{str(tool_name)} result:**\n{str(clean_content)}",
+                                                    "tool": {"name": str(tool_name)},
+                                                },
+                                                default=str
+                                            )
+                                    except (json.JSONDecodeError, TypeError, ValueError):
+                                        # If JSON parsing fails, display as plain text
+                                        yield json.dumps(
+                                            {
+                                                "type": "tool_result", 
+                                                "content": f"**{str(tool_name)} result:**\n{str(clean_content)}",
+                                                "tool": {"name": str(tool_name)},
+                                            },
+                                            default=str
+                                        )
+                                except Exception as e:
+                                    logger.error(f"Error processing tool response: {e}")
+                                    # Ensure we don't try to serialize TextContentItem objects in error handling
+                                    try:
+                                        error_content = f"**{tool_name}:** Error processing response: {str(e)}"
+                                        yield json.dumps(
+                                            {
+                                                "type": "tool_result", 
+                                                "content": str(error_content),
+                                                "tool": {"name": str(tool_name)},
+                                            },
+                                            default=str
+                                        )
+                                    except Exception as json_error:
+                                        logger.error(f"Error serializing error response: {json_error}")
+                                        # Final fallback - plain text error
+                                        yield json.dumps(
+                                            {
+                                                "type": "error",
+                                                "content": f"Tool {str(tool_name)} failed to process response",
+                                            },
+                                            default=str
+                                        )
+                        else:
+                            logger.warning("REGULAR AGENT TOOL EXECUTION DEBUG - No tool_responses found!")
                     else:
                         current_step_content = ""
 
@@ -848,12 +1010,47 @@ class Chat:
     def _process_tool_execution_simple(self, step_details, tool_results):
         """Simplified tool execution processing."""
         try:
-            if step_details.tool_calls:
+            # Look for tool responses first (this contains the actual results)
+            if hasattr(step_details, "tool_responses") and step_details.tool_responses:
+                for tool_response in step_details.tool_responses:
+                    tool_name = str(tool_response.tool_name)  # Ensure it's a string
+                    content = tool_response.content
+                    
+                    # Extract actual content from LlamaStack content objects
+                    actual_content = None
+                    if hasattr(content, 'text'):
+                        actual_content = content.text
+                        logger.debug(f"ReAct tool response - extracted text: {actual_content[:200]}...")
+                    elif hasattr(content, 'content'):
+                        actual_content = content.content
+                        logger.debug(f"ReAct tool response - extracted content: {actual_content[:200]}...")
+                    elif isinstance(content, (str, list, dict)):
+                        actual_content = content
+                        logger.debug(f"ReAct tool response - using content directly")
+                    else:
+                        actual_content = str(content)
+                        logger.debug(f"ReAct tool response - converted to string: {actual_content[:200]}...")
+                    
+                    tool_results.append((tool_name, actual_content))
+                    
+                    logger.debug(f"Tool response captured: {tool_name}")
+                    try:
+                        if isinstance(actual_content, str):
+                            parsed_content = json.loads(actual_content)
+                            logger.debug(f"Tool response JSON: {parsed_content}")
+                        else:
+                            logger.debug(f"Tool response already parsed: {actual_content}")
+                    except json.JSONDecodeError:
+                        logger.debug(f"Tool response raw: {actual_content}")
+            
+            # Fallback to tool calls if no responses (shouldn't happen for successful executions)
+            elif step_details.tool_calls:
                 tool_call = step_details.tool_calls[0]
                 tool_name = str(tool_call.tool_name)
                 tool_results.append(
-                    {"name": tool_name, "result": "Tool executed successfully"}
+                    (tool_name, "Tool executed but no response data available")
                 )
+                logger.warning(f"Tool {tool_name} executed but no response data found")
         except Exception as e:
             logger.error(f"Error in tool execution processing: {e}")
 
@@ -863,6 +1060,14 @@ class Chat:
         """Simplified tool results formatting."""
         try:
             if tool_results:
+                # Convert tool_results to JSON-serializable format
+                serializable_tools = []
+                for tool_name, content in tool_results:
+                    serializable_tools.append({
+                        "name": str(tool_name),
+                        "result": str(content)
+                    })
+                
                 yield json.dumps(
                     {
                         "type": "tool_results",
@@ -870,8 +1075,9 @@ class Chat:
                             f"Used {len(tool_results)} tools to help answer "
                             f"your question."
                         ),
-                        "tools": tool_results,
-                    }
+                        "tools": serializable_tools,
+                    },
+                    default=str
                 )
         except Exception as e:
             logger.error(f"Error in tool results formatting: {e}")
