@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+# Security: Create non-root user
+RUN useradd --create-home --shell /bin/bash mcpuser
+
+WORKDIR /app
+
+# Copy requirements first for better layer caching
+COPY ./mcpservers/mcp_oracle/requirements.txt /app/requirements.txt
+
+# Install dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY ./mcpservers/mcp_oracle/ /app/mcpservers/mcp_oracle/
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Security: Switch to non-root user
+USER mcpuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD python -c "from mcpservers.mcp_oracle.database import test_connection; exit(0 if test_connection() else 1)"
+
+# Expose port
+EXPOSE 8005
+
+# Start server
+CMD ["python", "-m", "mcpservers.mcp_oracle.server"]

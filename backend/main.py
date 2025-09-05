@@ -150,9 +150,23 @@ async def startup_tasks():
         logger.info("Templates are still available, core functionality will work.")
 
 
+def handle_asyncio_exception(loop, context):
+    """Handle asyncio exceptions, specifically suppressing harmless TCP transport errors."""
+    exception = context.get('exception')
+    if isinstance(exception, RuntimeError) and 'TCPTransport' in str(exception):
+        # Suppress harmless TCP transport cleanup errors from httpx/LlamaStack
+        return
+    
+    # Log other exceptions normally
+    logger.error(f"Asyncio exception: {context}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("FastAPI app is starting up...")
+    
+    # Set up asyncio exception handler to suppress harmless TCP transport errors
+    loop = asyncio.get_event_loop()
+    loop.set_exception_handler(handle_asyncio_exception)
 
     # Schedule startup tasks to run after server is ready
     async def run_startup_tasks():

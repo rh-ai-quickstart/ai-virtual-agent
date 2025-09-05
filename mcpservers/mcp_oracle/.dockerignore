@@ -1,0 +1,14 @@
+*.pyc
+__pycache__/
+.env
+.env.local
+.git/
+.gitignore
+README.md
+tests/
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
