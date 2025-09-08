@@ -54,6 +54,11 @@ async def get_or_create_dev_user(db: AsyncSession) -> models.User:
     existing_user = result.scalar_one_or_none()
 
     if existing_user:
+        # QUICK TEST MODE: force dev user role to 'user' for UI verification
+        # if existing_user.role != models.RoleEnum.user:
+        #     existing_user.role = models.RoleEnum.user
+        #     await db.commit()
+        #     await db.refresh(existing_user)
         return existing_user
 
     # Create new dev user with all available agents assigned
@@ -61,6 +66,8 @@ async def get_or_create_dev_user(db: AsyncSession) -> models.User:
         username=dev_username,
         email=dev_email,
         role=models.RoleEnum.admin,  # Give admin role for full access during development
+        # QUICK TEST MODE: force dev user role to 'user' for UI verification
+        # role=models.RoleEnum.user,
         agent_ids=[],  # Will be populated when agents are available
     )
 

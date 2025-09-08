@@ -87,15 +87,15 @@ export function Masthead({
             </Flex>
           </Link>
         </NavItem>
-        {/* Only show Config navigation for admin users */}
-        {currentUser?.role === 'admin' && (
+        {/* Show Config navigation for all users, link depends on role */}
+        {currentUser && (
           <NavItem
             icon={<CogIcon />}
             itemId={1}
             isActive={location.pathname.startsWith('/config/')}
             to="#"
           >
-            <Link to="/config/agents">
+            <Link to={currentUser.role === 'admin' ? '/config/agents' : '/config/profile'}>
               <Flex
                 direction={{ default: 'row' }}
                 alignItems={{ default: 'alignItemsCenter' }}

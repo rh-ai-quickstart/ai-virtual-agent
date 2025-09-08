@@ -43,6 +43,7 @@ import { ArrowLeftIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
 import type { Ref } from 'react';
 import { UserForm } from './user-form';
+import { useCurrentUser } from '@/contexts/UserContext';
 
 interface UserProfileProps {
   userId: string;
@@ -51,6 +52,7 @@ interface UserProfileProps {
 
 export function UserProfile({ userId, onBackToList }: UserProfileProps) {
   const queryClient = useQueryClient();
+  const { currentUser } = useCurrentUser();
 
   // Agent management state
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
@@ -219,13 +221,18 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
     );
   }
 
+  const isAdmin = currentUser?.role === 'admin';
+  const isSelf = currentUser?.id === userProfile.id;
+  const canEditDelete = Boolean(isAdmin);
+  const canModifyAgents = Boolean(isAdmin || isSelf);
+
   return (
     <PageSection>
       <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
         <FlexItem>
           <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
             <Button variant="link" icon={<ArrowLeftIcon />} onClick={onBackToList}>
-              Back to Users
+              Back
             </Button>
             <Title headingLevel="h1">User Profile</Title>
           </Flex>
@@ -236,7 +243,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
               <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }}>
                 <CardTitle>{userProfile.username}</CardTitle>
                 <FlexItem>
-                  {!isEditing ? (
+                  {canEditDelete && !isEditing ? (
                     <Flex columnGap={{ default: 'columnGapSm' }}>
                       <Button
                         variant="danger"
@@ -249,7 +256,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
                         Edit Profile
                       </Button>
                     </Flex>
-                  ) : (
+                  ) : isEditing && canEditDelete ? (
                     <ActionGroup>
                       <Button
                         variant="primary"
@@ -269,7 +276,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
                         Cancel
                       </Button>
                     </ActionGroup>
-                  )}
+                  ) : null}
                 </FlexItem>
               </Flex>
             </CardHeader>
@@ -317,78 +324,81 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
                   <DescriptionListDescription>
                     <Flex direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
                       <FlexItem>
-                        <Dropdown
-                          isOpen={agentDropdownOpen}
-                          onOpenChange={(isOpen) => setAgentDropdownOpen(isOpen)}
-                          toggle={(toggleRef: Ref<MenuToggleElement>) => (
-                            <MenuToggle
-                              ref={toggleRef}
-                              onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
-                              isExpanded={agentDropdownOpen}
-                            >
-                              Add Agent
-                            </MenuToggle>
-                          )}
-                          shouldFocusToggleOnSelect
-                        >
-                          <DropdownList>
-                            {availableAgents.map((agent) => {
-                              const isAssigned = userProfile.agent_ids?.includes(agent.id);
-                              const isLoading =
-                                addAgentMutation.isPending &&
-                                addAgentMutation.variables?.agentId === agent.id;
-                              const hasError =
-                                addAgentMutation.isError &&
-                                addAgentMutation.variables?.agentId === agent.id;
+                        {canModifyAgents && (
+                          <Dropdown
+                            isOpen={agentDropdownOpen}
+                            onOpenChange={(isOpen) => setAgentDropdownOpen(isOpen)}
+                            toggle={(toggleRef: Ref<MenuToggleElement>) => (
+                              <MenuToggle
+                                ref={toggleRef}
+                                onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
+                                isExpanded={agentDropdownOpen}
+                              >
+                                Add Agent
+                              </MenuToggle>
+                            )}
+                            shouldFocusToggleOnSelect
+                          >
+                            <DropdownList>
+                              {availableAgents.map((agent) => {
+                                const isAssigned = userProfile.agent_ids?.includes(agent.id);
+                                const isLoading =
+                                  addAgentMutation.isPending &&
+                                  addAgentMutation.variables?.agentId === agent.id;
+                                const hasError =
+                                  addAgentMutation.isError &&
+                                  addAgentMutation.variables?.agentId === agent.id;
 
-                              return (
-                                <DropdownItem
-                                  key={agent.id}
-                                  onClick={() => {
-                                    if (!isAssigned && !isLoading) {
-                                      handleAddAgent(agent.id);
-                                    }
-                                  }}
-                                  isDisabled={isAssigned || isLoading}
-                                >
-                                  <Flex
-                                    alignItems={{ default: 'alignItemsCenter' }}
-                                    gap={{ default: 'gapSm' }}
+                                return (
+                                  <DropdownItem
+                                    key={agent.id}
+                                    onClick={() => {
+                                      if (!isAssigned && !isLoading) {
+                                        handleAddAgent(agent.id);
+                                      }
+                                    }}
+                                    isDisabled={isAssigned || isLoading}
                                   >
-                                    <Checkbox
-                                      isChecked={isAssigned}
-                                      isDisabled={isLoading}
-                                      id={`agent-${agent.id}`}
-                                      name={`agent-${agent.id}`}
-                                      onChange={() => {
-                                        if (!isAssigned && !isLoading) {
-                                          handleAddAgent(agent.id);
-                                        }
-                                      }}
-                                    />
-                                    <FlexItem>
-                                      <span>{agent.name}</span>
-                                      {isLoading && (
-                                        <Spinner size="sm" style={{ marginLeft: '8px' }} />
-                                      )}
-                                      {hasError && (
-                                        <span
-                                          style={{
-                                            color: 'red',
-                                            fontSize: '0.8em',
-                                            marginLeft: '8px',
-                                          }}
-                                        >
-                                          {addAgentMutation.error?.message || 'Failed to add agent'}
-                                        </span>
-                                      )}
-                                    </FlexItem>
-                                  </Flex>
-                                </DropdownItem>
-                              );
-                            })}
-                          </DropdownList>
-                        </Dropdown>
+                                    <Flex
+                                      alignItems={{ default: 'alignItemsCenter' }}
+                                      gap={{ default: 'gapSm' }}
+                                    >
+                                      <Checkbox
+                                        isChecked={isAssigned}
+                                        isDisabled={isLoading}
+                                        id={`agent-${agent.id}`}
+                                        name={`agent-${agent.id}`}
+                                        onChange={() => {
+                                          if (!isAssigned && !isLoading) {
+                                            handleAddAgent(agent.id);
+                                          }
+                                        }}
+                                      />
+                                      <FlexItem>
+                                        <span>{agent.name}</span>
+                                        {isLoading && (
+                                          <Spinner size="sm" style={{ marginLeft: '8px' }} />
+                                        )}
+                                        {hasError && (
+                                          <span
+                                            style={{
+                                              color: 'red',
+                                              fontSize: '0.8em',
+                                              marginLeft: '8px',
+                                            }}
+                                          >
+                                            {addAgentMutation.error?.message ||
+                                              'Failed to add agent'}
+                                          </span>
+                                        )}
+                                      </FlexItem>
+                                    </Flex>
+                                  </DropdownItem>
+                                );
+                              })}
+                            </DropdownList>
+                          </Dropdown>
+                        )}
                       </FlexItem>
                       <FlexItem>
                         {userProfile.agent_ids && userProfile.agent_ids.length > 0 ? (
@@ -403,7 +413,11 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
                                 <Label
                                   key={agentId}
                                   color="blue"
-                                  onClose={isLoading ? undefined : () => handleRemoveAgent(agentId)}
+                                  onClose={
+                                    !canModifyAgents || isLoading
+                                      ? undefined
+                                      : () => handleRemoveAgent(agentId)
+                                  }
                                   closeBtnAriaLabel={`Remove ${agent?.name || agentId}`}
                                 >
                                   {agent?.name || agentId}

@@ -14,7 +14,9 @@ import { Route as rootRoute } from './routes/__root';
 import { Route as ProtectedRouteImport } from './routes/_protected/route';
 import { Route as ProtectedIndexImport } from './routes/_protected/index';
 import { Route as OauthSigninImport } from './routes/oauth.sign_in';
+import { Route as ProtectedConfigRouteImport } from './routes/_protected/config/route';
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/_admin/route';
+import { Route as ProtectedConfigProfileImport } from './routes/_protected/config/profile';
 import { Route as ProtectedAdminConfigRouteImport } from './routes/_protected/_admin/config/route';
 import { Route as ProtectedAdminConfigUsersImport } from './routes/_protected/_admin/config/users';
 import { Route as ProtectedAdminConfigMcpServersImport } from './routes/_protected/_admin/config/mcp-servers';
@@ -40,9 +42,21 @@ const OauthSigninRoute = OauthSigninImport.update({
   getParentRoute: () => rootRoute,
 } as any);
 
+const ProtectedConfigRouteRoute = ProtectedConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any);
+
 const ProtectedAdminRouteRoute = ProtectedAdminRouteImport.update({
   id: '/_admin',
   getParentRoute: () => ProtectedRouteRoute,
+} as any);
+
+const ProtectedConfigProfileRoute = ProtectedConfigProfileImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ProtectedConfigRouteRoute,
 } as any);
 
 const ProtectedAdminConfigRouteRoute = ProtectedAdminConfigRouteImport.update({
@@ -93,6 +107,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminRouteImport;
       parentRoute: typeof ProtectedRouteImport;
     };
+    '/_protected/config': {
+      id: '/_protected/config';
+      path: '/config';
+      fullPath: '/config';
+      preLoaderRoute: typeof ProtectedConfigRouteImport;
+      parentRoute: typeof ProtectedRouteImport;
+    };
     '/oauth/sign_in': {
       id: '/oauth/sign_in';
       path: '/oauth/sign_in';
@@ -113,6 +134,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/config';
       preLoaderRoute: typeof ProtectedAdminConfigRouteImport;
       parentRoute: typeof ProtectedAdminRouteImport;
+    };
+    '/_protected/config/profile': {
+      id: '/_protected/config/profile';
+      path: '/profile';
+      fullPath: '/config/profile';
+      preLoaderRoute: typeof ProtectedConfigProfileImport;
+      parentRoute: typeof ProtectedConfigRouteImport;
     };
     '/_protected/_admin/config/agents': {
       id: '/_protected/_admin/config/agents';
@@ -177,13 +205,27 @@ const ProtectedAdminRouteRouteWithChildren = ProtectedAdminRouteRoute._addFileCh
   ProtectedAdminRouteRouteChildren
 );
 
+interface ProtectedConfigRouteRouteChildren {
+  ProtectedConfigProfileRoute: typeof ProtectedConfigProfileRoute;
+}
+
+const ProtectedConfigRouteRouteChildren: ProtectedConfigRouteRouteChildren = {
+  ProtectedConfigProfileRoute: ProtectedConfigProfileRoute,
+};
+
+const ProtectedConfigRouteRouteWithChildren = ProtectedConfigRouteRoute._addFileChildren(
+  ProtectedConfigRouteRouteChildren
+);
+
 interface ProtectedRouteRouteChildren {
   ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren;
+  ProtectedConfigRouteRoute: typeof ProtectedConfigRouteRouteWithChildren;
   ProtectedIndexRoute: typeof ProtectedIndexRoute;
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedAdminRouteRoute: ProtectedAdminRouteRouteWithChildren,
+  ProtectedConfigRouteRoute: ProtectedConfigRouteRouteWithChildren,
   ProtectedIndexRoute: ProtectedIndexRoute,
 };
 
@@ -193,9 +235,10 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '': typeof ProtectedAdminRouteRouteWithChildren;
+  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
   '/oauth/sign_in': typeof OauthSigninRoute;
   '/': typeof ProtectedIndexRoute;
-  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
+  '/config/profile': typeof ProtectedConfigProfileRoute;
   '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
   '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
   '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
@@ -204,9 +247,10 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '': typeof ProtectedAdminRouteRouteWithChildren;
+  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
   '/oauth/sign_in': typeof OauthSigninRoute;
   '/': typeof ProtectedIndexRoute;
-  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
+  '/config/profile': typeof ProtectedConfigProfileRoute;
   '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
   '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
   '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
@@ -217,9 +261,11 @@ export interface FileRoutesById {
   __root__: typeof rootRoute;
   '/_protected': typeof ProtectedRouteRouteWithChildren;
   '/_protected/_admin': typeof ProtectedAdminRouteRouteWithChildren;
+  '/_protected/config': typeof ProtectedConfigRouteRouteWithChildren;
   '/oauth/sign_in': typeof OauthSigninRoute;
   '/_protected/': typeof ProtectedIndexRoute;
   '/_protected/_admin/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
+  '/_protected/config/profile': typeof ProtectedConfigProfileRoute;
   '/_protected/_admin/config/agents': typeof ProtectedAdminConfigAgentsRoute;
   '/_protected/_admin/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
   '/_protected/_admin/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
@@ -230,9 +276,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | ''
+    | '/config'
     | '/oauth/sign_in'
     | '/'
-    | '/config'
+    | '/config/profile'
     | '/config/agents'
     | '/config/knowledge-bases'
     | '/config/mcp-servers'
@@ -240,9 +287,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo;
   to:
     | ''
+    | '/config'
     | '/oauth/sign_in'
     | '/'
-    | '/config'
+    | '/config/profile'
     | '/config/agents'
     | '/config/knowledge-bases'
     | '/config/mcp-servers'
@@ -251,9 +299,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_protected'
     | '/_protected/_admin'
+    | '/_protected/config'
     | '/oauth/sign_in'
     | '/_protected/'
     | '/_protected/_admin/config'
+    | '/_protected/config/profile'
     | '/_protected/_admin/config/agents'
     | '/_protected/_admin/config/knowledge-bases'
     | '/_protected/_admin/config/mcp-servers'
@@ -289,6 +339,7 @@ export const routeTree = rootRoute
       "filePath": "_protected/route.tsx",
       "children": [
         "/_protected/_admin",
+        "/_protected/config",
         "/_protected/"
       ]
     },
@@ -297,6 +348,13 @@ export const routeTree = rootRoute
       "parent": "/_protected",
       "children": [
         "/_protected/_admin/config"
+      ]
+    },
+    "/_protected/config": {
+      "filePath": "_protected/config/route.tsx",
+      "parent": "/_protected",
+      "children": [
+        "/_protected/config/profile"
       ]
     },
     "/oauth/sign_in": {
@@ -315,6 +373,10 @@ export const routeTree = rootRoute
         "/_protected/_admin/config/mcp-servers",
         "/_protected/_admin/config/users"
       ]
+    },
+    "/_protected/config/profile": {
+      "filePath": "_protected/config/profile.tsx",
+      "parent": "/_protected/config"
     },
     "/_protected/_admin/config/agents": {
       "filePath": "_protected/_admin/config/agents.tsx",

@@ -495,7 +495,7 @@ async def update_user_agents(
     user_id: UUID,
     agent_assignment: schemas.UserAgentAssignment,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(require_admin_role),
+    current_user: models.User = Depends(check_user_access),
 ):
     """
     Add agents to a user's assignment list.
@@ -514,6 +514,7 @@ async def update_user_agents(
         schemas.UserRead: The updated user profile with new agent assignments
 
     Raises:
+        HTTPException: 403 if the authenticated user cannot modify this user's agents
         HTTPException: 404 if the user is not found
         HTTPException: 404 if any of the specified agents don't exist in
                        LlamaStack
@@ -586,7 +587,7 @@ async def remove_user_agents(
     user_id: UUID,
     agent_assignment: schemas.UserAgentAssignment,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(require_admin_role),
+    current_user: models.User = Depends(check_user_access),
 ):
     """
     Remove agents from a user's assignment list.
@@ -605,6 +606,7 @@ async def remove_user_agents(
         assignments
 
     Raises:
+        HTTPException: 403 if the authenticated user cannot modify this user's agents
         HTTPException: 404 if the user is not found
     """
     # Get the user from database
