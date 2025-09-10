@@ -18,6 +18,15 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0', // Enable container access
+    port: 5173,
+    watch: {
+      usePolling: true, // Enable polling for container file watching
+      interval: 1000,   // Check every second
+    },
+    hmr: {
+      port: 5173,
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_API_BASE_URL || 'http://backend:8000',
