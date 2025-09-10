@@ -22,7 +22,7 @@ export default defineConfig({
     port: 5173,
     watch: {
       usePolling: true, // Enable polling for container file watching
-      interval: 1000,   // Check every second
+      interval: 1000, // Check every second
     },
     hmr: {
       port: 5173,
