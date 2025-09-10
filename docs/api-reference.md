@@ -635,6 +635,12 @@ GET /api/tools
     "name": "Database Store",
     "description": "Product and order management tools",
     "endpoint_url": "http://mcp-dbstore:8003"
+  },
+  {
+    "toolgroup_id": "mcp-oracle",
+    "name": "Oracle Analytics",
+    "description": "TPC-DS business analytics tools for Oracle Database",
+    "endpoint_url": "http://oracle-mcp-service:8003"
   }
 ]
 ```
@@ -694,7 +700,9 @@ Create a new MCP (Model Context Protocol) server.
 POST /api/mcp_servers
 ```
 
-**Request Body:**
+**Request Body Examples:**
+
+Database Store MCP Server:
 ```json
 {
   "toolgroup_id": "mcp-dbstore",
@@ -705,7 +713,24 @@ POST /api/mcp_servers
 }
 ```
 
-**Response:**
+Oracle Analytics MCP Server:
+```json
+{
+  "toolgroup_id": "mcp-oracle",
+  "name": "Oracle Analytics",
+  "description": "TPC-DS business analytics tools for Oracle Database",
+  "endpoint_url": "http://oracle-mcp-service:8003",
+  "configuration": {
+    "oracle_host": "oracle-service.an-oracle-23ai.svc.cluster.local",
+    "oracle_port": "1521",
+    "service_name": "FREEPDB1",
+    "username": "tpcds",
+    "environment": "development"
+  }
+}
+```
+
+**Response Example (Database Store):**
 ```json
 {
   "toolgroup_id": "mcp-dbstore",
@@ -713,7 +738,25 @@ POST /api/mcp_servers
   "description": "Product and order management tools",
   "endpoint_url": "http://mcp-dbstore:8003",
   "configuration": {},
-  "provider_id": "mcp-server-provider"
+  "provider_id": "model-context-protocol"
+}
+```
+
+**Response Example (Oracle Analytics):**
+```json
+{
+  "toolgroup_id": "mcp-oracle",
+  "name": "Oracle Analytics",
+  "description": "TPC-DS business analytics tools for Oracle Database",
+  "endpoint_url": "http://oracle-mcp-service:8003",
+  "configuration": {
+    "oracle_host": "oracle-service.an-oracle-23ai.svc.cluster.local",
+    "oracle_port": "1521",
+    "service_name": "FREEPDB1",
+    "username": "tpcds",
+    "environment": "development"
+  },
+  "provider_id": "model-context-protocol"
 }
 ```
 
