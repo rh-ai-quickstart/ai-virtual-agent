@@ -468,18 +468,23 @@ class TestUserAgents:
         )
         assert response.status_code == status.HTTP_200_OK
 
-    def test_regular_user_cannot_assign_agents(
+    def test_regular_user_can_assign_agents(
         self,
         test_client,
         regular_user,
         mock_db_session,
         setup_dependencies,
     ):
-        """Test regular user cannot assign agents."""
+        """Test regular user can assign agents to themselves."""
         setup_dependencies(user=regular_user, db_session=mock_db_session)
+
+        # Mock user found
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = regular_user
+        mock_db_session.execute.return_value = mock_result
 
         agent_data = {"agent_ids": ["agent1", "agent2"]}
         response = test_client.post(
             f"/api/users/{regular_user.id}/agents", json=agent_data
         )
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_200_OK
