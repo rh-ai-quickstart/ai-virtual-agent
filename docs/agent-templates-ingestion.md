@@ -98,6 +98,74 @@ The system now supports multiple categories with specialized agent templates:
   - Focus: Financial planning, retirement strategies, tax optimization
   - Knowledge Base: `financial_planner_kb`
 
+#### 4. Legal Category
+
+The legal category provides comprehensive legal guidance across four specialized domains:
+
+**Family & Life Planning Suite** (`legal_family_life.yaml`):
+- **Divorce & Separation Specialist** (`divorce_separation_specialist`)
+  - Focus: Divorce procedures, property division, spousal support
+  - Model: `mistral:latest`
+  - Covers: State-specific divorce laws, legal separation, mediation
+
+- **Child Custody & Support Specialist** (`child_custody_support_specialist`)
+  - Focus: Custody arrangements, support calculations, modifications
+  - Model: `mistral:latest`
+  - Covers: Best interest standards, parenting plans, enforcement
+
+- **Wills & Estates Specialist** (`wills_estates_specialist`)
+  - Focus: Estate planning, trusts, probate, inheritance
+  - Model: `mistral:latest`
+  - Covers: Will creation, trust types, intestate succession
+
+**Housing & Property Suite** (`legal_housing_property.yaml`):
+- **Landlord-Tenant Specialist** (`landlord_tenant_specialist`)
+  - Focus: Rental disputes, evictions, security deposits
+  - Model: `llama3.2:3b-instruct-fp16`
+  - Covers: Tenant rights, habitability standards, lease violations
+
+- **Real Estate Transactions Specialist** (`real_estate_transactions_specialist`)
+  - Focus: Property purchases, sales, closings
+  - Model: `mistral:latest`
+  - Covers: Purchase agreements, title issues, disclosure requirements
+
+- **Lease Agreements Specialist** (`lease_agreements_specialist`)
+  - Focus: Lease review, negotiation, termination
+  - Model: `mistral:latest`
+  - Covers: Contract terms, tenant obligations, early termination
+
+**Work & Business Suite** (`legal_work_business.yaml`):
+- **Employment Law Specialist** (`employment_law_specialist`)
+  - Focus: Workplace rights, wrongful termination, harassment
+  - Model: `mistral:latest`
+  - Covers: FLSA compliance, discrimination, workplace safety
+
+- **Business Formation Specialist** (`business_formation_specialist`)
+  - Focus: Entity selection, business registration, compliance
+  - Model: `mistral:latest`
+  - Covers: LLC vs Corporation, state registration, tax implications
+
+- **Contracts Specialist** (`contracts_specialist`)
+  - Focus: Contract drafting, review, enforcement
+  - Model: `mistral:latest`
+  - Covers: Contract formation, breach remedies, dispute resolution
+
+**Accident & Injury Suite** (`legal_accident_injury.yaml`):
+- **Car Accidents Specialist** (`car_accidents_specialist`)
+  - Focus: Post-accident procedures, insurance claims, settlements
+  - Model: `mistral:latest`
+  - Covers: Fault determination, property damage, injury evaluation
+
+- **Personal Injury Specialist** (`personal_injury_specialist`)
+  - Focus: Slip-and-fall, premises liability, damages
+  - Model: `mistral:latest`
+  - Covers: Negligence law, liability analysis, compensation types
+
+- **Traffic Violations Specialist** (`traffic_violations_specialist`)
+  - Focus: Traffic tickets, DUI defense, license protection
+  - Model: `mistral:latest`
+  - Covers: Ticket defense, court procedures, penalty mitigation
+
 ## Data Ingestion Process
 
 ### 1. Knowledge Base Creation
