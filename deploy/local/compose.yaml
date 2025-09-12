@@ -107,6 +107,9 @@ services:
         condition: service_healthy
       llamastack:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+        required: false
     networks:
       - ai-va-network
     healthcheck:
@@ -154,6 +157,12 @@ services:
       - ai-va-network
     profiles:
       - attachments
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   pgdata:
