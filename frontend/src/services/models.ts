@@ -10,7 +10,7 @@ export const fetchModels = async (): Promise<Model[]> => {
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
-  const data: unknown = response.json();
+  const data: unknown = await response.json();
   return data as Model[];
 };
 
@@ -19,7 +19,7 @@ export const fetchEmbeddingModels = async (): Promise<EmbeddingModel[]> => {
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
-  const data: unknown = response.json();
+  const data: unknown = await response.json();
   return data as EmbeddingModel[];
 };
 

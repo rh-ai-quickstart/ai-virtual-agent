@@ -52,12 +52,20 @@ class AgentTemplate(BaseModel):
 
 
 class TemplateInitializationRequest(BaseModel):
-    """Schema for template initialization request."""
+    """Schema for template initialization request.
+
+    Added optional override fields to allow callers (UI) to customize
+    the target model and tools before deploying from a template.
+    """
 
     template_name: str
     custom_name: Optional[str] = None
     custom_prompt: Optional[str] = None
     include_knowledge_base: bool = True
+
+    # Optional overrides
+    model_name: Optional[str] = None
+    tools: Optional[List[schemas.ToolAssociationInfo]] = None
 
 
 class TemplateInitializationResponse(BaseModel):
@@ -329,17 +337,23 @@ async def initialize_agent_from_template(
         # Step 2: Create agent
         agent_prompt = request.custom_prompt or template.prompt
 
-        # Convert template tools to schema format
-        tools = [schemas.ToolAssociationInfo(**tool) for tool in template.tools]
+        # Determine tools: prefer overrides if provided, otherwise template tools
+        if request.tools is not None:
+            tools = list(request.tools)
+        else:
+            tools = [schemas.ToolAssociationInfo(**tool) for tool in template.tools]
 
         # Add RAG tool if knowledge base was created
         if knowledge_base_created and template.knowledge_base_ids:
             tools.append(schemas.ToolAssociationInfo(toolgroup_id="builtin::rag"))
 
+        # Determine model: prefer override if provided and non-empty
+        model_to_use = request.model_name or template.model_name
+
         agent_config = schemas.VirtualAssistantCreate(
             name=agent_name,
             prompt=agent_prompt,
-            model_name=template.model_name,
+            model_name=model_to_use,
             tools=tools,
             knowledge_base_ids=(
                 template.knowledge_base_ids if knowledge_base_created else []

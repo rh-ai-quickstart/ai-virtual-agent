@@ -71,6 +71,9 @@ export interface TemplateInitializationRequest {
   custom_name?: string;
   custom_prompt?: string;
   include_knowledge_base?: boolean;
+  // Optional overrides when initializing from template
+  model_name?: string;
+  tools?: { toolgroup_id: string }[];
 }
 
 export interface TemplateInitializationResponse {

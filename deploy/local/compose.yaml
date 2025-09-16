@@ -138,6 +138,12 @@ services:
         condition: service_healthy
     networks:
       - ai-va-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5173 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # MinIO service for attachments (optional - use profile 'attachments')
   minio:
