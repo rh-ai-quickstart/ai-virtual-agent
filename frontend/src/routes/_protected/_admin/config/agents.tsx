@@ -238,7 +238,7 @@ function AgentTemplates() {
     return suiteDetailsMap?.[suiteId] || null;
   };
 
-  // When selectedTemplateIds changes, immediately populate templateOverrides with defaults
+  // When selectedTemplateIds changes, add defaults for newly selected templates (preserve existing overrides)
   useEffect(() => {
     if (selectedTemplateIds.length === 0) return;
 
@@ -301,10 +301,9 @@ function AgentTemplates() {
       });
   }, [selectedTemplateIds]);
 
-  // Reconcile template model with available models per spec:
-  // - If template model exists in the list, use it
-  // - Else if only one model available, use that one
-  // - Else force empty and require user selection
+  // Reconcile model selection:
+  // - If template model exists in the available list, preselect it
+  // - Otherwise leave empty and require user selection
   useEffect(() => {
     if (!models || models.length === 0) return;
     const available = new Set(models.map((m) => m.model_name));
