@@ -101,7 +101,7 @@ make install NAMESPACE=your-namespace LLM=qwen-2-5-vl-3b-instruct LLM_TOLERATION
 # ADMIN_EMAIL: Admin user email
 ```
 
-📖 **[See example configuration →](deploy/cluster/helm/values.example.yaml)**
+📖 **[See deployment parameters →](#vision-model-configuration)**
 
 ## Project Structure
 
@@ -279,9 +279,9 @@ Notes:
 
 ### Vision Model Issues
 
-**Image processing fails with "Error code: 500":** Check vision model configuration and resource limits in the example values file.
+**Image processing fails with "Error code: 500":** Usually caused by insufficient max-model-len. Increase memory parameters in the make command or reduce image resolution.
 
-📖 **[See vision model troubleshooting →](deploy/cluster/helm/values.example.yaml)**
+📖 **[See vision model troubleshooting →](#troubleshooting)**
 
 
 ## Community & Support
