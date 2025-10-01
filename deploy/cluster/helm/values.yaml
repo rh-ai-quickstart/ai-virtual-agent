@@ -1,54 +1,68 @@
-# Example values for ai-virtual-agent with vision model configuration.
-# Copy this file to values.yaml and customize for your deployment.
-#
-# VISION MODEL CONFIGURATION:
-# This example includes the Qwen 2.5 VL 3B vision model configuration
-# that enables image interpretation capabilities in the cluster.
-#
-# Key vision model settings:
-# - max-model-len: 20480 (supports ~16K image tokens)
-# - gpu-memory-utilization: 0.80 (optimized for memory)
-# - max-num-seqs: 4 (balanced concurrency)
-#
-# TROUBLESHOOTING:
-# - Image processing error 500: Usually caused by insufficient max-model-len
-# - OOM errors: Reduce max-num-seqs or gpu-memory-utilization
-# - Pod scheduling issues: Check GPU node tolerations
+# Default values for ai-virtual-agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
-# This will set the replicaset count
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
-# Container image configuration
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: quay.io/ecosystem-appeng/ai-virtual-agent
+  # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   #tag: "1.1.0"
 
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
+# This is to override the chart name.
 nameOverride: ""
 fullnameOverride: ""
 
-# Service account configuration
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
+  # Specifies whether a service account should be created
   create: true
+  # Automatically mount a ServiceAccount's API credentials?
   automount: true
+  # Annotations to add to the service account
   annotations:
     serviceaccounts.openshift.io/oauth-redirectreference.ai-virtual-agent: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"ai-virtual-agent-authenticated"}}'
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
   name: "ai-virtual-agent-proxy-sa"
 
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
-podSecurityContext: {}
-securityContext: {}
 
-# Service configuration
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 8000
 
-# Resource configuration (customize as needed)
+
 resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #   cpu: 100m
   #   memory: 128Mi
@@ -56,21 +70,25 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-# Health check configuration
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   httpGet:
     path: /
     port: http
 readinessProbe: {}
+#  httpGet:
+#    path: /
+#    port: http
 
-# Autoscaling configuration
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
 
-# Volume configuration for TLS and proxy secrets
+# Additional volumes on the output Deployment definition.
 volumes:
   - name: secret-ai-virtual-agent-tls
     secret:
@@ -80,52 +98,55 @@ volumes:
     secret:
       defaultMode: 420
       secretName: ai-virtual-agent-proxy
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
 
+# Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
 nodeSelector: {}
+
 tolerations: []
+
 affinity: {}
 
-# Database configuration
 pgSecret: pgvector
 
-# LlamaStack URL configuration
 llama_stack_url: http://llamastack:8321
 
-# Session secret configuration
 sessionSecret: {}
- # value: "your-session-secret-here"
+ # value: "my-session-secret"
 
-# Admin user seed configuration
 seed:
   admin_user:
-    username: "your-admin@your-domain.com"  # Change this
-    email: "your-admin@your-domain.com"     # Change this
+    username: kubeadmin
+    # email: ""
 
-# PostgreSQL configuration
 pgvector:
   extraDatabases:
   - name: ai_virtual_agent
     vectordb: false
 
-# MinIO configuration
 minio:
   secret:
-    user: your_minio_user           # Change this
-    password: your_minio_password   # Change this
+    user: minio_rag_user
+    password: minio_rag_password
     host: minio
     port: "9000"
 
-  # Upload sample files to the minio bucket
+    # Upload sample files to the minio bucket
   sampleFileUpload:
     enabled: true
     bucket: documents
     urls:
     - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
 
-# LlamaStack configuration
 llama-stack:
-  enabled: true
   auth:
     provider_config:
       type: "custom"
@@ -170,46 +191,15 @@ llama-stack:
       when: user is owner
       description: users can read, update and delete resources they own
   secrets:
-    TAVILY_SEARCH_API_KEY: ""  # Add your Tavily API key here
+    TAVILY_SEARCH_API_KEY: ""
 
-# Global model configuration - VISION MODELS CONFIGURATION
-global:
-  models:
-    # Text model - matches local llama3.2:1b-instruct-fp16 (DISABLED to save resources)
-    llama-3-2-1b-instruct:
-      id: meta-llama/Llama-3.2-1B-Instruct
-      enabled: false
+# global:
+#   models:
+#     llama-3-1-8b-instruct:
+#       id: meta-llama/Llama-3.1-8B-Instruct
+#       enabled: true
+#       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
 
-    # Vision model - Qwen 2.5 VL 3B (RECOMMENDED FOR PRODUCTION)
-    # This model provides image interpretation capabilities
-    qwen-2-5-vl-3b-instruct:
-      id: Qwen/Qwen2.5-VL-3B-Instruct
-      enabled: true
-      # GPU node scheduling
-      tolerations:
-        - key: g5-gpu
-          effect: NoSchedule
-          operator: Exists
-      # Resource requirements for vision model
-      resources:
-        limits:
-          cpu: "2"
-          memory: 16Gi
-          nvidia.com/gpu: 1
-        requests:
-          cpu: "1"
-          memory: 8Gi
-          nvidia.com/gpu: 1
-      # vLLM configuration optimized for image processing
-      args:
-        - --max-model-len
-        - "20480"  # Increased context length for image processing (supports ~16K image tokens)
-        - --gpu-memory-utilization
-        - "0.80"   # Optimized memory usage
-        - --max-num-seqs
-        - "4"      # Balanced concurrency for memory efficiency
-
-  # MCP servers configuration
-  mcp-servers:
-    mcp-weather:
-      uri: http://mcp-weather:8000/sse
+#   mcp-servers:
+#     mcp-weather:
+#       uri: http://rag-mcp-weather:8000/sse

@@ -88,6 +88,19 @@ The platform supports image interpretation through vision-enabled AI models:
 
 **Cluster Deployment:** Uses `Qwen/Qwen2.5-VL-3B-Instruct` vision model via vLLM
 
+**Deploy with Vision Model:**
+```bash
+# Deploy AI Virtual Agent with Qwen vision model
+make install NAMESPACE=your-namespace LLM=qwen-2-5-vl-3b-instruct LLM_TOLERATION=g5-gpu ADMIN_USERNAME=your-admin@your-domain.com ADMIN_EMAIL=your-admin@your-domain.com
+
+# Parameters:
+# NAMESPACE: Your OpenShift project/namespace
+# LLM: Vision model to deploy (qwen-2-5-vl-3b-instruct)
+# LLM_TOLERATION: GPU node toleration (g5-gpu for GPU nodes)
+# ADMIN_USERNAME: Admin user for agent creation
+# ADMIN_EMAIL: Admin user email
+```
+
 📖 **[See example configuration →](deploy/cluster/helm/values.example.yaml)**
 
 ## Project Structure
