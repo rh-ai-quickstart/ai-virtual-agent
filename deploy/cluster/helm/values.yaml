@@ -235,8 +235,9 @@ mcp-servers:
         runAsNonRoot: true
 
   # Enable installing Oracle 23ai via the mcp-servers subchart
+  # Default: disabled.
   oracle:
-    enabled: true
+    enabled: false
 
   # Configure individual MCP servers per the subchart schema
   mcp-servers:
@@ -265,7 +266,7 @@ mcp-servers:
             - ALL
 
     oracle-sqlcl:
-      enabled: true
+      enabled: false
       port: 8080
       transport: stdio
       image: "quay.io/ecosystem-appeng/oracle-sqlcl:0.1.0"
