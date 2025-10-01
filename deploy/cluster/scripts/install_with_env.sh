@@ -79,11 +79,12 @@ build_helm_cmd() {
 
     # Oracle MCP server enablement (when ORACLE=true)
     if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
+        # Enable Oracle database installation
+        cmd_args+=("--set" "mcp-servers.oracle.enabled=true")
         # Ensure Toolhive CRDs/operator are enabled and Oracle SQLcl MCP is enabled in subchart
         cmd_args+=("--set" "mcp-servers.toolhive.crds.enabled=true")
         cmd_args+=("--set" "mcp-servers.toolhive.operator.enabled=true")
         # Disable weather by default and enable oracle-sqlcl per new values structure
-        cmd_args+=("--set" "mcp-servers.weather.enabled=false")
         cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
     fi
 
@@ -119,54 +120,6 @@ build_helm_cmd() {
 }
 
 echo "Installing $AI_VIRTUAL_AGENT_RELEASE helm chart in namespace $NAMESPACE"
-
-# If ORACLE=true, pre-install Oracle 23ai database before the umbrella chart
-# if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
-#     # Resolve Oracle chart path (override with ORACLE_CHART env var if provided)
-#     DEFAULT_ORACLE_CHART_PATH="$SCRIPT_DIR/../../../../ai-architecture-charts/oracle23ai/helm"
-#     ORACLE_CHART_PATH="${ORACLE_CHART:-$DEFAULT_ORACLE_CHART_PATH}"
-
-#     if [ ! -d "$ORACLE_CHART_PATH" ]; then
-#         echo "❌ Oracle chart not found at: $ORACLE_CHART_PATH"
-#         echo "   Set ORACLE_CHART to the path of oracle23ai/helm or ensure the default path exists."
-#         exit 1
-#     fi
-
-#     echo "📦 Installing/Upgrading Oracle 23ai (release: oracle23ai) from $ORACLE_CHART_PATH"
-#     helm upgrade --install oracle23ai "$ORACLE_CHART_PATH" -n "$NAMESPACE"
-
-#     # Mandatory readiness wait when ORACLE=true
-#     ORACLE_WAIT_TIMEOUT_SECONDS=${ORACLE_WAIT_TIMEOUT_SECONDS:-1800}
-#     echo "⏳ Waiting up to ${ORACLE_WAIT_TIMEOUT_SECONDS}s for Oracle StatefulSet to become ready..."
-#     if command -v oc >/dev/null 2>&1; then
-#         if ! oc rollout status statefulset/oracle23ai -n "$NAMESPACE" --timeout=${ORACLE_WAIT_TIMEOUT_SECONDS}s; then
-#             echo "❌ Oracle StatefulSet did not become ready within timeout. Aborting."
-#             exit 1
-#         fi
-#     else
-#         if ! kubectl rollout status statefulset/oracle23ai -n "$NAMESPACE" --timeout=${ORACLE_WAIT_TIMEOUT_SECONDS}s; then
-#             echo "❌ Oracle StatefulSet did not become ready within timeout. Aborting."
-#             exit 1
-#         fi
-#     fi
-
-#     echo "🔎 Verifying Oracle secret exists..."
-#     ORACLE_SECRET_WAIT_SECONDS=${ORACLE_SECRET_WAIT_SECONDS:-600}
-#     elapsed=0
-#     interval=5
-#     while [ $elapsed -lt $ORACLE_SECRET_WAIT_SECONDS ]; do
-#         if kubectl get secret oracle23ai -n "$NAMESPACE" >/dev/null 2>&1; then
-#             echo "✅ Oracle secret found"
-#             break
-#         fi
-#         sleep $interval
-#         elapsed=$((elapsed+interval))
-#     done
-#     if [ $elapsed -ge $ORACLE_SECRET_WAIT_SECONDS ]; then
-#         echo "❌ Oracle secret not found after ${ORACLE_SECRET_WAIT_SECONDS}s. Aborting."
-#         exit 1
-#     fi
-# fi
 
 # Execute the helm command with proper argument handling
 build_helm_cmd

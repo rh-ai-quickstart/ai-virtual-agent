@@ -117,6 +117,9 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make install NAMESPACE=my-ai-assistant"
+	@echo "  make install NAMESPACE=my-ai-assistant ORACLE=true"
+	@echo "  make uninstall NAMESPACE=my-ai-assistant"
+	@echo "  make uninstall NAMESPACE=my-ai-assistant ORACLE=true"
 	@echo "  make install-status NAMESPACE=my-ai-assistant"
 
 deps: ## Update Helm dependencies
@@ -151,12 +154,21 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"
-	@echo "Step 1: Deleting MCPServer instances (managed by Toolhive operator)..."
+	@echo "Deleting MCPServer instances (managed by Toolhive operator)..."
 	@echo "Note: This will automatically clean up StatefulSets, deployments, services, and PVCs"
 	@oc delete mcpservers --all -n $(NAMESPACE) --ignore-not-found=true ||:
-	@echo "Step 2: Uninstalling Helm release..."
+	@echo "Uninstalling Helm release..."
 	@helm uninstall --ignore-not-found $(AI_VIRTUAL_AGENT_RELEASE) -n $(NAMESPACE)
-	@echo "Step 3: Cleaning up Toolhive CRDs (cluster-scoped)..."
+	@if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then \
+		echo "Cleaning up Oracle-specific resources..."; \
+		echo "Oracle cleanup: Removing Oracle StatefulSet and related resources..."; \
+		oc delete statefulset oracle23ai -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete job oracle23ai-tpcds-populate -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete secret oracle23ai -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete pvc oracle-data-oracle23ai-0 -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		echo "Oracle cleanup completed."; \
+	fi
+	@echo "Cleaning up Toolhive CRDs (cluster-scoped)..."
 	@echo "Note: Toolhive CRDs are cluster-scoped and may be used by other namespaces."
 	@echo "To remove them, run: oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev"
 	@echo "Checking for any remaining resources in namespace $(NAMESPACE)..."
