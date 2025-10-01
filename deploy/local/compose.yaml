@@ -72,7 +72,7 @@ services:
       - '${LLAMASTACK_PORT:-8321}:8321'
     volumes:
       - llama:/root/.llama
-      - ${PWD}/deploy/local/llamastack-run.yaml:/run.yaml:Z
+      - ./llamastack-run.yaml:/run.yaml:Z
     entrypoint: ["python", "-m", "llama_stack.core.server.server", "/run.yaml"]
     networks:
       - ai-va-network
@@ -98,6 +98,7 @@ services:
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
+      - ATTACHMENTS_INTERNAL_API_ENDPOINT=http://backend:8000
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:

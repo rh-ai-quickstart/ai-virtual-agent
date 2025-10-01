@@ -43,6 +43,9 @@ models:
 - metadata: {}
   model_id: llama3.2:1b-instruct-fp16
   provider_id: ollama
+- metadata: {}
+  model_id: llama3.2-vision
+  provider_id: ollama
 shields: []
 memory_banks: []
 datasets: []
