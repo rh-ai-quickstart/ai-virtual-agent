@@ -106,6 +106,8 @@ async def startup_tasks():
     # Always ensure templates are available (no external dependencies)
     await ensure_templates_available()
 
+    # Note: ToolHive discovery is now on-demand only (no background sync needed)
+    # External service sync may not be needed in the simplified architecture
     logger.info("All startup tasks completed successfully!")
 
 
@@ -179,6 +181,10 @@ class SPAStaticFiles(StaticFiles):
     """
 
     async def get_response(self, path: str, scope):
+        # Skip static file handling for API routes
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
         if len(sys.argv) > 1 and sys.argv[1] == "dev":
             # We are in Dev mode, proxy to the React dev server
             async with httpx.AsyncClient() as client:

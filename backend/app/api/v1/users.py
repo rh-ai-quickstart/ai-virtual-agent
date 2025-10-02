@@ -119,7 +119,8 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
     if current_user:
         logger.info(
-            f"User authenticated - ID: {current_user.id}, Username: {current_user.username}"
+            f"User authenticated - ID: {current_user.id}, "
+            f"Username: {current_user.username}"
         )
     else:
         logger.warning("Authentication failed - User not found")

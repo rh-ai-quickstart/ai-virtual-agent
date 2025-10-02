@@ -92,7 +92,8 @@ async def delete_knowledge_base(
         client = get_client_from_request(request)
         try:
             logger.info(
-                f"Deleting knowledge base from LlamaStack using ID: {kb.vector_store_id}"
+                f"Deleting knowledge base from LlamaStack using ID: "
+                f"{kb.vector_store_id}"
             )
             await client.vector_stores.delete(kb.vector_store_id)
             logger.info(f"Successfully deleted from LlamaStack: {kb.vector_store_id}")
@@ -100,7 +101,8 @@ async def delete_knowledge_base(
             logger.warning(f"Failed to delete from LlamaStack: {str(e)}")
     else:
         logger.info(
-            f"No vector_store_id found for {vector_store_name}, skipping LlamaStack deletion"
+            f"No vector_store_id found for {vector_store_name}, "
+            f"skipping LlamaStack deletion"
         )
 
     try:

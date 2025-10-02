@@ -125,6 +125,11 @@ spec:
             - name: ADMIN_EMAIL
               value: '{{ .Values.seed.admin_user.email }}'
             {{- end }}
+            # ToolHive MCP Server Discovery
+            - name: TOOLHIVE_DISCOVERY_ENABLED
+              value: "true"
+            - name: TOOLHIVE_NAMESPACE
+              value: "{{ .Release.Namespace }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

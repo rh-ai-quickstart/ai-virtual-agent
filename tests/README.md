@@ -305,4 +305,6 @@ For CI environments that want to run tests separately:
   # run: make test-int
 ```
 
-For more detailed configuration options, see [Config](CONFIG.md).
+For detailed configuration options, see the environment files in this directory:
+- [`.env.toolhive-test`](.env.toolhive-test) - ToolHive discovery test configuration
+- [Integration test configuration](integration/) - Tavern YAML test configurations

@@ -257,7 +257,8 @@ class ChatService:
         )
         self.db.add(user_message)
 
-        # Create assistant message with smallest possible later timestamp (1 microsecond)
+        # Create assistant message with smallest possible later timestamp
+        # (1 microsecond)
         assistant_message = ChatMessage(
             session_id=session_id,
             role="assistant",

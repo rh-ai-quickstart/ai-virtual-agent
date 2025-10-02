@@ -17,6 +17,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+🔍 **Auto-Discovery** - Automatic detection of ToolHive-deployed MCP servers
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
 ## Quick Start
@@ -129,6 +130,7 @@ The platform integrates several components:
 
 ### 🔧 **For Integration**
 - **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **[ToolHive Discovery](docs/toolhive-discovery.md)** - Auto-discovery of ToolHive MCP servers
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
