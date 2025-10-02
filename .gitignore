@@ -20,6 +20,9 @@ dist-ssr
 .env.test
 !.env.*.example
 
+# Helm values files (exclude actual values)
+deploy/cluster/helm/values.yaml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

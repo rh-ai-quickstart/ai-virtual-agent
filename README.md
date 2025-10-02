@@ -16,6 +16,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 🤖 **Agent Management** - Create and configure AI agents with different capabilities
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
+🖼️ **Image Understanding** - Upload and analyze images with vision-enabled AI models (Qwen 2.5 VL 3B on cluster, Llama 3.2 Vision locally)
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
@@ -78,6 +79,29 @@ make install
 ```
 
 📖 **[Full Installation Guide →](INSTALLING.md)**
+
+### Vision Model Configuration
+
+The platform supports image interpretation through vision-enabled AI models:
+
+**Local Development:** Uses Ollama with `llama3.2-vision` model (automatically configured)
+
+**Cluster Deployment:** Uses `Qwen/Qwen2.5-VL-3B-Instruct` vision model via vLLM
+
+**Deploy with Vision Model:**
+```bash
+# Deploy AI Virtual Agent with Qwen vision model
+make install NAMESPACE=your-namespace LLM=qwen-2-5-vl-3b-instruct LLM_TOLERATION=g5-gpu ADMIN_USERNAME=your-admin@your-domain.com ADMIN_EMAIL=your-admin@your-domain.com
+
+# Parameters:
+# NAMESPACE: Your OpenShift project/namespace
+# LLM: Vision model to deploy (qwen-2-5-vl-3b-instruct)
+# LLM_TOLERATION: GPU node toleration (g5-gpu for GPU nodes)
+# ADMIN_USERNAME: Admin user for agent creation
+# ADMIN_EMAIL: Admin user email
+```
+
+📖 **[See deployment parameters →](#vision-model-configuration)**
 
 ## Project Structure
 
@@ -150,6 +174,17 @@ const expert = await initializeAgentTemplate({
   template: "commercial_banker",
   knowledge_bases: ["banking-regulations"]
 });
+```
+
+**Image Analysis Agent**
+```typescript
+const imageAgent = await createAgent({
+  name: "Image Analyzer",
+  model: "qwen-2-5-vl-3b-instruct", // Vision-capable model deployed on cluster
+  tools: ["builtin::rag"]
+});
+// Users can upload images and ask: "What's in this image?", "Describe this chart", "Read this document"
+// Supports both local (llama3.2-vision) and cluster (Qwen 2.5 VL 3B) deployments
 ```
 
 ## Development Commands
@@ -238,7 +273,15 @@ install the MIME detection dependency (libmagic) and Python binding:
 
 Notes:
 - Unit tests import parts of the attachments stack. Without libmagic installed you can still proceed by installing the packages above.
-- If you’re not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip bucket-related startup paths.
+- If you're not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip bucket-related startup paths.
+
+## Troubleshooting
+
+### Vision Model Issues
+
+**Image processing fails with "Error code: 500":** Usually caused by insufficient max-model-len. Increase memory parameters in the make command or reduce image resolution.
+
+📖 **[See vision model troubleshooting →](#troubleshooting)**
 
 
 ## Community & Support
