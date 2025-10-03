@@ -130,6 +130,10 @@ spec:
               value: "true"
             - name: TOOLHIVE_NAMESPACE
               value: "{{ .Release.Namespace }}"
+            {{- if .Values.toolhiveRegistry.enabled }}
+            - name: TOOLHIVE_API_URL
+              value: "http://{{ include "ai-virtual-agent.fullname" . }}-registry-api:{{ .Values.toolhiveRegistry.service.port }}"
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

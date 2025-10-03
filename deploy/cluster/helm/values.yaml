@@ -203,3 +203,47 @@ llama-stack:
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
+
+# Toolhive Registry API Configuration
+toolhiveRegistry:
+  # Enable Toolhive Registry API deployment
+  enabled: true
+  
+  # Registry API service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  # Registry data configuration
+  registryData:
+    version: "1.0.0"
+    lastUpdated: "2024-01-01T00:00:00Z"  # Update this timestamp when registry data changes
+    servers:
+      weather:
+        name: weather
+        description: Weather information MCP server
+        image: ghcr.io/stacklok/toolhive/mcp-weather:latest
+        tier: Community
+        status: Active
+        transport: sse
+        tools:
+          - get_weather
+      oracle-sqlcl:
+        name: oracle-sqlcl
+        description: Oracle SQL command line MCP server
+        image: ghcr.io/stacklok/toolhive/mcp-oracle-sqlcl:latest
+        tier: Community
+        status: Active
+        transport: sse
+        tools:
+          - execute_sql
+  
+  # MCPRegistry resource configuration
+  mcpRegistry:
+    name: default-registry
+    displayName: "Default MCP Registry"
+    filter:
+      names:
+        include:
+          - "*"
