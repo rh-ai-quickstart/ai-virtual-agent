@@ -93,11 +93,15 @@ services:
       dockerfile: deploy/local/Containerfile.backend.dev
     container_name: ai-va-backend-dev
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-ai_virtual_agent}
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
+      - TOOLHIVE_API_URL=${TOOLHIVE_API_URL:-}
+      - MCP_SERVERS=${MCP_SERVERS:-}
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:

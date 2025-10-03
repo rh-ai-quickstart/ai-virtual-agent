@@ -13,7 +13,6 @@ capabilities.
 import asyncio
 import logging
 import sys
-import time
 from contextlib import asynccontextmanager
 
 import httpx
@@ -22,7 +21,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from kubernetes import client, config
+
+# from kubernetes import client, config  # Removed - no longer needed
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .app.api.v1.router import api_router
@@ -49,43 +49,29 @@ def get_incluster_namespace() -> str:
 def wait_for_service_ready(
     service_name: str,
     namespace: str,
-    timeout_seconds: int = 300,
-    interval_seconds: int = 5,
+    timeout_seconds: int = 300,  # noqa: ARG001
+    interval_seconds: int = 5,  # noqa: ARG001
 ) -> bool:
-    """Wait for a Kubernetes service to be ready."""
-    start_time = time.time()
+    """Wait for a Kubernetes service to be ready.
 
-    while time.time() - start_time < timeout_seconds:
-        try:
-            config.load_incluster_config()
-            core_v1 = client.CoreV1Api()
-            endpoints = core_v1.read_namespaced_endpoints(
-                name=service_name, namespace=namespace
-            )
+    Note: This function is currently disabled as Kubernetes client
+    dependency has been removed for simplified MCP discovery.
 
-            if endpoints.subsets:
-                for subset in endpoints.subsets:
-                    if subset.addresses:
-                        logger.info(
-                            f"Service '{service_name}' in namespace "
-                            f"'{namespace}' is ready."
-                        )
-                        return True
+    Args:
+        service_name: Name of the service to check
+        namespace: Kubernetes namespace
+        timeout_seconds: Timeout in seconds (unused - kept for API compatibility)
+        interval_seconds: Check interval in seconds (unused - kept for API compatibility)  # noqa: E501
 
-        except client.ApiException as e:
-            if e.status != 404:  # Ignore 404 if service not yet created
-                logger.error(f"Error checking endpoints: {e}")
-
-        logger.info(
-            f"Waiting for service '{service_name}' in namespace "
-            f"'{namespace}' to be ready..."
-        )
-        time.sleep(interval_seconds)
-
-    logger.warning(
-        f"Timeout waiting for service '{service_name}' in namespace '{namespace}'."
+    Returns:
+        Always returns True since the check is disabled
+    """
+    logger.info(
+        f"Kubernetes service readiness check disabled for '{service_name}' "
+        f"in namespace '{namespace}' (timeout: {timeout_seconds}s, "
+        f"interval: {interval_seconds}s)"
     )
-    return False
+    return True
 
 
 async def ensure_templates_available():
@@ -106,6 +92,8 @@ async def startup_tasks():
     # Always ensure templates are available (no external dependencies)
     await ensure_templates_available()
 
+    # Note: ToolHive discovery is now on-demand only (no background sync needed)
+    # External service sync may not be needed in the simplified architecture
     logger.info("All startup tasks completed successfully!")
 
 
@@ -179,6 +167,10 @@ class SPAStaticFiles(StaticFiles):
     """
 
     async def get_response(self, path: str, scope):
+        # Skip static file handling for API routes
+        if path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
         if len(sys.argv) > 1 and sys.argv[1] == "dev":
             # We are in Dev mode, proxy to the React dev server
             async with httpx.AsyncClient() as client:

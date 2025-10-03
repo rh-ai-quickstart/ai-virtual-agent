@@ -12,6 +12,14 @@ rules:
   verbs:
   - get
   - list
+# ToolHive MCP Server Discovery
+- apiGroups:
+  - "toolhive.stacklok.dev"
+  resources:
+  - mcpservers
+  verbs:
+  - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

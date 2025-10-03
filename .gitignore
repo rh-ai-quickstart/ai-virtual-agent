@@ -20,6 +20,10 @@ dist-ssr
 .env.test
 !.env.*.example
 
+# Test configuration files (may contain sensitive namespace/cluster info)
+tests/.env*
+!tests/.env*.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

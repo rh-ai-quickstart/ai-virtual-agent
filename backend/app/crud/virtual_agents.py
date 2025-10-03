@@ -26,7 +26,8 @@ class DuplicateVirtualAgentNameError(Exception):
 
 class CRUDVirtualAgent(CRUDBase[VirtualAgent, VirtualAgentCreate, dict]):
     async def create(self, db: AsyncSession, *, obj_in: dict) -> VirtualAgent:
-        """Create virtual agent with transaction management and name uniqueness validation."""
+        """Create virtual agent with transaction management and name uniqueness
+        validation."""
         try:
             db_obj = VirtualAgent(**obj_in)
             db.add(db_obj)

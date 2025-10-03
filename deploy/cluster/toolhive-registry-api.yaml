@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toolhive-registry-api
+  namespace: your-project
+  labels:
+    app: toolhive-registry-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolhive-registry-api
+  template:
+    metadata:
+      labels:
+        app: toolhive-registry-api
+    spec:
+      containers:
+      - name: registry-api
+        image: nginxinc/nginx-unprivileged:stable-alpine
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - name: registry-data
+          mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: registry-data
+        configMap:
+          name: default-registry-registry-storage
+      - name: nginx-config
+        configMap:
+          name: toolhive-registry-api-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toolhive-registry-api-config
+  namespace: your-project
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+      location /api/v1beta/registry {
+        alias /usr/share/nginx/html/;
+        try_files /registry.json =404;
+        add_header Content-Type application/json;
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toolhive-registry-api
+  namespace: your-project
+  labels:
+    app: toolhive-registry-api
+spec:
+  selector:
+    app: toolhive-registry-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http

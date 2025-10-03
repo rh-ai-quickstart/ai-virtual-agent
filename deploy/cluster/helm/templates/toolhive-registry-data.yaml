@@ -1,0 +1,37 @@
+{{- if .Values.toolhiveRegistry.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-registry-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: toolhive-registry
+data:
+  registry.json: |
+    {{- $registryData := .Values.toolhiveRegistry.registryData }}
+    {
+      "version": {{ $registryData.version | quote }},
+      "last_updated": {{ $registryData.lastUpdated | quote }},
+      "servers": {
+        {{- $servers := $registryData.servers }}
+        {{- $serverNames := keys $servers }}
+        {{- range $index, $serverName := $serverNames }}
+        {{- $server := index $servers $serverName }}
+        {{ $serverName | quote }}: {
+          "name": {{ $server.name | quote }},
+          "description": {{ $server.description | quote }},
+          "image": {{ $server.image | quote }},
+          "tier": {{ $server.tier | quote }},
+          "status": {{ $server.status | quote }},
+          "transport": {{ $server.transport | quote }},
+          "tools": [
+            {{- range $toolIndex, $tool := $server.tools }}
+            {{ $tool | quote }}{{ if ne $toolIndex (sub (len $server.tools) 1) }},{{ end }}
+            {{- end }}
+          ]
+        }{{ if ne $index (sub (len $serverNames) 1) }},{{ end }}
+        {{- end }}
+      }
+    }
+{{- end }}

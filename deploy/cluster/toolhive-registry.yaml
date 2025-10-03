@@ -1,0 +1,16 @@
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPRegistry
+metadata:
+  name: default-registry
+  namespace: your-project
+spec:
+  displayName: "Default MCP Registry"
+  source:
+    type: configmap
+    configmap:
+      name: toolhive-registry-data
+      key: registry.json
+  filter:
+    names:
+      include:
+        - "*"

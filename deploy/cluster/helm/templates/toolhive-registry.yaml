@@ -1,0 +1,19 @@
+{{- if .Values.toolhiveRegistry.enabled }}
+apiVersion: toolhive.stacklok.dev/v1alpha1
+kind: MCPRegistry
+metadata:
+  name: {{ .Values.toolhiveRegistry.mcpRegistry.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: toolhive-registry
+spec:
+  displayName: {{ .Values.toolhiveRegistry.mcpRegistry.displayName | quote }}
+  source:
+    type: configmap
+    configmap:
+      name: {{ include "ai-virtual-agent.fullname" . }}-registry-data
+      key: registry.json
+  filter:
+    {{- toYaml .Values.toolhiveRegistry.mcpRegistry.filter | nindent 4 }}
+{{- end }}
