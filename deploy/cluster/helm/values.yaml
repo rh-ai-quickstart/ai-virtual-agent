@@ -208,13 +208,13 @@ llama-stack:
 toolhiveRegistry:
   # Enable Toolhive Registry API deployment
   enabled: true
-  
+
   # Registry API service configuration
   service:
     type: ClusterIP
     port: 8080
     targetPort: 8080
-  
+
   # Registry data configuration
   registryData:
     version: "1.0.0"
@@ -238,7 +238,7 @@ toolhiveRegistry:
         transport: sse
         tools:
           - execute_sql
-  
+
   # MCPRegistry resource configuration
   mcpRegistry:
     name: default-registry

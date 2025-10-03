@@ -87,13 +87,13 @@ DISABLE_ATTACHMENTS=false
 # Toolhive Registry Configuration
 toolhiveRegistry:
   enabled: true  # Enable/disable registry deployment
-  
+
   # Registry API service
   service:
     type: ClusterIP
     port: 8080
     targetPort: 8080
-  
+
   # Registry data (customizable)
   registryData:
     version: "1.0.0"
@@ -148,10 +148,10 @@ toolhiveRegistry:
    ```bash
    # Check all components
    oc get all -n your-project
-   
+
    # Check MCPRegistry
    oc get mcpregistry -n your-project
-   
+
    # Test registry API
    oc port-forward service/ai-va-registry-api 8080:8080 -n your-project
    curl http://localhost:8080/api/v1beta/registry
