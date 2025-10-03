@@ -13,7 +13,6 @@ capabilities.
 import asyncio
 import logging
 import sys
-import time
 from contextlib import asynccontextmanager
 
 import httpx
@@ -22,7 +21,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from kubernetes import client, config
+
+# from kubernetes import client, config  # Removed - no longer needed
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .app.api.v1.router import api_router
@@ -52,40 +52,16 @@ def wait_for_service_ready(
     timeout_seconds: int = 300,
     interval_seconds: int = 5,
 ) -> bool:
-    """Wait for a Kubernetes service to be ready."""
-    start_time = time.time()
+    """Wait for a Kubernetes service to be ready.
 
-    while time.time() - start_time < timeout_seconds:
-        try:
-            config.load_incluster_config()
-            core_v1 = client.CoreV1Api()
-            endpoints = core_v1.read_namespaced_endpoints(
-                name=service_name, namespace=namespace
-            )
-
-            if endpoints.subsets:
-                for subset in endpoints.subsets:
-                    if subset.addresses:
-                        logger.info(
-                            f"Service '{service_name}' in namespace "
-                            f"'{namespace}' is ready."
-                        )
-                        return True
-
-        except client.ApiException as e:
-            if e.status != 404:  # Ignore 404 if service not yet created
-                logger.error(f"Error checking endpoints: {e}")
-
-        logger.info(
-            f"Waiting for service '{service_name}' in namespace "
-            f"'{namespace}' to be ready..."
-        )
-        time.sleep(interval_seconds)
-
-    logger.warning(
-        f"Timeout waiting for service '{service_name}' in namespace '{namespace}'."
+    Note: This function is currently disabled as Kubernetes client
+    dependency has been removed for simplified MCP discovery.
+    """
+    logger.info(
+        f"Kubernetes service readiness check disabled for '{service_name}' "
+        f"in namespace '{namespace}'"
     )
-    return False
+    return True
 
 
 async def ensure_templates_available():

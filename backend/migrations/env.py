@@ -70,9 +70,7 @@ def seed_user(username: str, email: str, role: RoleEnum):
 
 
 def seed_admin_users():
-    seed_user(
-        "ingestion-pipeline", "ingestion-pipeline@change.me", RoleEnum.admin
-    )
+    seed_user("ingestion-pipeline", "ingestion-pipeline@change.me", RoleEnum.admin)
     admin_username = os.getenv("ADMIN_USERNAME")
     if admin_username is not None:
         admin_email = os.getenv("ADMIN_EMAIL", "admin@change.me")
@@ -118,9 +116,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

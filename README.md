@@ -17,7 +17,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
-🔍 **Auto-Discovery** - Automatic detection of ToolHive-deployed MCP servers
+🔍 **Auto-Discovery** - Automatic detection of MCP servers from multiple sources (environment, API, defaults)
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
 ## Quick Start
@@ -60,6 +60,36 @@ cd ../frontend && npm install && npm run dev
 - Frontend: http://localhost:5173
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
+
+### MCP Server Discovery
+
+The platform automatically discovers MCP servers from multiple sources:
+
+**Local Testing with OpenShift MCP Servers:**
+```bash
+# Port forward MCP servers from OpenShift (replace 'your-project' with your actual project name)
+oc port-forward service/mcp-weather-proxy 8001:8000 &
+oc port-forward service/mcp-oracle-sqlcl-proxy 8081:8080 &
+oc port-forward service/mcp-inspector 6275:6274 &
+
+# Start local development environment
+cd deploy/local
+make compose-up
+```
+
+**View MCP Servers in UI:**
+1. Open http://localhost:5173
+2. Click "Config" → "MCP Servers"
+3. See auto-discovered servers: weather, oracle-sqlcl, inspector
+
+**Test API directly:**
+```bash
+# List all discovered MCP servers
+curl http://localhost:8000/api/v1/mcp_servers/ | jq .
+
+# Get specific server details
+curl http://localhost:8000/api/v1/mcp_servers/mcp::weather | jq .
+```
 
 ### Cluster Deployment
 
@@ -130,7 +160,7 @@ The platform integrates several components:
 
 ### 🔧 **For Integration**
 - **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
-- **[ToolHive Discovery](docs/toolhive-discovery.md)** - Auto-discovery of ToolHive MCP servers
+- **[ToolHive Discovery](docs/toolhive-discovery.md)** - MCP server auto-discovery (simplified approach)
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
