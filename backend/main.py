@@ -49,17 +49,27 @@ def get_incluster_namespace() -> str:
 def wait_for_service_ready(
     service_name: str,
     namespace: str,
-    timeout_seconds: int = 300,
-    interval_seconds: int = 5,
+    timeout_seconds: int = 300,  # noqa: ARG001
+    interval_seconds: int = 5,  # noqa: ARG001
 ) -> bool:
     """Wait for a Kubernetes service to be ready.
 
     Note: This function is currently disabled as Kubernetes client
     dependency has been removed for simplified MCP discovery.
+
+    Args:
+        service_name: Name of the service to check
+        namespace: Kubernetes namespace
+        timeout_seconds: Timeout in seconds (unused - kept for API compatibility)
+        interval_seconds: Check interval in seconds (unused - kept for API compatibility)  # noqa: E501
+
+    Returns:
+        Always returns True since the check is disabled
     """
     logger.info(
         f"Kubernetes service readiness check disabled for '{service_name}' "
-        f"in namespace '{namespace}'"
+        f"in namespace '{namespace}' (timeout: {timeout_seconds}s, "
+        f"interval: {interval_seconds}s)"
     )
     return True
 
