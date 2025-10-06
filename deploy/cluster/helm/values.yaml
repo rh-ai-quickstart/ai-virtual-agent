@@ -203,3 +203,10 @@ llama-stack:
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
+
+# ToolHive configuration for MCP server auto-discovery
+# Note: ToolHive API server should be deployed separately, not as part of this chart
+toolhive:
+  # API URL for external ToolHive server (required for auto-discovery)
+  # If not specified, defaults to http://toolhive-api.{namespace}.svc.cluster.local:8080
+  apiUrl: ""

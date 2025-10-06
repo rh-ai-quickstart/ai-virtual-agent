@@ -17,6 +17,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+🔍 **ToolHive Integration** - Auto-discovery of MCP servers deployed in Kubernetes
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
 ## Quick Start
@@ -63,6 +64,8 @@ cd ../frontend && npm install && npm run dev
 ### Cluster Deployment
 
 For production installation on Kubernetes/OpenShift:
+
+> **Note**: For MCP server auto-discovery, deploy ToolHive separately first. See [ToolHive MCP Auto-Discovery](#toolhive-mcp-auto-discovery) section below.
 
 ```bash
 # Navigate to cluster deployment directory
@@ -114,6 +117,58 @@ The platform integrates several components:
 
 📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
 
+## ToolHive MCP Auto-Discovery
+
+ToolHive integration automatically discovers MCP servers deployed in your Kubernetes cluster.
+
+**Prerequisites**: ToolHive must be deployed separately as a cluster-wide service.
+
+### Deploy ToolHive (Required First)
+
+ToolHive should be deployed independently before installing AI Virtual Agent:
+
+```bash
+# Deploy ToolHive using their official method
+# See: https://docs.stacklok.com/toolhive/
+
+# Verify ToolHive is running (replace 'your-toolhive-namespace' with actual namespace)
+oc get pods -l app=toolhive-api -n your-toolhive-namespace
+```
+
+### Enable MCP Auto-Discovery
+
+Once ToolHive is deployed, configure AI Virtual Agent to connect to it:
+
+```bash
+# Set ToolHive API URL to connect to existing ToolHive deployment
+# Replace 'your-toolhive-namespace' with the actual namespace where ToolHive is deployed
+export TOOLHIVE_API_URL=http://toolhive-api.your-toolhive-namespace.svc.cluster.local:8080
+
+# Install AI Virtual Agent with ToolHive integration
+make install NAMESPACE=your-namespace
+```
+
+### Local Development with Cluster ToolHive
+
+Connect local environment to cluster's ToolHive:
+
+```bash
+# Port forward ToolHive API (replace 'your-toolhive-namespace' with actual namespace)
+oc port-forward service/toolhive-api 8082:8080 -n your-toolhive-namespace
+
+# Set environment variable for local development
+export TOOLHIVE_API_URL=http://host.docker.internal:8082
+
+# Start local development
+cd deploy/local && make compose-up
+```
+
+### Environment Variables
+
+- `TOOLHIVE_API_URL` - URL of external ToolHive API server for MCP auto-discovery (optional)
+- `KUBERNETES_NAMESPACE` - Auto-injected in cluster, defaults to "default"
+- `CLUSTER_DOMAIN` - Cluster domain, defaults to "svc.cluster.local"
+
 ## Getting Started Guides
 
 ### 👩‍💻 **For Developers**
@@ -129,6 +184,7 @@ The platform integrates several components:
 
 ### 🔧 **For Integration**
 - **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **ToolHive Integration** - Auto-discovery of MCP servers in Kubernetes (see above)
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/api-reference.md)** - Backend API endpoints
 

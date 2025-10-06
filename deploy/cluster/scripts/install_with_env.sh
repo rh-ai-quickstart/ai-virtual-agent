@@ -85,6 +85,17 @@ build_helm_cmd() {
         cmd_args+=("--set" "seed.admin_user.email=$ADMIN_EMAIL")
     fi
 
+    # custom image args
+    if [ -n "$IMAGE" ]; then
+        cmd_args+=("--set" "image.repository=$(echo $IMAGE | cut -d: -f1)")
+        cmd_args+=("--set" "image.tag=$(echo $IMAGE | cut -d: -f2)")
+    fi
+
+    # toolhive args
+    if [ -n "$TOOLHIVE_API_URL" ]; then
+        cmd_args+=("--set" "toolhive.apiUrl=$TOOLHIVE_API_URL")
+    fi
+
 	# GCP args
 	if [ -n "$GCP_SERVICE_ACCOUNT_FILE" ]; then
 		cmd_args+=("--set-file" "llama-stack.gcpServiceAccountFile=$(realpath $GCP_SERVICE_ACCOUNT_FILE)")

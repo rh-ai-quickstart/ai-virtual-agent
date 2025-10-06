@@ -125,6 +125,14 @@ spec:
             - name: ADMIN_EMAIL
               value: '{{ .Values.seed.admin_user.email }}'
             {{- end }}
+            {{- if .Values.toolhive.apiUrl }}
+            - name: TOOLHIVE_API_URL
+              value: '{{ .Values.toolhive.apiUrl }}'
+            {{- end }}
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

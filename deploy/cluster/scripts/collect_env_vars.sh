@@ -81,6 +81,20 @@ POSTGRES_DBNAME="${POSTGRES_DBNAME:-rag_blueprint}"
 MINIO_USER="${MINIO_USER:-minio_rag_user}"
 MINIO_PASSWORD="${MINIO_PASSWORD:-minio_rag_password}"
 
+# Custom image and ToolHive configuration (use environment if set)
+IMAGE="${IMAGE:-}"
+TOOLHIVE_API_URL="${TOOLHIVE_API_URL:-}"
+
+# ToolHive integration for MCP server auto-discovery
+if [ -n "$TOOLHIVE_API_URL" ]; then
+    echo "🔧 Using ToolHive API URL: $TOOLHIVE_API_URL"
+    echo "    (MCP server auto-discovery enabled)"
+else
+    echo "💡 ToolHive API URL not configured"
+    echo "    To enable MCP server auto-discovery, deploy ToolHive separately and set:"
+    echo "    export TOOLHIVE_API_URL=http://toolhive-api.your-namespace.svc.cluster.local:8080"
+fi
+
 # Export all variables for use by calling scripts
 export HF_TOKEN
 export ADMIN_USERNAME
@@ -91,6 +105,8 @@ export POSTGRES_PASSWORD
 export POSTGRES_DBNAME
 export MINIO_USER
 export MINIO_PASSWORD
+export IMAGE
+export TOOLHIVE_API_URL
 
 # Also output them in a format that can be sourced
 if [ "$1" = "--export" ]; then
@@ -103,6 +119,8 @@ if [ "$1" = "--export" ]; then
     echo "export POSTGRES_DBNAME='$POSTGRES_DBNAME'"
     echo "export MINIO_USER='$MINIO_USER'"
     echo "export MINIO_PASSWORD='$MINIO_PASSWORD'"
+    [ -n "$IMAGE" ] && echo "export IMAGE='$IMAGE'"
+    [ -n "$TOOLHIVE_API_URL" ] && echo "export TOOLHIVE_API_URL='$TOOLHIVE_API_URL'"
 fi
 
 echo ""
