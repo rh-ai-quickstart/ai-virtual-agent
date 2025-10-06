@@ -98,7 +98,7 @@ services:
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
-      - TOOLHIVE_API_URL=${TOOLHIVE_API_URL:-http://toolhive-api.arhkp-1.svc.cluster.local:8080}
+      - TOOLHIVE_API_URL=${TOOLHIVE_API_URL:-http://host.docker.internal:8082}
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:

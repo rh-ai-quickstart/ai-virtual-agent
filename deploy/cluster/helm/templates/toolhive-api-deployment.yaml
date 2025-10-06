@@ -1,0 +1,51 @@
+{{- if .Values.toolhive.apiServer.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-toolhive-api
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: toolhive-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ai-virtual-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: toolhive-api
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.labels" . | nindent 8 }}
+        app.kubernetes.io/component: toolhive-api
+    spec:
+      serviceAccountName: {{ .Values.toolhive.apiServer.serviceAccount.name }}
+      containers:
+      - name: api-server
+        image: "{{ .Values.toolhive.apiServer.image.repository }}:{{ .Values.toolhive.apiServer.image.tag }}"
+        imagePullPolicy: {{ .Values.toolhive.apiServer.image.pullPolicy }}
+        command: ["thv"]
+        args: ["serve", "--host", "0.0.0.0", "--port", "{{ .Values.toolhive.apiServer.service.port }}"]
+        ports:
+        - containerPort: {{ .Values.toolhive.apiServer.service.port }}
+          name: http
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          {{- toYaml .Values.toolhive.apiServer.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /api/v1beta/version
+            port: {{ .Values.toolhive.apiServer.service.port }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/v1beta/version
+            port: {{ .Values.toolhive.apiServer.service.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+{{- end }}

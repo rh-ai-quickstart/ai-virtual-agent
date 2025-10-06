@@ -36,15 +36,18 @@ class ToolHiveMCPServer:
         tool_type = workload_data.get("tool_type", "mcp")
 
         # Handle endpoint URL - the API returns localhost URLs which won't work
-        # We need to map to the actual service URLs
+        # We need to map to the actual service URLs based on cluster configuration
         api_url = workload_data.get("url", "")
+        namespace = os.getenv("KUBERNETES_NAMESPACE", "default")
+        cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
+
         if name == "oracle-sqlcl":
-            endpoint_url = "http://mcp-oracle-sqlcl-proxy.arhkp-1.svc.cluster.local:8080"
+            endpoint_url = f"http://mcp-oracle-sqlcl-proxy.{namespace}.{cluster_domain}:8080"
         elif name == "weather":
-            endpoint_url = "http://mcp-weather-proxy.arhkp-1.svc.cluster.local:8000"
+            endpoint_url = f"http://mcp-weather-proxy.{namespace}.{cluster_domain}:8000"
         else:
             # Fallback - try to construct from service naming pattern
-            endpoint_url = f"http://mcp-{name}-proxy.arhkp-1.svc.cluster.local:{workload_data.get('port', 8080)}"
+            endpoint_url = f"http://mcp-{name}-proxy.{namespace}.{cluster_domain}:{workload_data.get('port', 8080)}"
 
         return cls(
             id=name,
@@ -83,10 +86,12 @@ class ToolHiveClient:
             headers: Additional headers for requests
         """
         # Default to in-cluster service URL or environment override
-        self.base_url = base_url or os.getenv(
-            "TOOLHIVE_API_URL",
-            "http://toolhive-api.arhkp-1.svc.cluster.local:8080"
-        )
+        # Use environment-configured namespace for default URL
+        default_namespace = os.getenv("KUBERNETES_NAMESPACE", "default")
+        default_cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
+        default_url = f"http://toolhive-api.{default_namespace}.{default_cluster_domain}:8080"
+
+        self.base_url = base_url or os.getenv("TOOLHIVE_API_URL", default_url)
         self.api_key = api_key or os.getenv("TOOLHIVE_API_KEY")
         self.headers = headers or {}
 

@@ -17,6 +17,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+🔍 **ToolHive Integration** - Auto-discovery of MCP servers deployed in Kubernetes
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
 ## Quick Start
@@ -114,6 +115,40 @@ The platform integrates several components:
 
 📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
 
+## ToolHive MCP Auto-Discovery
+
+ToolHive integration automatically discovers MCP servers deployed in your Kubernetes cluster.
+
+### Cluster Deployment
+
+MCP servers are auto-discovered when ToolHive is deployed:
+
+```bash
+# ToolHive API server is included by default
+make install NAMESPACE=your-namespace
+```
+
+### Local Development with Cluster ToolHive
+
+Connect local environment to cluster's ToolHive:
+
+```bash
+# Port forward ToolHive API
+oc port-forward service/toolhive-api 8082:8080 -n your-namespace
+
+# Set environment variable
+export TOOLHIVE_API_URL=http://host.docker.internal:8082
+
+# Start local development
+cd deploy/local && make compose-up
+```
+
+### Environment Variables
+
+- `TOOLHIVE_API_URL` - ToolHive API endpoint
+- `KUBERNETES_NAMESPACE` - Auto-injected in cluster, defaults to "default"
+- `CLUSTER_DOMAIN` - Cluster domain, defaults to "svc.cluster.local"
+
 ## Getting Started Guides
 
 ### 👩‍💻 **For Developers**
@@ -129,6 +164,7 @@ The platform integrates several components:
 
 ### 🔧 **For Integration**
 - **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **ToolHive Integration** - Auto-discovery of MCP servers in Kubernetes (see above)
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
