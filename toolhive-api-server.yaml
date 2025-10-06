@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toolhive-api-server
+  namespace: arhkp-1
+  labels:
+    app: toolhive-api-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolhive-api-server
+  template:
+    metadata:
+      labels:
+        app: toolhive-api-server
+    spec:
+      serviceAccountName: toolhive-operator  # Use existing service account with permissions
+      containers:
+      - name: api-server
+        image: ghcr.io/stacklok/toolhive:latest
+        command: ["thv"]
+        args: ["serve", "--host", "0.0.0.0", "--port", "8080"]
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1beta/version
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/v1beta/version
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toolhive-api
+  namespace: arhkp-1
+  labels:
+    app: toolhive-api-server
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: toolhive-api-server
