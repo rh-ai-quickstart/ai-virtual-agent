@@ -61,16 +61,12 @@ async def register_mcp_servers_from_toolhive():
         logger.info("Starting auto-discovery of MCP servers from ToolHive")
 
         toolhive_client = get_toolhive_client()
-        toolhive_mcp_servers = (
-            await toolhive_client.list_registered_mcp_servers()
-        )
+        toolhive_mcp_servers = await toolhive_client.list_registered_mcp_servers()
 
         registered_count = 0
         for toolhive_mcp in toolhive_mcp_servers:
             try:
-                llama_stack_mcp = convert_toolhive_mcp_to_llamastack(
-                    toolhive_mcp
-                )
+                llama_stack_mcp = convert_toolhive_mcp_to_llamastack(toolhive_mcp)
 
                 # Register the toolgroup directly with LlamaStack
                 await sync_client.toolgroups.register(
@@ -86,8 +82,7 @@ async def register_mcp_servers_from_toolhive():
 
                 registered_count += 1
                 logger.debug(
-                    f"Auto-registered MCP server from ToolHive: "
-                    f"{toolhive_mcp.name}"
+                    f"Auto-registered MCP server from ToolHive: " f"{toolhive_mcp.name}"
                 )
 
             except Exception as e:
@@ -172,9 +167,7 @@ async def read_mcp_servers():
         List[MCPServerRead]: List of all MCP servers
     """
     try:
-        logger.info(
-            "Fetching MCP servers from LlamaStack with ToolHive auto-discovery"
-        )
+        logger.info("Fetching MCP servers from LlamaStack with ToolHive auto-discovery")
 
         # Auto-discover and register MCP servers from ToolHive
         await register_mcp_servers_from_toolhive()
