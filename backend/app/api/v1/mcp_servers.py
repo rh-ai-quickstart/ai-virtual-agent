@@ -19,14 +19,16 @@ from fastapi import APIRouter, HTTPException, status
 
 from ...api.llamastack import sync_client
 from ...schemas.mcp_servers import MCPServerCreate, MCPServerRead
-from ...services.toolhive_client import get_toolhive_client, ToolHiveMCPServer
+from ...services.toolhive_client import ToolHiveMCPServer, get_toolhive_client
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/mcp_servers", tags=["mcp_servers"])
 
 
-def convert_toolhive_mcp_to_llamastack(toolhive_mcp: ToolHiveMCPServer) -> MCPServerCreate:
+def convert_toolhive_mcp_to_llamastack(
+    toolhive_mcp: ToolHiveMCPServer,
+) -> MCPServerCreate:
     """
     Convert ToolHive MCP server format to LlamaStack MCPServerCreate format.
 
@@ -45,8 +47,8 @@ def convert_toolhive_mcp_to_llamastack(toolhive_mcp: ToolHiveMCPServer) -> MCPSe
             "toolhive_source": True,
             "toolhive_id": toolhive_mcp.id,
             "toolhive_status": toolhive_mcp.status,
-            **toolhive_mcp.metadata
-        }
+            **toolhive_mcp.metadata,
+        },
     )
 
 
@@ -79,14 +81,21 @@ async def register_mcp_servers_from_toolhive():
                 )
 
                 registered_count += 1
-                logger.debug(f"Auto-registered MCP server from ToolHive: {toolhive_mcp.name}")
+                logger.debug(
+                    f"Auto-registered MCP server from ToolHive: {toolhive_mcp.name}"
+                )
 
             except Exception as e:
                 # Don't fail the entire process if one server fails
-                logger.warning(f"Failed to register ToolHive MCP server {toolhive_mcp.name}: {e}")
+                logger.warning(
+                    f"Failed to register ToolHive MCP server {toolhive_mcp.name}: {e}"
+                )
                 continue
 
-        logger.info(f"Auto-discovery completed: registered {registered_count} MCP servers from ToolHive")
+        logger.info(
+            f"Auto-discovery completed: registered {registered_count} "
+            f"MCP servers from ToolHive"
+        )
 
     except Exception as e:
         # Don't break the main API if ToolHive auto-discovery fails
@@ -165,7 +174,8 @@ async def read_mcp_servers():
         # Get all toolgroups from LlamaStack
         toolgroups = await sync_client.toolgroups.list()
 
-        # For local development: also include discovered ToolHive servers even if registration failed
+        # For local development: also include discovered ToolHive servers
+        # even if registration failed
         discovered_toolhive_servers = []
         try:
             toolhive_client = get_toolhive_client()
@@ -177,26 +187,32 @@ async def read_mcp_servers():
                 already_registered = any(
                     str(tg.identifier) == toolgroup_id
                     for tg in toolgroups
-                    if hasattr(tg, "provider_id") and tg.provider_id == "model-context-protocol"
+                    if hasattr(tg, "provider_id")
+                    and tg.provider_id == "model-context-protocol"
                 )
 
                 # If not registered, include it as a "discovered" server for UI testing
                 if not already_registered:
-                    discovered_toolhive_servers.append(MCPServerRead(
-                        toolgroup_id=toolgroup_id,
-                        name=toolhive_mcp.name,
-                        description=f"{toolhive_mcp.description} (ToolHive Discovery - Local Dev)",
-                        endpoint_url=toolhive_mcp.endpoint_url,
-                        configuration={
-                            **toolhive_mcp.metadata,
-                            "toolhive_source": True,
-                            "toolhive_id": toolhive_mcp.id,
-                            "toolhive_status": toolhive_mcp.status,
-                            "local_dev_discovery": True,
-                            "registration_status": "pending_mcp_provider"
-                        },
-                        provider_id="toolhive-discovery",
-                    ))
+                    discovered_toolhive_servers.append(
+                        MCPServerRead(
+                            toolgroup_id=toolgroup_id,
+                            name=toolhive_mcp.name,
+                            description=(
+                                f"{toolhive_mcp.description} "
+                                f"(ToolHive Discovery - Local Dev)"
+                            ),
+                            endpoint_url=toolhive_mcp.endpoint_url,
+                            configuration={
+                                **toolhive_mcp.metadata,
+                                "toolhive_source": True,
+                                "toolhive_id": toolhive_mcp.id,
+                                "toolhive_status": toolhive_mcp.status,
+                                "local_dev_discovery": True,
+                                "registration_status": "pending_mcp_provider",
+                            },
+                            provider_id="toolhive-discovery",
+                        )
+                    )
         except Exception as e:
             logger.debug(f"Could not fetch ToolHive servers for local dev display: {e}")
             pass
@@ -243,7 +259,11 @@ async def read_mcp_servers():
         # Add discovered ToolHive servers to the response for local development
         mcp_servers.extend(discovered_toolhive_servers)
 
-        logger.info(f"Retrieved {len(mcp_servers)} MCP servers from LlamaStack ({len(discovered_toolhive_servers)} discovered from ToolHive for local dev)")
+        logger.info(
+            f"Retrieved {len(mcp_servers)} MCP servers from LlamaStack "
+            f"({len(discovered_toolhive_servers)} discovered from "
+            f"ToolHive for local dev)"
+        )
         return mcp_servers
 
     except Exception as e:
@@ -464,28 +484,29 @@ async def test_toolhive_discovery():
         for toolhive_mcp in toolhive_mcp_servers:
             try:
                 llama_stack_mcp = convert_toolhive_mcp_to_llamastack(toolhive_mcp)
-                converted_servers.append({
-                    "original": {
-                        "id": toolhive_mcp.id,
-                        "name": toolhive_mcp.name,
-                        "description": toolhive_mcp.description,
-                        "endpoint_url": toolhive_mcp.endpoint_url,
-                        "status": toolhive_mcp.status,
-                        "metadata": toolhive_mcp.metadata
-                    },
-                    "converted": {
-                        "toolgroup_id": llama_stack_mcp.toolgroup_id,
-                        "name": llama_stack_mcp.name,
-                        "description": llama_stack_mcp.description,
-                        "endpoint_url": llama_stack_mcp.endpoint_url,
-                        "configuration": llama_stack_mcp.configuration
+                converted_servers.append(
+                    {
+                        "original": {
+                            "id": toolhive_mcp.id,
+                            "name": toolhive_mcp.name,
+                            "description": toolhive_mcp.description,
+                            "endpoint_url": toolhive_mcp.endpoint_url,
+                            "status": toolhive_mcp.status,
+                            "metadata": toolhive_mcp.metadata,
+                        },
+                        "converted": {
+                            "toolgroup_id": llama_stack_mcp.toolgroup_id,
+                            "name": llama_stack_mcp.name,
+                            "description": llama_stack_mcp.description,
+                            "endpoint_url": llama_stack_mcp.endpoint_url,
+                            "configuration": llama_stack_mcp.configuration,
+                        },
                     }
-                })
+                )
             except Exception as e:
-                conversion_errors.append({
-                    "server_name": toolhive_mcp.name,
-                    "error": str(e)
-                })
+                conversion_errors.append(
+                    {"server_name": toolhive_mcp.name, "error": str(e)}
+                )
 
         result = {
             "toolhive_health": health_check,
@@ -495,10 +516,13 @@ async def test_toolhive_discovery():
             "conversion_errors_count": len(conversion_errors),
             "servers": converted_servers,
             "conversion_errors": conversion_errors,
-            "test_timestamp": "2025-10-06T18:12:00Z"
+            "test_timestamp": "2025-10-06T18:12:00Z",
         }
 
-        logger.info(f"ToolHive test completed: discovered {len(toolhive_mcp_servers)} servers, converted {len(converted_servers)}")
+        logger.info(
+            f"ToolHive test completed: discovered {len(toolhive_mcp_servers)} "
+            f"servers, converted {len(converted_servers)}"
+        )
         return result
 
     except Exception as e:

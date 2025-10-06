@@ -7,8 +7,9 @@ deployed in the OpenShift/Kubernetes cluster.
 
 import logging
 import os
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,17 @@ class ToolHiveMCPServer:
         cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
 
         if name == "oracle-sqlcl":
-            endpoint_url = f"http://mcp-oracle-sqlcl-proxy.{namespace}.{cluster_domain}:8080"
+            endpoint_url = (
+                f"http://mcp-oracle-sqlcl-proxy.{namespace}.{cluster_domain}:8080"
+            )
         elif name == "weather":
             endpoint_url = f"http://mcp-weather-proxy.{namespace}.{cluster_domain}:8000"
         else:
             # Fallback - try to construct from service naming pattern
-            endpoint_url = f"http://mcp-{name}-proxy.{namespace}.{cluster_domain}:{workload_data.get('port', 8080)}"
+            port = workload_data.get("port", 8080)
+            endpoint_url = (
+                f"http://mcp-{name}-proxy.{namespace}.{cluster_domain}:{port}"
+            )
 
         return cls(
             id=name,
@@ -63,8 +69,8 @@ class ToolHiveMCPServer:
                 "proxy_mode": workload_data.get("proxy_mode", ""),
                 "created_at": workload_data.get("created_at", ""),
                 "labels": workload_data.get("labels", {}),
-                "original_url": api_url
-            }
+                "original_url": api_url,
+            },
         )
 
 
@@ -89,7 +95,9 @@ class ToolHiveClient:
         # Use environment-configured namespace for default URL
         default_namespace = os.getenv("KUBERNETES_NAMESPACE", "default")
         default_cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
-        default_url = f"http://toolhive-api.{default_namespace}.{default_cluster_domain}:8080"
+        default_url = (
+            f"http://toolhive-api.{default_namespace}.{default_cluster_domain}:8080"
+        )
 
         self.base_url = base_url or os.getenv("TOOLHIVE_API_URL", default_url)
         self.api_key = api_key or os.getenv("TOOLHIVE_API_KEY")
@@ -99,10 +107,9 @@ class ToolHiveClient:
         if self.api_key:
             self.headers["Authorization"] = f"Bearer {self.api_key}"
 
-        self.headers.update({
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        })
+        self.headers.update(
+            {"Content-Type": "application/json", "Accept": "application/json"}
+        )
 
     async def list_registered_mcp_servers(self) -> List[ToolHiveMCPServer]:
         """
@@ -130,31 +137,48 @@ class ToolHiveClient:
                     for workload in workloads:
                         try:
                             # Only process MCP servers that are running
-                            if (workload.get("tool_type") == "mcp" and
-                                workload.get("status", "").lower() == "running"):
+                            if (
+                                workload.get("tool_type") == "mcp"
+                                and workload.get("status", "").lower() == "running"
+                            ):
 
                                 server = ToolHiveMCPServer.from_workload(workload)
                                 servers.append(server)
-                                logger.debug(f"Found running MCP server: {server.name} at {server.endpoint_url}")
+                                logger.debug(
+                                    f"Found running MCP server: {server.name} "
+                                    f"at {server.endpoint_url}"
+                                )
                             else:
-                                logger.debug(f"Skipping workload {workload.get('name')}: tool_type={workload.get('tool_type')}, status={workload.get('status')}")
+                                logger.debug(
+                                    f"Skipping workload {workload.get('name')}: "
+                                    f"tool_type={workload.get('tool_type')}, "
+                                    f"status={workload.get('status')}"
+                                )
 
                         except Exception as e:
                             logger.warning(f"Failed to parse workload data: {e}")
                             logger.debug(f"Problematic workload data: {workload}")
                             continue
 
-                    logger.info(f"Retrieved {len(servers)} running MCP servers from ToolHive API")
+                    logger.info(
+                        f"Retrieved {len(servers)} running MCP servers "
+                        f"from ToolHive API"
+                    )
                     return servers
 
                 elif response.status_code == 404:
-                    logger.info("ToolHive workloads endpoint not found - no servers registered")
+                    logger.info(
+                        "ToolHive workloads endpoint not found - no servers registered"
+                    )
                     return []
 
                 else:
                     error_text = response.text
-                    logger.error(f"ToolHive API error: {response.status_code} - {error_text}")
-                    # Don't raise - return empty list to avoid breaking main functionality
+                    logger.error(
+                        f"ToolHive API error: {response.status_code} - {error_text}"
+                    )
+                    # Don't raise - return empty list to avoid breaking main
+                    # functionality
                     return []
 
         except httpx.ConnectError as e:
@@ -165,7 +189,8 @@ class ToolHiveClient:
             return []
         except Exception as e:
             logger.error(f"Error fetching MCP servers from ToolHive API: {e}")
-            return []  # Return empty list on error to not break the main functionality
+            # Return empty list on error to not break the main functionality
+            return []
 
     async def get_mcp_server(self, server_id: str) -> Optional[ToolHiveMCPServer]:
         """
@@ -188,7 +213,9 @@ class ToolHiveClient:
             return None
 
         except Exception as e:
-            logger.error(f"Error fetching MCP server {server_id} from ToolHive API: {e}")
+            logger.error(
+                f"Error fetching MCP server {server_id} from ToolHive API: {e}"
+            )
             return None
 
     async def health_check(self) -> bool:
@@ -205,10 +232,14 @@ class ToolHiveClient:
                 response = await client.get(url)
                 if response.status_code == 200:
                     version_info = response.json()
-                    logger.debug(f"ToolHive API health check successful: {version_info}")
+                    logger.debug(
+                        f"ToolHive API health check successful: {version_info}"
+                    )
                     return True
                 else:
-                    logger.debug(f"ToolHive API health check failed: {response.status_code}")
+                    logger.debug(
+                        f"ToolHive API health check failed: {response.status_code}"
+                    )
                     return False
 
         except Exception as e:
