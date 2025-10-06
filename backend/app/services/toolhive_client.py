@@ -37,17 +37,19 @@ class ToolHiveMCPServer:
         tool_type = workload_data.get("tool_type", "mcp")
 
         # Handle endpoint URL - the API returns localhost URLs which won't work
-        # We need to map to the actual service URLs based on cluster configuration
+        # We need to map to the actual service URLs based on cluster config
         api_url = workload_data.get("url", "")
         namespace = os.getenv("KUBERNETES_NAMESPACE", "default")
         cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
 
         if name == "oracle-sqlcl":
             endpoint_url = (
-                f"http://mcp-oracle-sqlcl-proxy.{namespace}.{cluster_domain}:8080"
+                f"http://mcp-oracle-sqlcl-proxy." f"{namespace}.{cluster_domain}:8080"
             )
         elif name == "weather":
-            endpoint_url = f"http://mcp-weather-proxy.{namespace}.{cluster_domain}:8000"
+            endpoint_url = (
+                f"http://mcp-weather-proxy." f"{namespace}.{cluster_domain}:8000"
+            )
         else:
             # Fallback - try to construct from service naming pattern
             port = workload_data.get("port", 8080)
@@ -58,7 +60,9 @@ class ToolHiveMCPServer:
         return cls(
             id=name,
             name=name,
-            description=f"ToolHive MCP Server: {name} ({tool_type}, {transport_type})",
+            description=(
+                f"ToolHive MCP Server: {name} ({tool_type}, {transport_type})"
+            ),
             endpoint_url=endpoint_url,
             status=status,
             metadata={
@@ -96,7 +100,7 @@ class ToolHiveClient:
         default_namespace = os.getenv("KUBERNETES_NAMESPACE", "default")
         default_cluster_domain = os.getenv("CLUSTER_DOMAIN", "svc.cluster.local")
         default_url = (
-            f"http://toolhive-api.{default_namespace}.{default_cluster_domain}:8080"
+            f"http://toolhive-api.{default_namespace}." f"{default_cluster_domain}:8080"
         )
 
         self.base_url = base_url or os.getenv("TOOLHIVE_API_URL", default_url)
@@ -150,7 +154,8 @@ class ToolHiveClient:
                                 )
                             else:
                                 logger.debug(
-                                    f"Skipping workload {workload.get('name')}: "
+                                    f"Skipping workload "
+                                    f"{workload.get('name')}: "
                                     f"tool_type={workload.get('tool_type')}, "
                                     f"status={workload.get('status')}"
                                 )
@@ -168,14 +173,15 @@ class ToolHiveClient:
 
                 elif response.status_code == 404:
                     logger.info(
-                        "ToolHive workloads endpoint not found - no servers registered"
+                        "ToolHive workloads endpoint not found - "
+                        "no servers registered"
                     )
                     return []
 
                 else:
                     error_text = response.text
                     logger.error(
-                        f"ToolHive API error: {response.status_code} - {error_text}"
+                        f"ToolHive API error: {response.status_code} - " f"{error_text}"
                     )
                     # Don't raise - return empty list to avoid breaking main
                     # functionality
@@ -200,7 +206,8 @@ class ToolHiveClient:
             server_id: The name of the MCP server
 
         Returns:
-            Optional[ToolHiveMCPServer]: The MCP server if found, None otherwise
+            Optional[ToolHiveMCPServer]: The MCP server if found, None
+                otherwise
         """
         try:
             # Get all servers and find the matching one
@@ -238,7 +245,7 @@ class ToolHiveClient:
                     return True
                 else:
                     logger.debug(
-                        f"ToolHive API health check failed: {response.status_code}"
+                        f"ToolHive API health check failed: " f"{response.status_code}"
                     )
                     return False
 

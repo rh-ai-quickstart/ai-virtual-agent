@@ -1,24 +1,30 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: toolhive-api-server
+  name: toolhive-api
   namespace: arhkp-1
   labels:
-    app: toolhive-api-server
+    app: toolhive-api
+    app.kubernetes.io/component: toolhive-api
+    app.kubernetes.io/name: toolhive-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: toolhive-api-server
+      app: toolhive-api
+      app.kubernetes.io/component: toolhive-api
   template:
     metadata:
       labels:
-        app: toolhive-api-server
+        app: toolhive-api
+        app.kubernetes.io/component: toolhive-api
     spec:
-      serviceAccountName: toolhive-operator  # Use existing service account with permissions
+      serviceAccountName: toolhive-operator
       containers:
       - name: api-server
-        image: ghcr.io/stacklok/toolhive:latest
+        image: "ghcr.io/stacklok/toolhive:latest"
+        imagePullPolicy: IfNotPresent
         command: ["thv"]
         args: ["serve", "--host", "0.0.0.0", "--port", "8080"]
         ports:
@@ -55,7 +61,8 @@ metadata:
   name: toolhive-api
   namespace: arhkp-1
   labels:
-    app: toolhive-api-server
+    app: toolhive-api
+    app.kubernetes.io/component: toolhive-api
 spec:
   type: ClusterIP
   ports:
@@ -64,4 +71,5 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: toolhive-api-server
+    app: toolhive-api
+    app.kubernetes.io/component: toolhive-api

@@ -85,11 +85,14 @@ MINIO_PASSWORD="${MINIO_PASSWORD:-minio_rag_password}"
 IMAGE="${IMAGE:-}"
 TOOLHIVE_API_URL="${TOOLHIVE_API_URL:-}"
 
-# Auto-configure ToolHive API URL to use integrated API server if not provided
-if [ -z "$TOOLHIVE_API_URL" ]; then
-    TOOLHIVE_API_URL="http://toolhive-api.${NAMESPACE}.svc.cluster.local:8080"
-    echo "🔧 Auto-configured ToolHive API URL: $TOOLHIVE_API_URL"
-    echo "    (Using integrated ToolHive API server)"
+# ToolHive integration for MCP server auto-discovery
+if [ -n "$TOOLHIVE_API_URL" ]; then
+    echo "🔧 Using ToolHive API URL: $TOOLHIVE_API_URL"
+    echo "    (MCP server auto-discovery enabled)"
+else
+    echo "💡 ToolHive API URL not configured"
+    echo "    To enable MCP server auto-discovery, deploy ToolHive separately and set:"
+    echo "    export TOOLHIVE_API_URL=http://toolhive-api.your-namespace.svc.cluster.local:8080"
 fi
 
 # Export all variables for use by calling scripts

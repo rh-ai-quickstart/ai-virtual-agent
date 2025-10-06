@@ -65,6 +65,8 @@ cd ../frontend && npm install && npm run dev
 
 For production installation on Kubernetes/OpenShift:
 
+> **Note**: For MCP server auto-discovery, deploy ToolHive separately first. See [ToolHive MCP Auto-Discovery](#toolhive-mcp-auto-discovery) section below.
+
 ```bash
 # Navigate to cluster deployment directory
 cd deploy/cluster
@@ -119,12 +121,30 @@ The platform integrates several components:
 
 ToolHive integration automatically discovers MCP servers deployed in your Kubernetes cluster.
 
-### Cluster Deployment
+**Prerequisites**: ToolHive must be deployed separately as a cluster-wide service.
 
-MCP servers are auto-discovered when ToolHive is deployed:
+### Deploy ToolHive (Required First)
+
+ToolHive should be deployed independently before installing AI Virtual Agent:
 
 ```bash
-# ToolHive API server is included by default
+# Deploy ToolHive using their official method
+# See: https://docs.stacklok.com/toolhive/
+
+# Verify ToolHive is running (replace 'your-toolhive-namespace' with actual namespace)
+oc get pods -l app=toolhive-api -n your-toolhive-namespace
+```
+
+### Enable MCP Auto-Discovery
+
+Once ToolHive is deployed, configure AI Virtual Agent to connect to it:
+
+```bash
+# Set ToolHive API URL to connect to existing ToolHive deployment
+# Replace 'your-toolhive-namespace' with the actual namespace where ToolHive is deployed
+export TOOLHIVE_API_URL=http://toolhive-api.your-toolhive-namespace.svc.cluster.local:8080
+
+# Install AI Virtual Agent with ToolHive integration
 make install NAMESPACE=your-namespace
 ```
 
@@ -133,10 +153,10 @@ make install NAMESPACE=your-namespace
 Connect local environment to cluster's ToolHive:
 
 ```bash
-# Port forward ToolHive API
-oc port-forward service/toolhive-api 8082:8080 -n your-namespace
+# Port forward ToolHive API (replace 'your-toolhive-namespace' with actual namespace)
+oc port-forward service/toolhive-api 8082:8080 -n your-toolhive-namespace
 
-# Set environment variable
+# Set environment variable for local development
 export TOOLHIVE_API_URL=http://host.docker.internal:8082
 
 # Start local development
@@ -145,7 +165,7 @@ cd deploy/local && make compose-up
 
 ### Environment Variables
 
-- `TOOLHIVE_API_URL` - ToolHive API endpoint
+- `TOOLHIVE_API_URL` - URL of external ToolHive API server for MCP auto-discovery (optional)
 - `KUBERNETES_NAMESPACE` - Auto-injected in cluster, defaults to "default"
 - `CLUSTER_DOMAIN` - Cluster domain, defaults to "svc.cluster.local"
 

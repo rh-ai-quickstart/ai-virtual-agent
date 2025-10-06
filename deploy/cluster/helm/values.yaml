@@ -205,36 +205,8 @@ llama-stack:
 #       uri: http://rag-mcp-weather:8000/sse
 
 # ToolHive configuration for MCP server auto-discovery
+# Note: ToolHive API server should be deployed separately, not as part of this chart
 toolhive:
-  # API URL for ToolHive server (optional)
+  # API URL for external ToolHive server (required for auto-discovery)
+  # If not specified, defaults to http://toolhive-api.{namespace}.svc.cluster.local:8080
   apiUrl: ""
-
-  # ToolHive API Server deployment (auto-discovery component)
-  apiServer:
-    # Enable ToolHive API server deployment
-    enabled: true
-
-    # Container image configuration
-    image:
-      repository: ghcr.io/stacklok/toolhive
-      tag: latest
-      pullPolicy: IfNotPresent
-
-    # Resource configuration
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "100m"
-      limits:
-        memory: "512Mi"
-        cpu: "500m"
-
-    # Service configuration
-    service:
-      type: ClusterIP
-      port: 8080
-      name: toolhive-api
-
-    # Service account (uses existing toolhive-operator if available)
-    serviceAccount:
-      name: toolhive-operator
