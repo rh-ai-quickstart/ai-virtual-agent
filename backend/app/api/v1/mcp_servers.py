@@ -14,7 +14,6 @@ Key Features:
 """
 
 import logging
-import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, status
@@ -48,7 +47,9 @@ def _get_kubernetes_client() -> Optional[client.CustomObjectsApi]:
                 config.load_kube_config()
                 logger.info("Loaded local kubeconfig")
             except config.ConfigException:
-                logger.warning("No Kubernetes configuration found - MCP auto-discovery disabled")
+                logger.warning(
+                    "No Kubernetes configuration found - MCP auto-discovery disabled"
+                )
                 return None
 
         return client.CustomObjectsApi()
@@ -78,50 +79,59 @@ async def _discover_toolhive_mcp_servers() -> List[dict]:
             group="toolhive.stacklok.dev",
             version="v1alpha1",
             namespace=namespace,
-            plural="mcpservers"
+            plural="mcpservers",
         )
 
         discovered_servers = []
-        for item in mcpservers.get('items', []):
-            metadata = item.get('metadata', {})
-            spec = item.get('spec', {})
-            status = item.get('status', {})
+        for item in mcpservers.get("items", []):
+            metadata = item.get("metadata", {})
+            spec = item.get("spec", {})
+            status = item.get("status", {})
 
             # Extract server information
-            server_name = metadata.get('name')
-            transport = spec.get('transport', 'stdio')
-            port = spec.get('port', 8080)
+            server_name = metadata.get("name")
+            transport = spec.get("transport", "stdio")
+            port = spec.get("port", 8080)
 
             # Construct endpoint URL based on Toolhive proxy naming convention
             endpoint_url = f"http://mcp-{server_name}-proxy:{port}/sse"
 
             # Check if server is ready (Toolhive should set status conditions)
             is_ready = True  # Assume ready if deployed by Toolhive
-            conditions = status.get('conditions', [])
+            conditions = status.get("conditions", [])
             for condition in conditions:
-                if condition.get('type') == 'Ready' and condition.get('status') != 'True':
+                if (
+                    condition.get("type") == "Ready"
+                    and condition.get("status") != "True"
+                ):
                     is_ready = False
                     break
 
             if is_ready:
-                discovered_servers.append({
-                    'name': server_name,
-                    'endpoint_url': endpoint_url,
-                    'transport': transport,
-                    'port': port,
-                    'toolgroup_id': f"mcp::{server_name}",  # Use mcp:: prefix
-                    'description': f"Auto-discovered MCP server from Toolhive: {server_name}",
-                    'configuration': {
-                        'transport': transport,
-                        'port': port,
-                        'source': 'toolhive'
+                discovered_servers.append(
+                    {
+                        "name": server_name,
+                        "endpoint_url": endpoint_url,
+                        "transport": transport,
+                        "port": port,
+                        "toolgroup_id": f"mcp::{server_name}",  # Use mcp:: prefix
+                        "description": f"Auto-discovered MCP server from Toolhive: {server_name}",
+                        "configuration": {
+                            "transport": transport,
+                            "port": port,
+                            "source": "toolhive",
+                        },
                     }
-                })
-                logger.info(f"Discovered Toolhive MCP server: {server_name} at {endpoint_url}")
+                )
+                logger.info(
+                    f"Discovered Toolhive MCP server: {server_name} at {endpoint_url}"
+                )
             else:
                 logger.info(f"Skipping MCP server {server_name} - not ready")
 
-        logger.info(f"Discovered {len(discovered_servers)} ready MCP servers from Toolhive")
+        logger.info(
+            f"Discovered {len(discovered_servers)} ready MCP servers from Toolhive"
+        )
         return discovered_servers
 
     except ApiException as e:
@@ -147,19 +157,23 @@ async def _register_mcp_server_with_llamastack(server_info: dict) -> bool:
     """
     try:
         await sync_client.toolgroups.register(
-            toolgroup_id=server_info['toolgroup_id'],
+            toolgroup_id=server_info["toolgroup_id"],
             provider_id="model-context-protocol",
             args={
-                "name": server_info['name'],
-                "description": server_info['description'],
-                **server_info['configuration'],
+                "name": server_info["name"],
+                "description": server_info["description"],
+                **server_info["configuration"],
             },
-            mcp_endpoint={"uri": server_info['endpoint_url']},
+            mcp_endpoint={"uri": server_info["endpoint_url"]},
         )
-        logger.info(f"Successfully registered MCP server with LlamaStack: {server_info['toolgroup_id']}")
+        logger.info(
+            f"Successfully registered MCP server with LlamaStack: {server_info['toolgroup_id']}"
+        )
         return True
     except Exception as e:
-        logger.error(f"Failed to register MCP server {server_info['toolgroup_id']} with LlamaStack: {e}")
+        logger.error(
+            f"Failed to register MCP server {server_info['toolgroup_id']} with LlamaStack: {e}"
+        )
         return False
 
 
@@ -283,12 +297,14 @@ async def read_mcp_servers():
                 )
                 mcp_servers.append(mcp_server)
 
-        logger.info(f"Found {len(mcp_servers)} already registered MCP servers in LlamaStack")
+        logger.info(
+            f"Found {len(mcp_servers)} already registered MCP servers in LlamaStack"
+        )
 
         # Step 3: Register newly discovered Toolhive servers with LlamaStack
         newly_registered = 0
         for server_info in toolhive_servers:
-            toolgroup_id = server_info['toolgroup_id']
+            toolgroup_id = server_info["toolgroup_id"]
 
             # Check if this server is already registered
             if toolgroup_id not in registered_toolgroup_ids:
@@ -299,17 +315,21 @@ async def read_mcp_servers():
                     # Add to our list of MCP servers
                     new_server = MCPServerRead(
                         toolgroup_id=toolgroup_id,
-                        name=server_info['name'],
-                        description=server_info['description'],
-                        endpoint_url=server_info['endpoint_url'],
-                        configuration=server_info['configuration'],
+                        name=server_info["name"],
+                        description=server_info["description"],
+                        endpoint_url=server_info["endpoint_url"],
+                        configuration=server_info["configuration"],
                         provider_id="model-context-protocol",
                     )
                     mcp_servers.append(new_server)
                     newly_registered += 1
-                    logger.info(f"Successfully auto-registered MCP server: {toolgroup_id}")
+                    logger.info(
+                        f"Successfully auto-registered MCP server: {toolgroup_id}"
+                    )
                 else:
-                    logger.warning(f"Failed to auto-register MCP server: {toolgroup_id}")
+                    logger.warning(
+                        f"Failed to auto-register MCP server: {toolgroup_id}"
+                    )
             else:
                 logger.debug(f"MCP server {toolgroup_id} already registered, skipping")
 

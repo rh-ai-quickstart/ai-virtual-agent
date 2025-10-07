@@ -35,7 +35,7 @@ export function useVoiceInput({
   onError,
   language = 'en',
   apiEndpoint = '/api/v1/speech',
-  sessionId
+  sessionId,
 }: VoiceInputOptions = {}) {
   const [state, setState] = useState<VoiceInputState>({
     isRecording: false,
@@ -59,7 +59,7 @@ export function useVoiceInput({
       const hasWebSpeech = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
       const hasGetUserMedia = navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isSupported: hasMediaRecorder && hasGetUserMedia,
       }));
@@ -71,13 +71,21 @@ export function useVoiceInput({
     checkSupport();
   }, []);
 
-  const handleError = useCallback((error: Error) => {
-    setState(prev => ({ ...prev, error: error.message, isRecording: false, isProcessing: false }));
-    onError?.(error);
-  }, [onError]);
+  const handleError = useCallback(
+    (error: Error) => {
+      setState((prev) => ({
+        ...prev,
+        error: error.message,
+        isRecording: false,
+        isProcessing: false,
+      }));
+      onError?.(error);
+    },
+    [onError]
+  );
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   // Web Speech API implementation (fallback)
@@ -95,7 +103,7 @@ export function useVoiceInput({
     recognition.lang = language;
 
     recognition.onstart = () => {
-      setState(prev => ({ ...prev, isRecording: true, error: null }));
+      setState((prev) => ({ ...prev, isRecording: true, error: null }));
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -105,16 +113,16 @@ export function useVoiceInput({
         const sentences: Sentence[] = transcript
           .split(/[.!?]+/)
           .map((text: string) => text.trim())
-          .filter(text => text.length > 0)
+          .filter((text) => text.length > 0)
           .map((text: string, index: number) => ({
             text,
             start_time: null,
             end_time: null,
             confidence: event.results[0]?.[0]?.confidence || null,
-            index
+            index,
           }));
 
-        setState(prev => ({ ...prev, transcript, sentences, isRecording: false }));
+        setState((prev) => ({ ...prev, transcript, sentences, isRecording: false }));
         onTranscript?.(transcript);
         onSentences?.(sentences);
       }
@@ -125,7 +133,7 @@ export function useVoiceInput({
     };
 
     recognition.onend = () => {
-      setState(prev => ({ ...prev, isRecording: false }));
+      setState((prev) => ({ ...prev, isRecording: false }));
     };
 
     recognitionRef.current = recognition;
@@ -145,7 +153,7 @@ export function useVoiceInput({
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-        }
+        },
       });
 
       streamRef.current = stream;
@@ -154,7 +162,7 @@ export function useVoiceInput({
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
           ? 'audio/webm;codecs=opus'
-          : 'audio/webm'
+          : 'audio/webm',
       });
 
       mediaRecorder.ondataavailable = (event) => {
@@ -164,7 +172,7 @@ export function useVoiceInput({
       };
 
       mediaRecorder.onstop = async () => {
-        setState(prev => ({ ...prev, isRecording: false, isProcessing: true }));
+        setState((prev) => ({ ...prev, isRecording: false, isProcessing: true }));
 
         try {
           // Create audio blob
@@ -180,58 +188,64 @@ export function useVoiceInput({
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
 
-      setState(prev => ({ ...prev, isRecording: true, error: null }));
+      setState((prev) => ({ ...prev, isRecording: true, error: null }));
     } catch (error) {
       handleError(error as Error);
     }
   }, [handleError, clearError]);
 
-  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
-    if (!sessionId) {
-      handleError(new Error('Session ID is required for transcription'));
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('audio_data', audioBlob);
-      formData.append('session_id', sessionId);
-      if (language) {
-        formData.append('language', language);
+  const transcribeAudio = useCallback(
+    async (audioBlob: Blob) => {
+      if (!sessionId) {
+        handleError(new Error('Session ID is required for transcription'));
+        return;
       }
 
-      const response = await fetch(`${apiEndpoint}/transcribe-stream`, {
-        method: 'POST',
-        body: formData,
-      });
+      try {
+        const formData = new FormData();
+        formData.append('audio_data', audioBlob);
+        formData.append('session_id', sessionId);
+        if (language) {
+          formData.append('language', language);
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        const response = await fetch(`${apiEndpoint}/transcribe-stream`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => ({}))) as { detail?: string };
+          throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = (await response.json()) as {
+          transcription?: string;
+          sentences?: Sentence[];
+        };
+        const transcript = result.transcription?.trim();
+        const sentences: Sentence[] = result.sentences || [];
+
+        if (transcript) {
+          setState((prev) => ({
+            ...prev,
+            transcript,
+            sentences,
+            isProcessing: false,
+          }));
+          onTranscript?.(transcript);
+          onSentences?.(sentences);
+        } else {
+          handleError(new Error('No speech detected in audio'));
+        }
+      } catch (error) {
+        handleError(error as Error);
+      } finally {
+        setState((prev) => ({ ...prev, isProcessing: false }));
       }
-
-      const result = await response.json();
-      const transcript = result.transcription?.trim();
-      const sentences: Sentence[] = result.sentences || [];
-
-      if (transcript) {
-        setState(prev => ({
-          ...prev,
-          transcript,
-          sentences,
-          isProcessing: false
-        }));
-        onTranscript?.(transcript);
-        onSentences?.(sentences);
-      } else {
-        handleError(new Error('No speech detected in audio'));
-      }
-    } catch (error) {
-      handleError(error as Error);
-    } finally {
-      setState(prev => ({ ...prev, isProcessing: false }));
-    }
-  }, [sessionId, language, apiEndpoint, onTranscript, onSentences, handleError]);
+    },
+    [sessionId, language, apiEndpoint, onTranscript, onSentences, handleError]
+  );
 
   const startRecording = useCallback(() => {
     if (!state.isSupported && !useWebSpeech) {
@@ -248,7 +262,13 @@ export function useVoiceInput({
     } else {
       void startMediaRecording();
     }
-  }, [state.isSupported, state.isRecording, useWebSpeech, startWebSpeechRecognition, startMediaRecording]);
+  }, [
+    state.isSupported,
+    state.isRecording,
+    useWebSpeech,
+    startWebSpeechRecognition,
+    startMediaRecording,
+  ]);
 
   const stopRecording = useCallback(() => {
     if (!state.isRecording) return;
@@ -261,7 +281,7 @@ export function useVoiceInput({
 
     // Clean up media stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
   }, [state.isRecording, useWebSpeech]);
@@ -278,7 +298,7 @@ export function useVoiceInput({
   useEffect(() => {
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -307,10 +327,10 @@ declare global {
     continuous: boolean;
     interimResults: boolean;
     lang: string;
-    onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-    onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+    onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => void) | null;
     start(): void;
     stop(): void;
   }

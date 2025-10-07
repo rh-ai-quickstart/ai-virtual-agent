@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
 import { Label, Tooltip } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@patternfly/react-icons';
 
@@ -23,7 +24,7 @@ export function SentenceDisplay({
   sentences,
   showTimestamp = true,
   showConfidence = true,
-  onSentenceClick
+  onSentenceClick,
 }: SentenceDisplayProps) {
   const formatTime = (time: number | null | undefined): string => {
     if (time === null || time === undefined) return '';
@@ -32,7 +33,9 @@ export function SentenceDisplay({
     return `${minutes}:${seconds.padStart(4, '0')}`;
   };
 
-  const getConfidenceColor = (confidence: number | null | undefined): 'green' | 'orange' | 'red' | 'grey' => {
+  const getConfidenceColor = (
+    confidence: number | null | undefined
+  ): 'green' | 'orange' | 'red' | 'grey' => {
     if (confidence === null || confidence === undefined) return 'grey';
     if (confidence >= 0.8) return 'green';
     if (confidence >= 0.6) return 'orange';
@@ -83,9 +86,7 @@ export function SentenceDisplay({
         >
           {/* Sentence text */}
           <div style={{ marginBottom: '6px', lineHeight: '1.4' }}>
-            <span style={{ fontWeight: '500' }}>
-              {sentence.text}
-            </span>
+            <span style={{ fontWeight: '500' }}>{sentence.text}</span>
             {getConfidenceIcon(sentence.confidence)}
           </div>
 
@@ -102,28 +103,30 @@ export function SentenceDisplay({
                 {sentence.start_time !== null && sentence.end_time !== null
                   ? `${formatTime(sentence.start_time)} - ${formatTime(sentence.end_time)}`
                   : sentence.start_time !== null
-                  ? `Start: ${formatTime(sentence.start_time)}`
-                  : `End: ${formatTime(sentence.end_time)}`}
+                    ? `Start: ${formatTime(sentence.start_time)}`
+                    : `End: ${formatTime(sentence.end_time)}`}
               </Label>
             )}
 
             {/* Confidence score */}
-            {showConfidence && sentence.confidence !== null && sentence.confidence !== undefined && (
-              <Tooltip content={`Confidence score: ${(sentence.confidence * 100).toFixed(1)}%`}>
-                <Label
-                  variant="outline"
-                  color={getConfidenceColor(sentence.confidence)}
-                  isCompact
-                >
-                  {(sentence.confidence * 100).toFixed(1)}%
-                </Label>
-              </Tooltip>
-            )}
+            {showConfidence &&
+              sentence.confidence !== null &&
+              sentence.confidence !== undefined && (
+                <Tooltip content={`Confidence score: ${(sentence.confidence * 100).toFixed(1)}%`}>
+                  <Label
+                    variant="outline"
+                    color={getConfidenceColor(sentence.confidence)}
+                    isCompact
+                  >
+                    {(sentence.confidence * 100).toFixed(1)}%
+                  </Label>
+                </Tooltip>
+              )}
 
             {/* Duration */}
             {sentence.start_time !== null && sentence.end_time !== null && (
               <Label variant="outline" color="purple" isCompact>
-                {((sentence.end_time! - sentence.start_time!) || 0).toFixed(1)}s
+                {(sentence.end_time! - sentence.start_time! || 0).toFixed(1)}s
               </Label>
             )}
           </div>
@@ -131,22 +134,27 @@ export function SentenceDisplay({
       ))}
 
       {/* Summary */}
-      <div style={{
-        marginTop: '16px',
-        padding: '8px',
-        backgroundColor: '#f1f8ff',
-        borderRadius: '4px',
-        fontSize: '12px',
-        color: '#6a6e73'
-      }}>
+      <div
+        style={{
+          marginTop: '16px',
+          padding: '8px',
+          backgroundColor: '#f1f8ff',
+          borderRadius: '4px',
+          fontSize: '12px',
+          color: '#6a6e73',
+        }}
+      >
         Total: {sentences.length} sentence{sentences.length !== 1 ? 's' : ''}
-        {sentences.some(s => s.start_time !== null && s.end_time !== null) && (
+        {sentences.some((s) => s.start_time !== null && s.end_time !== null) && (
           <span style={{ marginLeft: '16px' }}>
-            Duration: {(() => {
-              const validSentences = sentences.filter(s => s.start_time !== null && s.end_time !== null);
+            Duration:{' '}
+            {(() => {
+              const validSentences = sentences.filter(
+                (s) => s.start_time !== null && s.end_time !== null
+              );
               if (validSentences.length === 0) return 'Unknown';
-              const minStart = Math.min(...validSentences.map(s => s.start_time!));
-              const maxEnd = Math.max(...validSentences.map(s => s.end_time!));
+              const minStart = Math.min(...validSentences.map((s) => s.start_time!));
+              const maxEnd = Math.max(...validSentences.map((s) => s.end_time!));
               return formatTime(maxEnd - minStart);
             })()}
           </span>

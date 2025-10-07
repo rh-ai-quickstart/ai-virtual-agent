@@ -3,11 +3,11 @@ Speech recognition service using OpenAI Whisper.
 """
 
 import asyncio
+import functools
 import logging
 import os
 import re
-from typing import Dict, List, Optional, Any
-import functools
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,15 @@ def _get_whisper():
     if _whisper is None:
         try:
             import whisper
+
             _whisper = whisper
         except ImportError as e:
-            logger.error("OpenAI Whisper not available. Install with: pip install openai-whisper")
-            raise ImportError("OpenAI Whisper is required for speech recognition") from e
+            logger.error(
+                "OpenAI Whisper not available. Install with: pip install openai-whisper"
+            )
+            raise ImportError(
+                "OpenAI Whisper is required for speech recognition"
+            ) from e
     return _whisper
 
 
@@ -35,6 +40,7 @@ def _get_torch():
     if _torch is None:
         try:
             import torch
+
             _torch = torch
         except ImportError:
             logger.warning("PyTorch not available. Using CPU-only mode.")
@@ -58,7 +64,9 @@ class SpeechService:
         self.device = "cpu"
         self._initialized = False
 
-    def _segment_into_sentences(self, text: str, segments: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _segment_into_sentences(
+        self, text: str, segments: List[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Segment transcribed text into individual sentences with timing information.
 
@@ -70,7 +78,7 @@ class SpeechService:
             List of sentence dictionaries with text, start_time, end_time, and confidence
         """
         # Simple sentence boundary detection using regex
-        sentence_endings = re.compile(r'[.!?]+\s*')
+        sentence_endings = re.compile(r"[.!?]+\s*")
         sentences = []
 
         if not text.strip():
@@ -87,7 +95,6 @@ class SpeechService:
         # If we have Whisper segments with timing information, try to map sentences to timing
         if segments:
             current_char_pos = 0
-            segment_idx = 0
 
             for i, sentence_text in enumerate(sentence_parts):
                 sentence_start_char = text.find(sentence_text, current_char_pos)
@@ -99,46 +106,56 @@ class SpeechService:
                 sentence_confidences = []
 
                 for segment in segments:
-                    segment_text = segment.get('text', '').strip()
-                    segment_start = segment.get('start', 0)
-                    segment_end = segment.get('end', 0)
+                    segment_text = segment.get("text", "").strip()
+                    segment_start = segment.get("start", 0)
+                    segment_end = segment.get("end", 0)
 
                     # Check if this segment overlaps with our sentence
-                    if segment_text and sentence_text.lower().find(segment_text.lower()) != -1:
+                    if (
+                        segment_text
+                        and sentence_text.lower().find(segment_text.lower()) != -1
+                    ):
                         if sentence_start_time is None:
                             sentence_start_time = segment_start
                         sentence_end_time = segment_end
 
                         # Collect confidence scores if available
-                        if 'avg_logprob' in segment:
+                        if "avg_logprob" in segment:
                             import math
-                            confidence = math.exp(segment['avg_logprob'])
+
+                            confidence = math.exp(segment["avg_logprob"])
                             sentence_confidences.append(confidence)
 
                 # Calculate average confidence for the sentence
                 avg_confidence = None
                 if sentence_confidences:
-                    avg_confidence = sum(sentence_confidences) / len(sentence_confidences)
+                    avg_confidence = sum(sentence_confidences) / len(
+                        sentence_confidences
+                    )
 
-                sentences.append({
-                    'text': sentence_text,
-                    'start_time': sentence_start_time,
-                    'end_time': sentence_end_time,
-                    'confidence': avg_confidence,
-                    'index': i
-                })
+                sentences.append(
+                    {
+                        "text": sentence_text,
+                        "start_time": sentence_start_time,
+                        "end_time": sentence_end_time,
+                        "confidence": avg_confidence,
+                        "index": i,
+                    }
+                )
 
                 current_char_pos = sentence_end_char
         else:
             # No timing information available, just return sentences with text
             for i, sentence_text in enumerate(sentence_parts):
-                sentences.append({
-                    'text': sentence_text,
-                    'start_time': None,
-                    'end_time': None,
-                    'confidence': None,
-                    'index': i
-                })
+                sentences.append(
+                    {
+                        "text": sentence_text,
+                        "start_time": None,
+                        "end_time": None,
+                        "confidence": None,
+                        "index": i,
+                    }
+                )
 
         return sentences
 
@@ -164,7 +181,9 @@ class SpeechService:
             loop = asyncio.get_event_loop()
             self.model = await loop.run_in_executor(
                 None,
-                functools.partial(whisper.load_model, self.model_name, device=self.device)
+                functools.partial(
+                    whisper.load_model, self.model_name, device=self.device
+                ),
             )
 
             self._initialized = True
@@ -174,7 +193,9 @@ class SpeechService:
             logger.error(f"Failed to initialize Whisper model: {str(e)}")
             raise
 
-    async def transcribe_file(self, file_path: str, language: Optional[str] = None) -> Dict[str, Any]:
+    async def transcribe_file(
+        self, file_path: str, language: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Transcribe audio file to text.
 
@@ -198,37 +219,36 @@ class SpeechService:
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
-                functools.partial(
-                    self.model.transcribe,
-                    file_path,
-                    language=language
-                )
+                functools.partial(self.model.transcribe, file_path, language=language),
             )
 
             # Extract useful information
             transcription_result = {
                 "text": result.get("text", "").strip(),
                 "language": result.get("language"),
-                "segments": result.get("segments", [])
+                "segments": result.get("segments", []),
             }
 
             # Calculate confidence if segments are available
             if transcription_result["segments"]:
                 # Average the segment probabilities if available
                 segment_probs = [
-                    seg.get("avg_logprob", 0) for seg in transcription_result["segments"]
+                    seg.get("avg_logprob", 0)
+                    for seg in transcription_result["segments"]
                     if "avg_logprob" in seg
                 ]
                 if segment_probs:
                     import math
+
                     # Convert log probabilities to confidence scores
                     confidences = [math.exp(prob) for prob in segment_probs]
-                    transcription_result["confidence"] = sum(confidences) / len(confidences)
+                    transcription_result["confidence"] = sum(confidences) / len(
+                        confidences
+                    )
 
             # Add sentence-level segmentation
             sentences = self._segment_into_sentences(
-                transcription_result["text"],
-                transcription_result["segments"]
+                transcription_result["text"], transcription_result["segments"]
             )
             transcription_result["sentences"] = sentences
 
@@ -289,43 +309,43 @@ class SpeechService:
                 "parameters": "39M",
                 "vram": "~1GB",
                 "relative_speed": "~10x",
-                "description": "Fastest, least accurate"
+                "description": "Fastest, least accurate",
             },
             {
                 "name": "base",
                 "parameters": "74M",
                 "vram": "~1GB",
                 "relative_speed": "~7x",
-                "description": "Good balance of speed and accuracy"
+                "description": "Good balance of speed and accuracy",
             },
             {
                 "name": "small",
                 "parameters": "244M",
                 "vram": "~2GB",
                 "relative_speed": "~4x",
-                "description": "Better accuracy, moderate speed"
+                "description": "Better accuracy, moderate speed",
             },
             {
                 "name": "medium",
                 "parameters": "769M",
                 "vram": "~5GB",
                 "relative_speed": "~2x",
-                "description": "Good accuracy, slower"
+                "description": "Good accuracy, slower",
             },
             {
                 "name": "large",
                 "parameters": "1550M",
                 "vram": "~10GB",
                 "relative_speed": "1x",
-                "description": "Best accuracy, slowest"
+                "description": "Best accuracy, slowest",
             },
             {
                 "name": "turbo",
                 "parameters": "809M",
                 "vram": "~6GB",
                 "relative_speed": "~8x",
-                "description": "Optimized large model, no translation"
-            }
+                "description": "Optimized large model, no translation",
+            },
         ]
 
         # Mark current model
@@ -344,7 +364,9 @@ class SpeechService:
         if model_name == self.model_name and self._initialized:
             return  # Already using this model
 
-        logger.info(f"Changing Whisper model from '{self.model_name}' to '{model_name}'")
+        logger.info(
+            f"Changing Whisper model from '{self.model_name}' to '{model_name}'"
+        )
 
         # Reset state
         self.model_name = model_name
