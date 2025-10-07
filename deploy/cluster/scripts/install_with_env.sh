@@ -86,6 +86,14 @@ build_helm_cmd() {
         cmd_args+=("--set" "mcp-servers.toolhive.operator.enabled=true")
         # Disable weather by default and enable oracle-sqlcl per new values structure
         cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
+        # Oracle MCP server is pre-configured in LlamaStack (no registration needed)
+        echo "✅ Oracle MCP server pre-configured in LlamaStack"
+    fi
+
+    # Development mode for testing (disable OAuth protection)
+    if [[ "${LOCAL_DEV_MODE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
+        cmd_args+=("--set" "localDevMode=true")
+        echo "⚠️  WARNING: LOCAL_DEV_MODE is enabled - OAuth protection is DISABLED!"
     fi
 
     # seed admin user args

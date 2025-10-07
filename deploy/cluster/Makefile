@@ -159,7 +159,7 @@ uninstall: ## Uninstall deployment and clean up resources
 	@oc delete mcpservers --all -n $(NAMESPACE) --ignore-not-found=true ||:
 	@echo "Uninstalling Helm release..."
 	@helm uninstall --ignore-not-found $(AI_VIRTUAL_AGENT_RELEASE) -n $(NAMESPACE)
-	@if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then \
+	@if [[ "$(ORACLE)" =~ ^(1|true|TRUE|yes|YES)$$ ]]; then \
 		echo "Cleaning up Oracle-specific resources..."; \
 		echo "Oracle cleanup: Removing Oracle StatefulSet and related resources..."; \
 		oc delete statefulset oracle23ai -n $(NAMESPACE) --ignore-not-found=true ||:; \
@@ -168,6 +168,9 @@ uninstall: ## Uninstall deployment and clean up resources
 		oc delete pvc oracle-data-oracle23ai-0 -n $(NAMESPACE) --ignore-not-found=true ||:; \
 		echo "Oracle cleanup completed."; \
 	fi
+	@echo "Cleaning up completed pipeline pods..."
+	@oc delete pods --field-selector=status.phase=Succeeded -n $(NAMESPACE) --ignore-not-found=true ||:
+	@echo "Pipeline cleanup completed."
 	@echo "Cleaning up Toolhive CRDs (cluster-scoped)..."
 	@echo "Note: Toolhive CRDs are cluster-scoped and may be used by other namespaces."
 	@echo "To remove them, run: oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev"
