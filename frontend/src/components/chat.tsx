@@ -15,7 +15,6 @@ import {
   Conversation,
   FileDetailsLabel,
   Message,
-  MessageBar,
   MessageBox,
   MessageProps,
 } from '@patternfly/chatbot';

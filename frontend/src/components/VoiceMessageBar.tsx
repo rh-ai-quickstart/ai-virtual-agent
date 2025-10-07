@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { MessageBar } from '@patternfly/chatbot';
 import { Button, Tooltip } from '@patternfly/react-core';
 import { MicrophoneIcon, MicrophoneSlashIcon } from '@patternfly/react-icons';
@@ -32,8 +32,7 @@ export function VoiceMessageBar({
 }: VoiceMessageBarProps) {
   // Remove local state - use prop value directly
   const [voiceInputActive, setVoiceInputActive] = useState(false);
-  const [justTranscribed, setJustTranscribed] = useState(false);
-  const messageBarRef = useRef<HTMLDivElement>(null);
+  const [voiceUpdateKey, setVoiceUpdateKey] = useState(0);
 
   const handleInputChange = useCallback((
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -64,7 +63,8 @@ export function VoiceMessageBar({
         onChange(event, newValue);
       }
       setVoiceInputActive(false);
-      setJustTranscribed(true);
+      // Force MessageBar re-render with voice content
+      setVoiceUpdateKey(prev => prev + 1);
     },
     onSentences: (sentenceData: Sentence[]) => {
       // Pass sentences to parent component for display
@@ -78,43 +78,6 @@ export function VoiceMessageBar({
     sessionId
   });
 
-  // Focus and update the input after voice transcription
-  useEffect(() => {
-    if (justTranscribed && messageBarRef.current) {
-      // Find the input element within the MessageBar
-      const inputElement = messageBarRef.current.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement;
-      if (inputElement) {
-        // Small delay to ensure DOM is updated
-        setTimeout(() => {
-          // Directly set the value to force update
-          inputElement.value = value || '';
-
-          // Trigger the React onChange event properly
-          const changeEvent = {
-            target: inputElement,
-            currentTarget: inputElement,
-            type: 'change',
-            bubbles: true
-          } as React.ChangeEvent<HTMLInputElement>;
-
-          // Call our handleInputChange directly to update React state
-          handleInputChange(changeEvent, value);
-
-          // Also dispatch native event for good measure
-          const nativeEvent = new Event('input', { bubbles: true });
-          inputElement.dispatchEvent(nativeEvent);
-
-          // Focus and position cursor at the end
-          inputElement.focus();
-          if (inputElement.setSelectionRange) {
-            const length = inputElement.value.length;
-            inputElement.setSelectionRange(length, length);
-          }
-        }, 50);
-      }
-      setJustTranscribed(false);
-    }
-  }, [justTranscribed, value, handleInputChange]);
 
   const handleVoiceToggle = useCallback(() => {
     if (voiceError) {
@@ -192,17 +155,43 @@ export function VoiceMessageBar({
         </div>
       )}
 
-      {/* Simple MessageBar to restore send button functionality */}
-      <div ref={messageBarRef}>
-        <MessageBar
-          onSendMessage={handleSendMessage}
-          isSendButtonDisabled={isSendButtonDisabled || isProcessing}
-          value={value}
-          onChange={handleInputChange}
-          handleAttach={handleAttach}
-          placeholder={getPlaceholder()}
-          hasMicrophoneButton
-        />
+      {/* Voice button + MessageBar layout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Working voice input button */}
+        <Tooltip content={getVoiceStatus()}>
+          <Button
+            variant="plain"
+            aria-label={isRecording ? "Stop voice input" : "Start voice input"}
+            onClick={handleVoiceToggle}
+            isDisabled={isVoiceButtonDisabled()}
+            style={{
+              color: isRecording ? '#d32f2f' : voiceError ? '#d32f2f' : '#1976d2',
+              backgroundColor: isRecording ? '#ffebee' : 'transparent',
+              border: isRecording ? '1px solid #d32f2f' : '1px solid transparent',
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
+              padding: '6px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {getVoiceIcon()}
+          </Button>
+        </Tooltip>
+
+        {/* Simple MessageBar with voice support */}
+        <div style={{ flex: 1 }}>
+          <MessageBar
+            key={`voice-${voiceUpdateKey}`}
+            onSendMessage={handleSendMessage}
+            isSendButtonDisabled={isSendButtonDisabled || isProcessing}
+            value={value}
+            onChange={handleInputChange}
+            handleAttach={handleAttach}
+            placeholder={getPlaceholder()}
+          />
+        </div>
       </div>
 
       {/* Voice capability indicator */}
