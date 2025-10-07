@@ -7,11 +7,11 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: quay.io/ecosystem-appeng/ai-virtual-agent
+  repository: quay.io/lrangine/ai-virtual-agent
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  #tag: "1.1.0"
+  tag: "1.0.16-amd64"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -150,7 +150,7 @@ llama-stack:
   auth:
     provider_config:
       type: "custom"
-      endpoint: http://ai-virtual-agent:8887/validate
+      endpoint: http://ai-virtual-agent:8000/validate
     access_policy:
     - permit:
         actions: [create]
@@ -192,13 +192,43 @@ llama-stack:
       description: users can read, update and delete resources they own
   secrets:
     TAVILY_SEARCH_API_KEY: ""
+  tool_groups:
+    - provider_id: tavily-search
+      toolgroup_id: builtin::websearch
+    - provider_id: rag-runtime
+      toolgroup_id: builtin::rag
+    - provider_id: model-context-protocol
+      toolgroup_id: mcp:oracle_mcp_server
+      mcp_endpoint:
+        uri: http://mcp-oracle-sqlcl-proxy:8080/sse
+      configuration:
+        database_type: oracle
+        connection_name: oracle_connection
+        health_check:
+          enabled: true
+          timeout: 180s
+          retry_interval: 30s
+          max_retries: 3
 
-# global:
-#   models:
-#     llama-3-1-8b-instruct:
-#       id: meta-llama/Llama-3.1-8B-Instruct
-#       enabled: true
-#       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
+global:
+  # Hugging Face token for accessing gated models
+  hf_token: ${HF_TOKEN}
+  models:
+    llama-3-2-1b-instruct:
+      id: meta-llama/Llama-3.2-1B-Instruct
+      enabled: true
+      resources:
+        limits:
+          cpu: 2
+          memory: 18Gi
+        requests:
+          cpu: 1
+          memory: 9Gi
+      tolerations:
+        - key: "g5-gpu"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
 
 #   mcp-servers:
 #     mcp-weather:
@@ -266,7 +296,7 @@ mcp-servers:
             - ALL
 
     oracle-sqlcl:
-      enabled: false
+      enabled: true
       port: 8080
       transport: stdio
       image: "quay.io/ecosystem-appeng/oracle-sqlcl:0.1.0"
@@ -290,11 +320,11 @@ mcp-servers:
           key: jdbc-uri
       resources:
         requests:
-          cpu: 500m
-          memory: 512Mi
-        limits:
           cpu: 1000m
-          memory: 1Gi
+          memory: 4Gi
+        limits:
+          cpu: 2000m
+          memory: 8Gi
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -314,3 +344,36 @@ mcp-servers:
       volumeMounts:
         - name: sqlcl-data
           mountPath: /sqlcl-home
+      # Wait for Oracle dependencies before starting MCP server
+      waitFor:
+        - name: oracle23ai
+          type: secret
+          timeout: 300
+          interval: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        - name: oracle23ai-tpcds-populate
+          type: job
+          timeout: 1800
+          interval: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+# LLM Service Configuration
+llm-service:
+  secret:
+    hf_token: ${HF_TOKEN}
+
+# Development Mode Configuration
+# Set to true to disable OAuth protection for testing
+localDevMode: false
