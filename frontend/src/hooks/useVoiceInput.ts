@@ -57,7 +57,7 @@ export function useVoiceInput({
     const checkSupport = () => {
       const hasMediaRecorder = typeof MediaRecorder !== 'undefined';
       const hasWebSpeech = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-      const hasGetUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+      const hasGetUserMedia = navigator.mediaDevices && !!navigator.mediaDevices.getUserMedia;
 
       setState(prev => ({
         ...prev,
@@ -98,15 +98,15 @@ export function useVoiceInput({
       setState(prev => ({ ...prev, isRecording: true, error: null }));
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = event.results[0]?.[0]?.transcript;
       if (transcript) {
         // Generate simple sentences for Web Speech API (no timing info available)
         const sentences: Sentence[] = transcript
           .split(/[.!?]+/)
-          .map((text, index) => text.trim())
+          .map((text: string) => text.trim())
           .filter(text => text.length > 0)
-          .map((text, index) => ({
+          .map((text: string, index: number) => ({
             text,
             start_time: null,
             end_time: null,
@@ -120,7 +120,7 @@ export function useVoiceInput({
       }
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       handleError(new Error(`Speech recognition error: ${event.error}`));
     };
 
@@ -299,7 +299,43 @@ export function useVoiceInput({
 // Extend Window interface for TypeScript
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+    start(): void;
+    stop(): void;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+  }
+
+  interface SpeechRecognitionErrorEvent extends Event {
+    error: string;
+  }
+
+  interface SpeechRecognitionResultList {
+    readonly [index: number]: SpeechRecognitionResult;
+    readonly length: number;
+  }
+
+  interface SpeechRecognitionResult {
+    readonly [index: number]: SpeechRecognitionAlternative;
+    readonly length: number;
+    readonly isFinal: boolean;
+  }
+
+  interface SpeechRecognitionAlternative {
+    readonly transcript: string;
+    readonly confidence: number;
   }
 }

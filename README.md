@@ -13,6 +13,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 
 ### Key Features
 
+🎤 **Voice Recognition** - OpenAI Whisper speech-to-text with Web Speech API fallback
 🤖 **Agent Management** - Create and configure AI agents with different capabilities
 📚 **Knowledge Integration** - Document search and question answering via RAG
 💬 **Real-time Chat** - Streaming conversations with session history
@@ -75,6 +76,14 @@ make install NAMESPACE=your-namespace
 export NAMESPACE=ai-virtual-agent
 export HF_TOKEN=your-huggingface-token
 make install
+
+# For voice-enabled deployment with Llama 3.2 (recommended):
+make install NAMESPACE=your-namespace \
+  HF_TOKEN=your-hf-token \
+  LLM=llama-3-2-1b-instruct \
+  LLM_TOLERATION=g5-gpu \
+  ADMIN_USERNAME=your-username \
+  ADMIN_EMAIL=your-email@domain.com
 ```
 
 📖 **[Full Installation Guide →](INSTALLING.md)**
@@ -151,6 +160,28 @@ const expert = await initializeAgentTemplate({
   knowledge_bases: ["banking-regulations"]
 });
 ```
+
+## Voice Recognition
+
+The platform includes integrated voice recognition capabilities:
+
+- **Speech-to-Text**: OpenAI Whisper models (tiny, base, small, medium, large, turbo)
+- **Default Model**: base (74M parameters, good speed/accuracy balance)
+- **Fallback**: Web Speech API for browsers without full Whisper support
+- **Health Check**: `curl http://localhost:8000/api/v1/speech/health`
+- **Endpoints**: `/api/v1/speech/*` for transcription and model management
+
+### Architecture Notes
+
+**Local Development:**
+- Uses ARM64 images on Apple Silicon Macs
+- Frontend/backend built automatically for host architecture
+- No GPU required (CPU-only Whisper)
+
+**Cluster Deployment:**
+- Uses AMD64 images for Linux clusters
+- Requires GPU nodes with tolerations for LLM deployment
+- Custom voice-enabled image: `quay.io/rhkp/ai-virtual-agent:voice-v1.0`
 
 ## Development Commands
 
@@ -238,8 +269,31 @@ install the MIME detection dependency (libmagic) and Python binding:
 
 Notes:
 - Unit tests import parts of the attachments stack. Without libmagic installed you can still proceed by installing the packages above.
-- If you’re not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip bucket-related startup paths.
+- If you're not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip bucket-related startup paths.
 
+## Troubleshooting
+
+### Architecture-Specific Issues
+
+**Frontend segmentation faults (ARM64 Macs):**
+If you encounter esbuild crashes with the frontend container, rebuild with explicit ARM64 platform:
+```bash
+podman build --platform=linux/arm64 -f deploy/local/Containerfile.frontend.dev -t local-frontend:arm64 .
+```
+
+**GPU scheduling issues (Cluster):**
+Verify GPU node availability and tolerations:
+```bash
+oc describe nodes | grep -i gpu
+oc get nodes -l node.kubernetes.io/instance-type=g5.xlarge
+```
+
+**Voice recognition not working:**
+Check speech service health and available models:
+```bash
+curl http://localhost:8000/api/v1/speech/health
+curl http://localhost:8000/api/v1/speech/models
+```
 
 ## Community & Support
 

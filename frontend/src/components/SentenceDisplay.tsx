@@ -1,4 +1,3 @@
-import React from 'react';
 import { Label, Tooltip } from '@patternfly/react-core';
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@patternfly/react-icons';
 
@@ -99,7 +98,7 @@ export function SentenceDisplay({
 
             {/* Timing information */}
             {showTimestamp && (sentence.start_time !== null || sentence.end_time !== null) && (
-              <Label variant="outline" color="cyan" isCompact>
+              <Label variant="outline" color="blue" isCompact>
                 {sentence.start_time !== null && sentence.end_time !== null
                   ? `${formatTime(sentence.start_time)} - ${formatTime(sentence.end_time)}`
                   : sentence.start_time !== null
@@ -124,7 +123,7 @@ export function SentenceDisplay({
             {/* Duration */}
             {sentence.start_time !== null && sentence.end_time !== null && (
               <Label variant="outline" color="purple" isCompact>
-                {((sentence.end_time - sentence.start_time) || 0).toFixed(1)}s
+                {((sentence.end_time! - sentence.start_time!) || 0).toFixed(1)}s
               </Label>
             )}
           </div>

@@ -18,30 +18,38 @@ export function EnhancedVoiceMessageBar({
   ...voiceMessageBarProps
 }: EnhancedVoiceMessageBarProps) {
   const [sentences, setSentences] = useState<Sentence[]>([]);
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
 
   const handleSentences = useCallback((newSentences: Sentence[]) => {
     setSentences(newSentences);
-    setIsVoiceMode(true);
   }, []);
 
   const handleSendMessage = useCallback((message: string | number) => {
     // Clear sentences when message is sent
     setSentences([]);
-    setIsVoiceMode(false);
     onSendMessage(message);
   }, [onSendMessage]);
 
   const handleSentenceClick = useCallback((sentence: Sentence) => {
-    // When a sentence is clicked, use it as the message input
-    if (voiceMessageBarProps.onChange && typeof sentence.text === 'string') {
-      const event = {
-        target: { value: sentence.text }
+    // When a sentence is clicked, append it to the current input value
+    if (typeof sentence.text === 'string' && voiceMessageBarProps.onChange) {
+      const currentValue = voiceMessageBarProps.value || '';
+      const newValue = currentValue ? `${currentValue} ${sentence.text}` : sentence.text;
+
+      // Create a proper synthetic event
+      const syntheticEvent = {
+        target: { value: newValue },
+        currentTarget: { value: newValue },
+        type: 'change'
       } as React.ChangeEvent<HTMLInputElement>;
-      voiceMessageBarProps.onChange(event, sentence.text);
+
+      voiceMessageBarProps.onChange(syntheticEvent, newValue);
     }
+
+    // Clear sentences after clicking to hide the panel
+    setSentences([]);
+
     onSentenceClick?.(sentence);
-  }, [voiceMessageBarProps.onChange, onSentenceClick]);
+  }, [onSentenceClick, voiceMessageBarProps.onChange, voiceMessageBarProps.value]);
 
   return (
     <div style={{ position: 'relative' }}>

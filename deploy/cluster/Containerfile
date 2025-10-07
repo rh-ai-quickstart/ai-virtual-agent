@@ -5,18 +5,8 @@ USER root
 
 WORKDIR /app/frontend
 
-# Copy only package files first to leverage Docker cache
-COPY frontend/package*.json ./
-
-RUN npm install --debug
-
-# Now copy the rest of the frontend code
-COPY frontend/ ./
-
-# Set node memory limit if needed
-ENV NODE_OPTIONS=--max-old-space-size=512
-
-RUN npm run build
+# Copy pre-built frontend assets (built locally to avoid cross-compilation issues)
+COPY frontend/dist ./dist
 
 
 # ---------- Backend Build ----------
@@ -26,7 +16,15 @@ USER root
 # Set working directory
 WORKDIR /app
 
-RUN dnf install -y nmap-ncat ffmpeg && dnf clean all
+# Install ffmpeg from RPM Fusion or compile from source
+RUN dnf install -y nmap-ncat wget tar && \
+    # Try to install ffmpeg from static builds
+    wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -O /tmp/ffmpeg.tar.xz && \
+    cd /tmp && tar -xf ffmpeg.tar.xz && \
+    find . -name "ffmpeg" -type f -executable -exec cp {} /usr/local/bin/ \; && \
+    chmod +x /usr/local/bin/ffmpeg && \
+    rm -rf /tmp/ffmpeg* && \
+    dnf clean all
 
 # Copy backend and install dependencies
 COPY backend/ ./backend/
