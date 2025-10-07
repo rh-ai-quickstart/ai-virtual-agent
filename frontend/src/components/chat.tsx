@@ -15,7 +15,6 @@ import {
   Conversation,
   FileDetailsLabel,
   Message,
-  MessageBar,
   MessageBox,
   MessageProps,
 } from '@patternfly/chatbot';
@@ -50,6 +49,7 @@ import userAvatar from '../assets/img/user-avatar.svg';
 import { ATTACHMENTS_API_ENDPOINT } from '@/config/api';
 import { SimpleContentItem } from '@/types/chat';
 import { getTemplateDetails } from '@/services/agent-templates';
+import { EnhancedVoiceMessageBar } from './EnhancedVoiceMessageBar';
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -783,13 +783,16 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
                           </div>
                         ))}
                       </div>
-                      <MessageBar
+                      <EnhancedVoiceMessageBar
                         onSendMessage={handleSendMessage as (message: string | number) => void}
-                        hasMicrophoneButton
                         isSendButtonDisabled={isLoading || !selectedAgent}
                         value={input}
                         onChange={handleInputChange}
                         handleAttach={handleAttach}
+                        sessionId={sessionId}
+                        placeholder="Type a message or click the microphone to speak..."
+                        language="en"
+                        showSentenceDisplay={true}
                       />
                     </PanelMainBody>
                   </PanelMain>

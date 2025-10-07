@@ -125,6 +125,13 @@ spec:
             - name: ADMIN_EMAIL
               value: '{{ .Values.seed.admin_user.email }}'
             {{- end }}
+            # Voice integration configuration
+            - name: WHISPER_MODEL
+              value: '{{ .Values.voice.whisperModel }}'
+            {{- if .Values.voice.enableModelCache }}
+            - name: WHISPER_CACHE_DIR
+              value: '/app/.cache/whisper'
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -141,14 +148,23 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            {{- if .Values.voice.enableModelCache }}
+            - name: whisper-cache
+              mountPath: /app/.cache/whisper
+            {{- end }}
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            {{- end }}
       volumes:
+        {{- if .Values.voice.enableModelCache }}
+        - name: whisper-cache
+          persistentVolumeClaim:
+            claimName: {{ include "ai-virtual-agent.fullname" . }}-whisper-cache
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

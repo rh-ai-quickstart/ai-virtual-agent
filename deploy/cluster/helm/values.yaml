@@ -63,12 +63,16 @@ resources: {}
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # NOTE: Voice integration with Whisper models requires additional CPU and memory resources.
+  # For production deployments with voice features, consider:
+  # - CPU: 1000m+ (voice processing is CPU intensive)
+  # - Memory: 4Gi+ (model loading requires significant memory)
   # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
+  #   cpu: 2000m
+  #   memory: 8Gi
   # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  #   cpu: 1000m
+  #   memory: 4Gi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
@@ -118,6 +122,17 @@ affinity: {}
 pgSecret: pgvector
 
 llama_stack_url: http://llamastack:8321
+
+# Voice integration configuration
+voice:
+  # Whisper model to use for speech-to-text (tiny, base, small, medium, large, turbo)
+  whisperModel: base
+  # Enable persistent cache for Whisper models
+  enableModelCache: true
+  # Storage size for model cache (only used if enableModelCache is true)
+  modelCacheSize: 10Gi
+  # Storage class for model cache PVC (optional, uses cluster default if not specified)
+  # storageClass: ""
 
 sessionSecret: {}
  # value: "my-session-secret"

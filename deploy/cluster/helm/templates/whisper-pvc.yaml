@@ -1,0 +1,18 @@
+{{- if .Values.voice.enableModelCache }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-whisper-cache
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: voice-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.voice.modelCacheSize }}
+  {{- if .Values.voice.storageClass }}
+  storageClassName: {{ .Values.voice.storageClass }}
+  {{- end }}
+{{- end }}

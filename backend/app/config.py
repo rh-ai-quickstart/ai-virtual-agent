@@ -23,6 +23,9 @@ class Settings:
     # LlamaStack Configuration
     LLAMA_STACK_URL: Optional[str] = os.getenv("LLAMA_STACK_URL")
 
+    # Kubernetes Configuration (for MCP server auto-discovery)
+    KUBERNETES_NAMESPACE: str = os.getenv("KUBERNETES_NAMESPACE", "default")
+
     # Attachments
     ATTACHMENTS_INTERNAL_API_ENDPOINT: str = os.getenv(
         "ATTACHMENTS_INTERNAL_API_ENDPOINT", "http://ai-virtual-agent:8000"

@@ -26,7 +26,7 @@ USER root
 # Set working directory
 WORKDIR /app
 
-RUN dnf install -y nmap-ncat && dnf clean all
+RUN dnf install -y nmap-ncat ffmpeg && dnf clean all
 
 # Copy backend and install dependencies
 COPY backend/ ./backend/
