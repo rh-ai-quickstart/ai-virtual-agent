@@ -20,5 +20,5 @@ dependencies:
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.2.22
-digest: sha256:3418efd23abe090a3dc9189251631b58f712474eab0258ef02aea70ecd95afd1
-generated: "2025-09-19T10:23:34.244020518-04:00"
+digest: sha256:1c50ff76cddbca2a499783108587be5d32d38c3ef0aa89c9e2f3ef8991ae343e
+generated: "2025-10-07T21:11:52.929591-04:00"
