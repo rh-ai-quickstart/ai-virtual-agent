@@ -597,7 +597,7 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
           style={{ marginBottom: '8px' }}
         />
       )}
-      <Chatbot displayMode={displayMode} isCompact={true}>
+      <Chatbot displayMode={displayMode}>
         <ChatbotConversationHistoryNav
           displayMode={displayMode}
           onDrawerToggle={() => {
@@ -614,7 +614,6 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
           onSelectActiveItem={onSelectActiveItem}
           conversations={conversations}
           onNewChat={onNewChat}
-          isCompact={true}
           handleTextInputChange={(value: string) => {
             if (value === '') {
               // Convert sessions to conversations format

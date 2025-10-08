@@ -77,6 +77,20 @@ build_helm_cmd() {
     cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
     cmd_args+=("--set" "ingestion-pipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
 
+    # Oracle MCP server enablement (when ORACLE=true)
+    if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
+        # Enable Oracle database installation
+        cmd_args+=("--set" "mcp-servers.oracle.enabled=true")
+        # Ensure Toolhive CRDs/operator are enabled and Oracle SQLcl MCP is enabled in subchart
+        cmd_args+=("--set" "mcp-servers.toolhive.crds.enabled=true")
+        cmd_args+=("--set" "mcp-servers.toolhive.operator.enabled=true")
+        # Disable weather by default and enable oracle-sqlcl per new values structure
+        cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
+        # Oracle MCP server is pre-configured in LlamaStack (no registration needed)
+        echo "✅ Oracle MCP server pre-configured in LlamaStack"
+    fi
+
+
     # seed admin user args
     if [ -n "$ADMIN_USERNAME" ]; then
         cmd_args+=("--set" "seed.admin_user.username=$ADMIN_USERNAME")

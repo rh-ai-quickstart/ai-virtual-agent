@@ -1,7 +1,7 @@
 # AI Virtual Agent - Helm Deployment Makefile
 # Run `make help` to see available targets.
 
-.PHONY: help install install-help install-status deps uninstall install-namespace list-models
+.PHONY: help install install-help install-status deps uninstall install-namespace list-models uninstall-crds
 
 # -----------------------------------------------------------------------------
 # Helper
@@ -31,6 +31,10 @@ HF_TOKEN ?=
 AI_VIRTUAL_AGENT_CHART := helm
 AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
+
+# Oracle MCP flag (default disabled). Override with: make install ORACLE=true
+ORACLE ?= false
+export ORACLE
 
 # Ingestion pipeline configuration
 SOURCE ?= S3
@@ -109,9 +113,13 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "  {SAFETY,LLM}_URL         - Model URL"
 	@echo "  {SAFETY,LLM}_API_TOKEN   - Model API token for remote models"
 	@echo "  {SAFETY,LLM}_TOLERATION  - Model pod toleration"
+	@echo "  ORACLE                - Set to true to enable Oracle MCP server"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make install NAMESPACE=my-ai-assistant"
+	@echo "  make install NAMESPACE=my-ai-assistant ORACLE=true"
+	@echo "  make uninstall NAMESPACE=my-ai-assistant"
+	@echo "  make uninstall NAMESPACE=my-ai-assistant ORACLE=true"
 	@echo "  make install-status NAMESPACE=my-ai-assistant"
 
 deps: ## Update Helm dependencies
@@ -146,15 +154,37 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"
+	@echo "Deleting MCPServer instances (managed by Toolhive operator)..."
+	@echo "Note: This will automatically clean up StatefulSets, deployments, services, and PVCs"
+	@oc delete mcpservers --all -n $(NAMESPACE) --ignore-not-found=true ||:
+	@echo "Uninstalling Helm release..."
 	@helm uninstall --ignore-not-found $(AI_VIRTUAL_AGENT_RELEASE) -n $(NAMESPACE)
-	@echo "Removing pgvector and minio PVCs from $(NAMESPACE)"
-	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|minio)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
-	@echo "Deleting remaining pods in namespace $(NAMESPACE)"
-	@oc delete pods -n $(NAMESPACE) --all
+	@if [[ "$(ORACLE)" =~ ^(1|true|TRUE|yes|YES)$$ ]]; then \
+		echo "Cleaning up Oracle-specific resources..."; \
+		echo "Oracle cleanup: Removing Oracle StatefulSet and related resources..."; \
+		oc delete statefulset oracle23ai -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete job oracle23ai-tpcds-populate -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete secret oracle23ai -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		oc delete pvc oracle-data-oracle23ai-0 -n $(NAMESPACE) --ignore-not-found=true ||:; \
+		echo "Oracle cleanup completed."; \
+	fi
+	@echo "Cleaning up completed pipeline pods..."
+	@oc delete pods --field-selector=status.phase=Succeeded -n $(NAMESPACE) --ignore-not-found=true ||:
+	@echo "Pipeline cleanup completed."
+	@echo "Cleaning up Toolhive CRDs (cluster-scoped)..."
+	@echo "Note: Toolhive CRDs are cluster-scoped and may be used by other namespaces."
+	@echo "To remove them, run: oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev"
 	@echo "Checking for any remaining resources in namespace $(NAMESPACE)..."
 	@echo "If you want to completely remove the namespace, run: oc delete project $(NAMESPACE)"
 	@echo "Remaining resources in namespace $(NAMESPACE):"
 	@$(MAKE) install-status NAMESPACE=$(NAMESPACE)
+
+uninstall-crds: ## Remove Toolhive CRDs (cluster-scoped) - use with caution
+	@echo "⚠️  WARNING: This will remove Toolhive CRDs cluster-wide!"
+	@echo "Only run this if no other namespaces are using Toolhive."
+	@echo "Removing Toolhive CRDs..."
+	@oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev --ignore-not-found=true ||:
+	@echo "Toolhive CRDs removed."
 
 install-status: ## Check deployment status
 	@echo "Deployment status for namespace: $(NAMESPACE)"
