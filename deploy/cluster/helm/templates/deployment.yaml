@@ -49,7 +49,6 @@ spec:
               done
               echo "$url is ready."
       containers:
-        {{- if not .Values.localDevMode }}
         - name: oauth-proxy
           args:
             - -provider=openshift
@@ -81,7 +80,6 @@ spec:
               name: secret-ai-virtual-agent-tls
             - mountPath: /etc/proxy/secrets
               name: secret-ai-virtual-agent-proxy
-        {{- end }}
 
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -127,9 +125,6 @@ spec:
             - name: ADMIN_EMAIL
               value: '{{ .Values.seed.admin_user.email }}'
             {{- end }}
-            # Development Mode - Disable OAuth for testing
-            - name: LOCAL_DEV_ENV_MODE
-              value: "{{ .Values.localDevMode | default false }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -150,11 +145,9 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if not .Values.localDevMode }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
