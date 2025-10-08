@@ -192,23 +192,6 @@ llama-stack:
       description: users can read, update and delete resources they own
   secrets:
     TAVILY_SEARCH_API_KEY: ""
-  tool_groups:
-    - provider_id: tavily-search
-      toolgroup_id: builtin::websearch
-    - provider_id: rag-runtime
-      toolgroup_id: builtin::rag
-    - provider_id: model-context-protocol
-      toolgroup_id: mcp:oracle_mcp_server
-      mcp_endpoint:
-        uri: http://mcp-oracle-sqlcl-proxy:8080/sse
-      configuration:
-        database_type: oracle
-        connection_name: oracle_connection
-        health_check:
-          enabled: true
-          timeout: 180s
-          retry_interval: 30s
-          max_retries: 3
 
 global:
   # Hugging Face token for accessing gated models
@@ -373,7 +356,3 @@ mcp-servers:
 llm-service:
   secret:
     hf_token: ${HF_TOKEN}
-
-# Development Mode Configuration
-# Set to true to disable OAuth protection for testing
-localDevMode: false

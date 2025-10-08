@@ -90,11 +90,6 @@ build_helm_cmd() {
         echo "✅ Oracle MCP server pre-configured in LlamaStack"
     fi
 
-    # Development mode for testing (disable OAuth protection)
-    if [[ "${LOCAL_DEV_MODE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
-        cmd_args+=("--set" "localDevMode=true")
-        echo "⚠️  WARNING: LOCAL_DEV_MODE is enabled - OAuth protection is DISABLED!"
-    fi
 
     # seed admin user args
     if [ -n "$ADMIN_USERNAME" ]; then
