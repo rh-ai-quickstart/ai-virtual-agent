@@ -790,6 +790,7 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
                         onChange={handleInputChange}
                         handleAttach={handleAttach}
                         sessionId={sessionId}
+                        placeholder="Type a message or click the microphone to speak..."
                       />
                     </PanelMainBody>
                   </PanelMain>

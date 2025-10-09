@@ -1,7 +1,5 @@
 import React, { useCallback, useState } from 'react';
 import { MessageBar } from '@patternfly/chatbot';
-import { Button, Tooltip } from '@patternfly/react-core';
-import { MicrophoneIcon, MicrophoneSlashIcon } from '@patternfly/react-icons';
 import { useVoiceInput, Sentence } from '@/hooks/useVoiceInput';
 
 export interface VoiceMessageBarProps {
@@ -21,6 +19,7 @@ export interface VoiceMessageBarProps {
 
 /**
  * Enhanced MessageBar component with voice input capabilities
+ * Using PatternFly's native microphone button with privacy-focused override
  */
 export function VoiceMessageBar({
   onSendMessage,
@@ -33,8 +32,6 @@ export function VoiceMessageBar({
   language = 'en',
   onSentences,
 }: VoiceMessageBarProps) {
-  // Remove local state - use prop value directly
-  const [voiceInputActive, setVoiceInputActive] = useState(false);
   const [voiceUpdateKey, setVoiceUpdateKey] = useState(0);
 
   const handleInputChange = useCallback(
@@ -42,13 +39,12 @@ export function VoiceMessageBar({
       event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
       newValue?: string | number
     ) => {
-      // Simply pass through to parent - no local state
       onChange?.(event, newValue);
     },
     [onChange]
   );
 
-  // Voice input hook
+  // Voice input hook - same as original VoiceMessageBar
   const {
     isRecording,
     isProcessing,
@@ -68,7 +64,6 @@ export function VoiceMessageBar({
         } as React.ChangeEvent<HTMLInputElement>;
         onChange(event, newValue);
       }
-      setVoiceInputActive(false);
       // Force MessageBar re-render with voice content
       setVoiceUpdateKey((prev) => prev + 1);
     },
@@ -78,12 +73,19 @@ export function VoiceMessageBar({
     },
     onError: (error: Error) => {
       console.error('Voice input error:', error);
-      setVoiceInputActive(false);
     },
     language,
     sessionId,
   });
 
+  const handleSendMessage = useCallback(
+    (message: string | number) => {
+      onSendMessage(message);
+    },
+    [onSendMessage]
+  );
+
+  // Voice toggle handler that uses our privacy-focused implementation
   const handleVoiceToggle = useCallback(() => {
     if (voiceError) {
       clearError();
@@ -101,7 +103,6 @@ export function VoiceMessageBar({
       return;
     }
 
-    setVoiceInputActive(!voiceInputActive);
     toggleRecording();
   }, [
     voiceError,
@@ -109,20 +110,10 @@ export function VoiceMessageBar({
     voiceSupported,
     useWebSpeech,
     sessionId,
-    voiceInputActive,
     toggleRecording,
   ]);
 
-  const handleSendMessage = useCallback(
-    (message: string | number) => {
-      // Send the message and clear voice input state
-      onSendMessage(message);
-      setVoiceInputActive(false);
-    },
-    [onSendMessage]
-  );
-
-  // Voice status indicator
+  // Voice status and UI functions - same as original
   const getVoiceStatus = () => {
     if (isProcessing) return 'Processing...';
     if (isRecording) return 'Listening...';
@@ -131,18 +122,6 @@ export function VoiceMessageBar({
     return voiceSupported ? 'Click to start voice input' : 'Using browser speech recognition';
   };
 
-  const getVoiceIcon = () => {
-    if (isRecording || voiceInputActive) {
-      return <MicrophoneSlashIcon />;
-    }
-    return <MicrophoneIcon />;
-  };
-
-  const isVoiceButtonDisabled = () => {
-    return isProcessing || (!voiceSupported && !useWebSpeech) || !sessionId;
-  };
-
-  // Enhanced placeholder text
   const getPlaceholder = () => {
     if (isRecording) return 'Listening... Click microphone to stop';
     if (isProcessing) return 'Processing speech...';
@@ -151,7 +130,7 @@ export function VoiceMessageBar({
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Voice input status indicator */}
+      {/* Voice input status indicator - same as original VoiceMessageBar */}
       {(isRecording || isProcessing || voiceError) && (
         <div
           style={{
@@ -173,46 +152,58 @@ export function VoiceMessageBar({
         </div>
       )}
 
-      {/* Voice button + MessageBar layout */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Working voice input button */}
-        <Tooltip content={getVoiceStatus()}>
-          <Button
-            variant="plain"
-            aria-label={isRecording ? 'Stop voice input' : 'Start voice input'}
-            onClick={handleVoiceToggle}
-            isDisabled={isVoiceButtonDisabled()}
-            style={{
-              color: isRecording ? '#d32f2f' : voiceError ? '#d32f2f' : '#1976d2',
-              backgroundColor: isRecording ? '#ffebee' : 'transparent',
-              border: isRecording ? '1px solid #d32f2f' : '1px solid transparent',
-              borderRadius: '50%',
-              width: '36px',
-              height: '36px',
-              minWidth: '36px',
-              padding: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {getVoiceIcon()}
-          </Button>
-        </Tooltip>
+      {/* Clean PatternFly MessageBar with overridden microphone behavior */}
+      <MessageBar
+        key={`voice-${voiceUpdateKey}`}
+        onSendMessage={handleSendMessage}
+        isSendButtonDisabled={isSendButtonDisabled || isProcessing}
+        value={value}
+        onChange={handleInputChange}
+        handleAttach={handleAttach}
+        placeholder={getPlaceholder()}
+        hasMicrophoneButton={true} // Use PatternFly's native microphone UI
+        buttonProps={{
+          attach: {
+            tooltipContent: 'Attach files',
+          },
+          microphone: {
+            language: language,
+            tooltipContent: {
+              active: 'Stop listening',
+              inactive: 'Use microphone'
+            },
+            props: {
+              // Override PatternFly's onClick with our privacy-focused implementation
+              onClick: (e: React.MouseEvent) => {
+                e.preventDefault();
+                handleVoiceToggle();
+              },
+              // Override the disabled state to respect our sessionId check
+              isDisabled: isProcessing || !sessionId,
+              // Override visual state to reflect our recording state
+              'aria-pressed': isRecording,
+              className: `pf-chatbot__button--microphone ${
+                isRecording ? 'pf-chatbot__button--microphone--active' : ''
+              }`,
+              style: {
+                ...(isRecording && {
+                  color: '#ffffff',
+                  backgroundColor: '#1976d2',
+                  border: '1px solid #1976d2',
+                }),
+                ...(voiceError && !isRecording && {
+                  color: '#d32f2f',
+                }),
+              }
+            }
+          },
+          send: {
+            tooltipContent: 'Send message',
+          },
+        }}
+      />
 
-        {/* Simple MessageBar with voice support */}
-        <div style={{ flex: 1 }}>
-          <MessageBar
-            key={`voice-${voiceUpdateKey}`}
-            onSendMessage={handleSendMessage}
-            isSendButtonDisabled={isSendButtonDisabled || isProcessing}
-            value={value}
-            onChange={handleInputChange}
-            handleAttach={handleAttach}
-            placeholder={getPlaceholder()}
-          />
-        </div>
-      </div>
-
-      {/* Voice capability indicator */}
+      {/* Voice capability indicator - same as original */}
       {voiceSupported || useWebSpeech ? (
         <div
           style={{
