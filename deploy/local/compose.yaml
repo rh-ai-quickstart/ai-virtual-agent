@@ -98,10 +98,14 @@ services:
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
+      # Voice integration configuration
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - WHISPER_CACHE_DIR=/app/.cache/whisper
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:
       - ../../backend:/app/backend:Z
+      - whisper_cache:/app/.cache/whisper
     depends_on:
       db:
         condition: service_healthy
@@ -175,6 +179,7 @@ volumes:
   minio_data:
   ollama:
   llama:
+  whisper_cache:
 
 networks:
   ai-va-network:

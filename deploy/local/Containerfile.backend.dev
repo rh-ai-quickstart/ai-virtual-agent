@@ -2,10 +2,17 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 USER root
 
-# Install only essential runtime dependencies
-RUN dnf install -y nmap-ncat && \
+# Install runtime dependencies (keeping existing UBI9 framework)
+RUN dnf install -y nmap-ncat wget xz && \
     dnf clean all && \
-    rm -rf /var/cache/dnf
+    rm -rf /var/cache/dnf && \
+    # Install static FFmpeg build
+    wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz && \
+    tar -xf ffmpeg-release-arm64-static.tar.xz && \
+    mv ffmpeg-*-arm64-static/ffmpeg /usr/local/bin/ && \
+    mv ffmpeg-*-arm64-static/ffprobe /usr/local/bin/ && \
+    rm -rf ffmpeg-* && \
+    chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
 # Set working directory
 WORKDIR /app
