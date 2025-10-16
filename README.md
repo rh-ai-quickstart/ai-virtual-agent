@@ -39,16 +39,32 @@ The platform integrates several components:
 ### Minimum hardware requirements 
 
 ### Minimum software requirements 
+<!-- oc, make, others ? -->
 
 ### Required user permissions 
 
 
 ## Deploy
 
+<!-- 
+### Prerequisites 
+
+What needs to go here? 
+
+oc login 
+
+anything else? 
+
+
+--> 
+
 ### Cluster Deployment
 
 For production installation on Kubernetes/OpenShift:
 
+```bash
+git clone https://github.com/rh-ai-quickstart/ai-virtual-agent.git
+```
 
 ```bash
 # Navigate to cluster deployment directory
@@ -67,23 +83,8 @@ make install
 📖 **[Full Installation Guide →](INSTALLING.md)**
 
 
-## Getting Started Guides
+### Delete 
 
-### 👩‍💻 **For Developers**
-- **[Local Development Guide](DEVELOPMENT.md)** - Containerized development environment (without cluster)
-- **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
-- **[Backend API Reference](docs/api-reference.md)** - Complete API documentation
-- **[Frontend Architecture](frontend/README.md)** - UI components and patterns
-
-### 🚀 **For Deployment**
-- **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
-- **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
-- **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
-
-### 🔧 **For Integration**
-- **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
-- **[Testing Guide](tests/README.md)** - Running integration tests
-- **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
 ## Example Use Cases
 
@@ -106,6 +107,24 @@ const expert = await initializeAgentTemplate({
 ```
 
 ## Advanced instructions
+
+### Getting Started Guides
+
+#### 👩‍💻 **For Developers**
+- **[Local Development Guide](DEVELOPMENT.md)** - Containerized development environment (without cluster)
+- **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
+- **[Backend API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Frontend Architecture](frontend/README.md)** - UI components and patterns
+
+#### 🚀 **For Deployment**
+- **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
+- **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
+- **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
+
+#### 🔧 **For Integration**
+- **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **[Testing Guide](tests/README.md)** - Running integration tests
+- **[API Reference](docs/api-reference.md)** - Backend API endpoints
 
 ### Project Structure
 
