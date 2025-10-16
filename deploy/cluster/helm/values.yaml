@@ -196,41 +196,6 @@ global:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
 
-# MCP servers (Toolhive) configuration - forwarded to child chart `mcp-servers`
-mcp-servers:
-  # Controls Toolhive dependency charts (CRDs and operator)
-  toolhive:
-    crds:
-      enabled: false
-    operator:
-      enabled: false
-
-  # Toolhive operator tuning
-  toolhive-operator:
-    operator:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 1Gi
-        limits:
-          cpu: 1000m
-          memory: 1Gi
-      containerSecurityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        runAsNonRoot: true
-        runAsUser: 1000
-        capabilities:
-          drop:
-          - ALL
-      podSecurityContext:
-        runAsNonRoot: true
-
-  # Enable installing Oracle 23ai via the mcp-servers subchart
-  # Default: disabled.
-  oracle:
-    enabled: false
-
   # MCP servers configuration is now handled by the mcp-servers subchart
   # See ai-architecture-charts/mcp-servers/helm/values.yaml for configuration
 
