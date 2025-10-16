@@ -1,8 +1,8 @@
-# AI Virtual Agent Quickstart
+# Build an AI-powered virtual agent 
 
-A platform for creating and managing AI-powered virtual agents with knowledge base integration, built on top of LlamaStack.
+Build and deploy a conversational AI virtual agent on Red Hat OpenShift AI to automate customer interactions and provide instant support.
 
-## What is this?
+## Detailed description
 
 This platform provides the tools to build and deploy conversational AI agents that can:
 
@@ -19,50 +19,36 @@ This platform provides the tools to build and deploy conversational AI agents th
 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
-## Quick Start
 
-### Local Development
+### Architecture Overview
 
-For local containerized development (without cluster):
+The platform integrates several components:
 
-📖 **[→ See Local Development Guide](DEVELOPMENT.md)**
+- **React Frontend** - Web interface for agent and chat management
+- **FastAPI Backend** - API server handling business logic and data persistence
+- **LlamaStack** - AI platform managing models, agents, and inference
+- **PostgreSQL + pgvector** - Data storage with vector search capabilities
+- **Kubernetes Pipeline** - Document processing and knowledge base ingestion
 
-### Local Development
+![Architecture](docs/images/architecture.png)
 
-For local development setup:
+📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
 
-```bash
-# Navigate to local deployment directory
-cd deploy/local
+## Requirements 
 
-# Start all services with Docker Compose
-make compose-up
+### Minimum hardware requirements 
 
-# Or start step-by-step:
-# 1. Start database (automatically initializes with permissions)
-podman compose up -d
-# or with Docker:
-# docker-compose up -d
+### Minimum software requirements 
 
-# 2. Start backend
-cd ../../backend && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt && alembic upgrade head
-uvicorn main:app --reload &
+### Required user permissions 
 
-# 3. Start frontend
-cd ../frontend && npm install && npm run dev
-```
 
-> **Note**: The PostgreSQL database is automatically initialized with proper permissions. Works with both Docker and Podman. No manual database setup needed!
-
-**Access your app:**
-- Frontend: http://localhost:5173
-- API: http://localhost:8000
-- Docs: http://localhost:8000/docs
+## Deploy
 
 ### Cluster Deployment
 
 For production installation on Kubernetes/OpenShift:
+
 
 ```bash
 # Navigate to cluster deployment directory
@@ -77,42 +63,9 @@ export HF_TOKEN=your-huggingface-token
 make install
 ```
 
+🧭 **[Advanced instructions →](#advanced-instructions)
 📖 **[Full Installation Guide →](INSTALLING.md)**
 
-## Project Structure
-
-```
-ai-virtual-agent/
-├── frontend/           # React UI with PatternFly components
-├── backend/            # FastAPI server with PostgreSQL
-├── mcpservers/         # Custom MCP tool servers
-├── docs/               # Architecture and API documentation
-├── deploy/
-│   ├── cluster/        # Kubernetes/Helm cluster deployment
-│   │   ├── helm/       # Helm chart files
-│   │   ├── scripts/    # Cluster deployment scripts
-│   │   ├── Containerfile # Cluster container image
-│   │   └── Makefile    # Cluster deployment commands
-│   └── local/          # Local development deployment
-│       ├── compose.dev.yaml # Docker Compose for local dev
-│       ├── dev/        # Local development configs
-│       └── Makefile    # Local development commands
-└── tests/              # Integration test suite
-```
-
-## Architecture Overview
-
-The platform integrates several components:
-
-- **React Frontend** - Web interface for agent and chat management
-- **FastAPI Backend** - API server handling business logic and data persistence
-- **LlamaStack** - AI platform managing models, agents, and inference
-- **PostgreSQL + pgvector** - Data storage with vector search capabilities
-- **Kubernetes Pipeline** - Document processing and knowledge base ingestion
-
-![Architecture](docs/images/architecture.png)
-
-📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
 
 ## Getting Started Guides
 
@@ -152,6 +105,65 @@ const expert = await initializeAgentTemplate({
 });
 ```
 
+## Advanced instructions
+
+### Project Structure
+
+```
+ai-virtual-agent/
+├── frontend/           # React UI with PatternFly components
+├── backend/            # FastAPI server with PostgreSQL
+├── mcpservers/         # Custom MCP tool servers
+├── docs/               # Architecture and API documentation
+├── deploy/
+│   ├── cluster/        # Kubernetes/Helm cluster deployment
+│   │   ├── helm/       # Helm chart files
+│   │   ├── scripts/    # Cluster deployment scripts
+│   │   ├── Containerfile # Cluster container image
+│   │   └── Makefile    # Cluster deployment commands
+│   └── local/          # Local development deployment
+│       ├── compose.dev.yaml # Docker Compose for local dev
+│       ├── dev/        # Local development configs
+│       └── Makefile    # Local development commands
+└── tests/              # Integration test suite
+```
+
+### Local Development
+
+For local containerized development (without cluster):
+
+📖 **[→ See Local Development Guide](DEVELOPMENT.md)**
+
+For local development setup:
+
+```bash
+# Navigate to local deployment directory
+cd deploy/local
+
+# Start all services with Docker Compose
+make compose-up
+
+# Or start step-by-step:
+# 1. Start database (automatically initializes with permissions)
+podman compose up -d
+# or with Docker:
+# docker-compose up -d
+
+# 2. Start backend
+cd ../../backend && python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt && alembic upgrade head
+uvicorn main:app --reload &
+
+# 3. Start frontend
+cd ../frontend && npm install && npm run dev
+```
+
+> **Note**: The PostgreSQL database is automatically initialized with proper permissions. Works with both Docker and Podman. No manual database setup needed!
+
+**Access your app:**
+- Frontend: http://localhost:5173
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
 ## Development Commands
 
 **Local Development:**
