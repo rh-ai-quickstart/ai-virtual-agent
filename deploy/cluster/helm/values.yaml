@@ -11,7 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  #tag: "1.1.0"
+  tag: "0.2.0"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -150,56 +150,56 @@ llama-stack:
   auth:
     provider_config:
       type: "custom"
-      endpoint: http://ai-virtual-agent:8887/validate
+      endpoint: http://ai-virtual-agent:8000/validate
     access_policy:
-    - permit:
-        actions: [create]
-        resource: session::*
-      description: all users have create access to sessions
-    - permit:
-        actions: [read]
-        resource: agent::*
-      description: all users have read access to agents
-    - permit:
-        actions: [read]
-        resource: tool_group::*
-      description: all users have read access to tool_groups
-    - permit:
-        actions: [read]
-        resource: model::*
-      description: all users have read access to models
-    - permit:
-        actions: [read]
-        resource: vector_db::*
-      description: all users have read access to vector_dbs
-    - permit:
-        actions: [create, update, delete]
-        resource: vector_db::*
-      when: user with admin in roles
-      description: users with the admin role can create, update or delete vector_dbs
-    - permit:
-        actions: [create, update, delete]
-        resource: tool_group::*
-      when: user with admin in roles
-      description: users with the admin role can create, update or delete tool_groups
-    - forbid:
-        actions: [create, update, delete]
-      unless: user with admin in roles
-      description: only users with the admin role can create, update or delete resources
-    - permit:
-        actions: [read, update, delete]
-      when: user is owner
-      description: users can read, update and delete resources they own
+      - permit:
+          actions: [create]
+          resource: session::*
+        description: all users have create access to sessions
+      - permit:
+          actions: [read]
+          resource: agent::*
+        description: all users have read access to agents
+      - permit:
+          actions: [read, create, update, delete]
+          resource: tool_group::*
+        description: all users have full access to tool_groups
+      - permit:
+          actions: [read]
+          resource: model::*
+        description: all users have read access to models
+      - permit:
+          actions: [read, create, update, delete]
+          resource: vector_db::*
+        description: all users have full access to vector_dbs
+  providers:
+    agents:
+      - provider_id: meta-reference
+        provider_type: inline::meta-reference
+        config:
+          persistence_store:
+            type: sqlite
+            namespace: null
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/agents_store.db
+          responses_store:
+            type: sqlite
+            db_path: ${env.SQLITE_STORE_DIR:=~/.llama/distributions/starter}/responses_store.db
+          max_infer_iters: 30
   secrets:
     TAVILY_SEARCH_API_KEY: ""
 
-# global:
-#   models:
-#     llama-3-1-8b-instruct:
-#       id: meta-llama/Llama-3.1-8B-Instruct
-#       enabled: true
-#       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
+global:
+  # Hugging Face token for accessing gated models
+  hf_token: ${HF_TOKEN}
 
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
+
+  # MCP servers configuration is now handled by the mcp-servers subchart
+  # See ai-architecture-charts/mcp-servers/helm/values.yaml for configuration
+
+# LLM Service Configuration
+llm-service:
+  secret:
+    hf_token: ${HF_TOKEN}

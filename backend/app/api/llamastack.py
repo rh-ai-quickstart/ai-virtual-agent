@@ -97,7 +97,7 @@ def get_client_from_request(
     user_headers = get_user_headers_from_request(request)
     headers.update(user_headers)
 
-    return get_client(token, headers)
+    return get_client(None, headers)
 
 
 def token_to_auth_header(token: str) -> dict[str, str]:
