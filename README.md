@@ -284,3 +284,9 @@ Notes:
 ## License
 
 [MIT License](LICENSE) - Built with ❤️ by the Red Hat Ecosystem App Engineering team
+
+## Tags 
+
+* **Industry:** Cross-industry
+* **Product:** OpenShift AI 
+* **Use case:** Conversational agents
