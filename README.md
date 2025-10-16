@@ -13,11 +13,11 @@ This platform provides the tools to build and deploy conversational AI agents th
 
 ### Key Features
 
-🤖 **Agent Management** - Create and configure AI agents with different capabilities
-📚 **Knowledge Integration** - Document search and question answering via RAG
-💬 **Real-time Chat** - Streaming conversations with session history
-🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
-🛡️ **Safety Controls** - Configurable guardrails and content filtering
+- 🤖 **Agent Management** - Create and configure AI agents with different capabilities
+- 📚 **Knowledge Integration** - Document search and question answering via RAG
+- 💬 **Real-time Chat** - Streaming conversations with session history
+- 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+- 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
 
 ### Architecture Overview
@@ -63,10 +63,9 @@ anything else?
 For production installation on Kubernetes/OpenShift:
 
 ```bash
+# clone the repository
 git clone https://github.com/rh-ai-quickstart/ai-virtual-agent.git
-```
 
-```bash
 # Navigate to cluster deployment directory
 cd deploy/cluster
 
@@ -79,7 +78,8 @@ export HF_TOKEN=your-huggingface-token
 make install
 ```
 
-🧭 **[Advanced instructions →](#advanced-instructions)
+🧭 **[Advanced instructions →](#advanced-instructions)**
+
 📖 **[Full Installation Guide →](INSTALLING.md)**
 
 
@@ -183,7 +183,7 @@ cd ../frontend && npm install && npm run dev
 - Frontend: http://localhost:5173
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
-## Development Commands
+
 
 **Local Development:**
 ```bash
@@ -204,6 +204,8 @@ make compose-restart
 # Show status of development services
 make compose-status
 ```
+
+### Cluster development
 
 **Cluster Deployment:**
 ```bash
