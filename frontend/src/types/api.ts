@@ -1,13 +1,9 @@
 export interface Model {
-  model_name: string;
-  provider_resource_id: string;
+  model_id: string;
   model_type: string;
-}
-
-export interface EmbeddingModel {
-  name: string;
-  provider_resource_id: string;
-  model_type: string;
+  provider_id: string;
+  provider_type: string;
+  provider_config: Record<string, unknown>;
 }
 
 export interface Provider {

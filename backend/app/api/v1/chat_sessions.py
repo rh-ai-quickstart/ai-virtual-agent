@@ -26,7 +26,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...api.llamastack import get_client_from_request
 from ...crud.chat_sessions import chat_sessions
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
@@ -37,6 +36,7 @@ from ...schemas.chat_sessions import (
     DeleteSessionResponse,
 )
 from . import attachments
+from .llama_stack.client import get_client_from_request
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat_sessions", tags=["chat_sessions"])

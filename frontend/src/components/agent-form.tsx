@@ -350,9 +350,9 @@ export function AgentForm({ defaultAgentProps, onSubmit, isSubmitting, onCancel 
                   <FormSelectOption key="placeholder" value="" label="Select a model" isDisabled />
                   {(models || []).map((model) => (
                     <FormSelectOption
-                      key={model.model_name}
-                      value={model.model_name}
-                      label={model.model_name}
+                      key={model.model_id}
+                      value={model.model_id}
+                      label={model.model_id}
                     />
                   ))}
                 </Fragment>

@@ -17,12 +17,12 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from ...api.llamastack import sync_client
-from ...schemas.mcp_servers import MCPServerCreate, MCPServerRead
+from .client import sync_client
+from ....schemas.mcp_servers import MCPServerCreate, MCPServerRead
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/mcp_servers", tags=["mcp_servers"])
+router = APIRouter()
 
 
 @router.post(

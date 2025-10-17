@@ -1,9 +1,9 @@
 ---
 test_name: Test Models API Endpoint
 stages:
-  - name: Test GET /api/v1/llama_stack/llms
+  - name: Test GET /api/v1/llama_stack/models/llms
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/llms"
+      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/models/llms"
       method: GET
       headers:
         Accept: application/json
@@ -12,9 +12,12 @@ stages:
       headers:
         content-type: application/json
       json:
-        - model_name: "ollama/llama3.2:1b-instruct-fp16"
-          provider_resource_id: "llama3.2:1b-instruct-fp16"
+        - model_id: "ollama/llama3.2:1b-instruct-fp16"
           model_type: "llm"
+          provider_id: "ollama"
+          provider_type: "remote::ollama"
+          provider_config:
+            url: "http://ollama:11434"
 ---
 test_name: Test Virtual Agents API Endpoint
 stages:
@@ -92,9 +95,9 @@ stages:
 ---
 test_name: Test LlamaStack Providers API
 stages:
-  - name: Test GET /api/v1/llama_stack/providers
+  - name: Test GET /api/v1/llama_stack/providers/
     request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/providers"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/providers/"
       method: GET
       headers:
         Accept: application/json

@@ -10,16 +10,16 @@ from llama_stack.core.server.auth_providers import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...api.llamastack import (
-    get_sa_token,
-    get_user_headers_from_request,
-    token_to_auth_header,
-)
 from ...core.auth import (
     get_or_create_dev_user,
     is_local_dev_mode,
 )
 from ...database import get_db
+from .llama_stack.client import (
+    get_sa_token,
+    get_user_headers_from_request,
+    token_to_auth_header,
+)
 from .users import get_user_from_headers
 
 router = APIRouter(prefix="/validate", tags=["validate"])
