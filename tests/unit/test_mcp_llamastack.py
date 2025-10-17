@@ -21,6 +21,7 @@ class _MockToolGroup(BaseModel):
 
     identifier: str
     provider_id: str | None = None
+    provider_resource_id: str | None = None
     config: Dict[str, Any] = {}
 
 
@@ -66,9 +67,14 @@ class TestToolsEndpoint:
             _MockToolGroup(
                 identifier="mcp-server-1",
                 provider_id="model-context-protocol",
+                provider_resource_id="mcp-1-resource",
                 config={"endpoint_url": "http://mcp-1.local"},
             ),
-            _MockToolGroup(identifier="builtin-tg", provider_id="builtin"),
+            _MockToolGroup(
+                identifier="builtin-tg",
+                provider_id="builtin",
+                provider_resource_id="builtin-resource",
+            ),
         ]
 
         tools = [
@@ -97,7 +103,7 @@ class TestToolsEndpoint:
         toolgroups, tools = _mock_data
 
         monkeypatch.setattr(
-            "backend.app.api.v1.tools.get_client_from_request",
+            "backend.app.api.v1.llama_stack.tools.get_client_from_request",
             lambda _request: _MockLlamaClient(toolgroups, tools),
         )
 
@@ -105,30 +111,25 @@ class TestToolsEndpoint:
             yield tc
 
     def test_merges_mcp_and_builtin_groups(self, client, _mock_data):
-        """Endpoint returns MCP tool-groups, builtin groups and promoted
-        tools."""
+        """Endpoint returns MCP tool-groups and builtin groups."""
 
-        response = client.get("/api/v1/tools/")
+        response = client.get("/api/v1/llama_stack/tools/")
 
         assert response.status_code == 200, response.text
 
         data = response.json()
 
-        # Expect: 2 tool-groups + 1 promoted standalone tool
-        assert len(data) == 3
+        # Expect: 2 tool-groups
+        assert len(data) == 2
 
-        # Validate MCP group carried through custom endpoint URL
+        # Validate MCP group
         mcp_entry = next(
             item for item in data if item["toolgroup_id"] == "mcp-server-1"
         )
-        assert mcp_entry["endpoint_url"] == "http://mcp-1.local"
+        assert mcp_entry["name"] == "mcp-1-resource"
+        assert mcp_entry["title"] == "model-context-protocol"
 
         # Validate builtin group preserved as-is
         builtin_tg = next(item for item in data if item["toolgroup_id"] == "builtin-tg")
-        assert builtin_tg["provider_id"] == "builtin"
-
-        # Validate standalone tool promoted into its own pseudo-group
-        standalone = next(
-            item for item in data if item["toolgroup_id"] == "standalone-tool"
-        )
-        assert standalone["description"] == "Standalone tool"
+        assert builtin_tg["title"] == "builtin"
+        assert builtin_tg["name"] == "builtin-resource"

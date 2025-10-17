@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { EmbeddingModel, KnowledgeBase, Provider } from '@/types';
+import { Model, KnowledgeBase, Provider } from '@/types';
 import {
   Button,
   ActionGroup,
@@ -43,7 +43,7 @@ const KB_SOURCE_OPTIONS = [
 ];
 
 interface EmbeddingModelsFieldProps {
-  models: EmbeddingModel[];
+  models: Model[];
   isLoadingModels: boolean;
   modelsError: Error | null;
 }
@@ -420,7 +420,11 @@ export function KnowledgeBaseForm({
                 <Fragment>
                   <FormSelectOption key="placeholder" value="" label="Select a model" isDisabled />
                   {models.map((opt) => (
-                    <FormSelectOption key={opt.name} value={opt.name} label={opt.name} />
+                    <FormSelectOption
+                      key={opt.model_id}
+                      value={opt.model_id}
+                      label={opt.model_id}
+                    />
                   ))}
                 </Fragment>
               )}

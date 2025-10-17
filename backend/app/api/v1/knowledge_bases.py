@@ -10,10 +10,10 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...api.llamastack import get_client_from_request
 from ...crud.knowledge_bases import knowledge_bases
 from ...database import get_db
 from ...schemas import KnowledgeBaseCreate, KnowledgeBaseResponse
+from .llama_stack.client import get_client_from_request
 
 logger = logging.getLogger(__name__)
 

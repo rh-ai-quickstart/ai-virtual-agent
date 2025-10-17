@@ -46,7 +46,7 @@ stages:
 
   - name: Get available models for template deployment
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/llms"
+      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/models/llms"
       method: GET
       headers:
         Accept: application/json
@@ -56,7 +56,7 @@ stages:
         content-type: application/json
       save:
         json:
-          available_model: "[0].model_name"
+          available_model: "[0].model_id"
 
   - name: Deploy agent from template
     request:

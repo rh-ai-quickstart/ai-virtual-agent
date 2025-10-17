@@ -121,7 +121,7 @@ function AgentTemplates() {
     Record<
       string,
       {
-        model_name: string;
+        model_id: string;
         tool_ids: string[];
         knowledge_base_ids: string[];
         template_model?: string;
@@ -257,7 +257,7 @@ function AgentTemplates() {
         if (!next[id]) {
           // We'll populate with template details when available, but set up structure now
           next[id] = {
-            model_name: '',
+            model_id: '',
             tool_ids: [],
             knowledge_base_ids: [],
             template_model: '',
@@ -297,7 +297,7 @@ function AgentTemplates() {
             // Update with template details, preserving any user edits.
             // Keep active selection empty unless user picked one; reconcile later against available models
             next[id] = {
-              model_name: next[id]?.model_name || '',
+              model_id: next[id]?.model_id || '',
               tool_ids: next[id]?.tool_ids?.length ? next[id].tool_ids : defaultToolIds,
               knowledge_base_ids: next[id]?.knowledge_base_ids?.length
                 ? next[id].knowledge_base_ids
@@ -321,24 +321,24 @@ function AgentTemplates() {
   // - Otherwise leave empty and require user selection
   useEffect(() => {
     if (!models || models.length === 0) return;
-    const available = new Set(models.map((m) => m.model_name));
+    const available = new Set(models.map((m) => m.model_id));
     setTemplateOverrides((prev) => {
       const next = { ...prev };
       const keys = new Set<string>([...Object.keys(next), ...selectedTemplateIds]);
       for (const key of keys) {
-        const o = next[key] || { model_name: '', tool_ids: [], template_model: '' };
+        const o = next[key] || { model_id: '', tool_ids: [], template_model: '' };
 
         // If user already picked a valid model, keep it
-        if (o.model_name && available.has(o.model_name)) {
+        if (o.model_id && available.has(o.model_id)) {
           next[key] = o;
           continue;
         }
 
         const templateModel = o.template_model || '';
         if (templateModel && available.has(templateModel)) {
-          next[key] = { ...o, model_name: templateModel };
+          next[key] = { ...o, model_id: templateModel };
         } else {
-          next[key] = { ...o, model_name: '' };
+          next[key] = { ...o, model_id: '' };
         }
       }
       return next;
@@ -434,7 +434,7 @@ function AgentTemplates() {
       <FormSelectOption key="placeholder" value="" label="Select a model" isDisabled />,
     ];
     for (const m of models || []) {
-      opts.push(<FormSelectOption key={m.model_name} value={m.model_name} label={m.model_name} />);
+      opts.push(<FormSelectOption key={m.model_id} value={m.model_id} label={m.model_id} />);
     }
     return opts;
   }, [models, isLoadingModels, modelsError]);
@@ -444,7 +444,7 @@ function AgentTemplates() {
 
   // Precompute model name sets for validation/use
   const normalize = (s: string) => (s || '').split('/').pop()?.trim().toLowerCase() || '';
-  const modelNames = useMemo(() => new Set((models || []).map((m) => m.model_name)), [models]);
+  const modelNames = useMemo(() => new Set((models || []).map((m) => m.model_id)), [models]);
   const modelBaseNames = useMemo(
     () => new Set(Array.from(modelNames).map((n) => normalize(n))),
     [modelNames]
@@ -470,7 +470,7 @@ function AgentTemplates() {
     if (hasUnprocessedTemplates) return true; // Still processing defaults
 
     return selectedTemplateIds.some((id) => {
-      const selected = templateOverrides[id]?.model_name || '';
+      const selected = templateOverrides[id]?.model_id || '';
       if (!selected) return true;
       const validation = validateModelSelection(selected);
       return !validation.isValid;
@@ -726,20 +726,20 @@ function AgentTemplates() {
                           <FormGroup label="Model" isRequired fieldId={`model-${pair.id}`}>
                             <FormSelect
                               id={`model-${pair.id}`}
-                              value={templateOverrides[pair.id]?.model_name || ''}
+                              value={templateOverrides[pair.id]?.model_id || ''}
                               onChange={(_e, value) =>
                                 setTemplateOverrides((prev) => ({
                                   ...prev,
                                   [pair.id]: {
-                                    ...(prev[pair.id] || { model_name: '', tool_ids: [] }),
-                                    model_name: value,
+                                    ...(prev[pair.id] || { model_id: '', tool_ids: [] }),
+                                    model_id: value,
                                   },
                                 }))
                               }
                               isDisabled={isLoadingModels || !!modelsError}
                               aria-label={`Select model for ${pair.name}`}
                               validated={(() => {
-                                const selected = templateOverrides[pair.id]?.model_name || '';
+                                const selected = templateOverrides[pair.id]?.model_id || '';
                                 if (!selected) return 'default';
                                 if (isLoadingModels || modelsError) return 'default';
                                 const validation = validateModelSelection(selected);
@@ -749,7 +749,7 @@ function AgentTemplates() {
                               {modelOptions}
                             </FormSelect>
                             {(() => {
-                              const selected = templateOverrides[pair.id]?.model_name || '';
+                              const selected = templateOverrides[pair.id]?.model_id || '';
                               const validation = validateModelSelection(selected);
                               const invalid = selected ? !validation.isValid : false;
                               return invalid ? (
@@ -776,7 +776,7 @@ function AgentTemplates() {
                                   ...prev,
                                   [pair.id]: {
                                     ...(prev[pair.id] || {
-                                      model_name: '',
+                                      model_id: '',
                                       tool_ids: [],
                                       knowledge_base_ids: [],
                                     }),
@@ -804,7 +804,7 @@ function AgentTemplates() {
                                   ...prev,
                                   [pair.id]: {
                                     ...(prev[pair.id] || {
-                                      model_name: '',
+                                      model_id: '',
                                       tool_ids: [],
                                       knowledge_base_ids: [],
                                     }),
@@ -864,15 +864,15 @@ function AgentTemplates() {
                     for (const id of ids) {
                       try {
                         const overrides = templateOverrides[id] || {
-                          model_name: '',
+                          model_id: '',
                           tool_ids: [],
                           knowledge_base_ids: [],
                         };
 
                         // Determine if we should send a model override
                         const templateModel = overrides.template_model || '';
-                        const selectedModel = overrides.model_name || '';
-                        const modelNames = new Set((models || []).map((m) => m.model_name));
+                        const selectedModel = overrides.model_id || '';
+                        const modelNames = new Set((models || []).map((m) => m.model_id));
                         const templateModelExists =
                           !!templateModel && modelNames.has(templateModel);
                         const modelOverride = (() => {

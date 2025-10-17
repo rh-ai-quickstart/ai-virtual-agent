@@ -10,270 +10,296 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root';
-import { Route as ProtectedRouteImport } from './routes/_protected/route';
-import { Route as ProtectedIndexImport } from './routes/_protected/index';
-import { Route as OauthSigninImport } from './routes/oauth.sign_in';
-import { Route as ProtectedConfigRouteImport } from './routes/_protected/config/route';
-import { Route as ProtectedAdminRouteImport } from './routes/_protected/_admin/route';
-import { Route as ProtectedConfigProfileImport } from './routes/_protected/config/profile';
-import { Route as ProtectedAdminConfigRouteImport } from './routes/_protected/_admin/config/route';
-import { Route as ProtectedAdminConfigUsersImport } from './routes/_protected/_admin/config/users';
-import { Route as ProtectedAdminConfigMcpServersImport } from './routes/_protected/_admin/config/mcp-servers';
-import { Route as ProtectedAdminConfigKnowledgeBasesImport } from './routes/_protected/_admin/config/knowledge-bases';
-import { Route as ProtectedAdminConfigAgentsImport } from './routes/_protected/_admin/config/agents';
+import { Route as rootRoute } from './routes/__root'
+import { Route as ProtectedRouteImport } from './routes/_protected/route'
+import { Route as ProtectedIndexImport } from './routes/_protected/index'
+import { Route as OauthSigninImport } from './routes/oauth.sign_in'
+import { Route as ProtectedConfigRouteImport } from './routes/_protected/config/route'
+import { Route as ProtectedAdminRouteImport } from './routes/_protected/_admin/route'
+import { Route as ProtectedConfigProfileImport } from './routes/_protected/config/profile'
+import { Route as ProtectedAdminConfigRouteImport } from './routes/_protected/_admin/config/route'
+import { Route as ProtectedAdminConfigUsersImport } from './routes/_protected/_admin/config/users'
+import { Route as ProtectedAdminConfigModelsImport } from './routes/_protected/_admin/config/models'
+import { Route as ProtectedAdminConfigMcpServersImport } from './routes/_protected/_admin/config/mcp-servers'
+import { Route as ProtectedAdminConfigKnowledgeBasesImport } from './routes/_protected/_admin/config/knowledge-bases'
+import { Route as ProtectedAdminConfigAgentsImport } from './routes/_protected/_admin/config/agents'
 
 // Create/Update Routes
 
 const ProtectedRouteRoute = ProtectedRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const ProtectedIndexRoute = ProtectedIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProtectedRouteRoute,
-} as any);
+} as any)
 
 const OauthSigninRoute = OauthSigninImport.update({
   id: '/oauth/sign_in',
   path: '/oauth/sign_in',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const ProtectedConfigRouteRoute = ProtectedConfigRouteImport.update({
   id: '/config',
   path: '/config',
   getParentRoute: () => ProtectedRouteRoute,
-} as any);
+} as any)
 
 const ProtectedAdminRouteRoute = ProtectedAdminRouteImport.update({
   id: '/_admin',
   getParentRoute: () => ProtectedRouteRoute,
-} as any);
+} as any)
 
 const ProtectedConfigProfileRoute = ProtectedConfigProfileImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => ProtectedConfigRouteRoute,
-} as any);
+} as any)
 
 const ProtectedAdminConfigRouteRoute = ProtectedAdminConfigRouteImport.update({
   id: '/config',
   path: '/config',
   getParentRoute: () => ProtectedAdminRouteRoute,
-} as any);
+} as any)
 
 const ProtectedAdminConfigUsersRoute = ProtectedAdminConfigUsersImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => ProtectedAdminConfigRouteRoute,
-} as any);
+} as any)
 
-const ProtectedAdminConfigMcpServersRoute = ProtectedAdminConfigMcpServersImport.update({
-  id: '/mcp-servers',
-  path: '/mcp-servers',
-  getParentRoute: () => ProtectedAdminConfigRouteRoute,
-} as any);
+const ProtectedAdminConfigModelsRoute = ProtectedAdminConfigModelsImport.update(
+  {
+    id: '/models',
+    path: '/models',
+    getParentRoute: () => ProtectedAdminConfigRouteRoute,
+  } as any,
+)
 
-const ProtectedAdminConfigKnowledgeBasesRoute = ProtectedAdminConfigKnowledgeBasesImport.update({
-  id: '/knowledge-bases',
-  path: '/knowledge-bases',
-  getParentRoute: () => ProtectedAdminConfigRouteRoute,
-} as any);
+const ProtectedAdminConfigMcpServersRoute =
+  ProtectedAdminConfigMcpServersImport.update({
+    id: '/mcp-servers',
+    path: '/mcp-servers',
+    getParentRoute: () => ProtectedAdminConfigRouteRoute,
+  } as any)
 
-const ProtectedAdminConfigAgentsRoute = ProtectedAdminConfigAgentsImport.update({
-  id: '/agents',
-  path: '/agents',
-  getParentRoute: () => ProtectedAdminConfigRouteRoute,
-} as any);
+const ProtectedAdminConfigKnowledgeBasesRoute =
+  ProtectedAdminConfigKnowledgeBasesImport.update({
+    id: '/knowledge-bases',
+    path: '/knowledge-bases',
+    getParentRoute: () => ProtectedAdminConfigRouteRoute,
+  } as any)
+
+const ProtectedAdminConfigAgentsRoute = ProtectedAdminConfigAgentsImport.update(
+  {
+    id: '/agents',
+    path: '/agents',
+    getParentRoute: () => ProtectedAdminConfigRouteRoute,
+  } as any,
+)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_protected': {
-      id: '/_protected';
-      path: '';
-      fullPath: '';
-      preLoaderRoute: typeof ProtectedRouteImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/_protected'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/_protected/_admin': {
-      id: '/_protected/_admin';
-      path: '';
-      fullPath: '';
-      preLoaderRoute: typeof ProtectedAdminRouteImport;
-      parentRoute: typeof ProtectedRouteImport;
-    };
+      id: '/_protected/_admin'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedAdminRouteImport
+      parentRoute: typeof ProtectedRouteImport
+    }
     '/_protected/config': {
-      id: '/_protected/config';
-      path: '/config';
-      fullPath: '/config';
-      preLoaderRoute: typeof ProtectedConfigRouteImport;
-      parentRoute: typeof ProtectedRouteImport;
-    };
+      id: '/_protected/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof ProtectedConfigRouteImport
+      parentRoute: typeof ProtectedRouteImport
+    }
     '/oauth/sign_in': {
-      id: '/oauth/sign_in';
-      path: '/oauth/sign_in';
-      fullPath: '/oauth/sign_in';
-      preLoaderRoute: typeof OauthSigninImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/oauth/sign_in'
+      path: '/oauth/sign_in'
+      fullPath: '/oauth/sign_in'
+      preLoaderRoute: typeof OauthSigninImport
+      parentRoute: typeof rootRoute
+    }
     '/_protected/': {
-      id: '/_protected/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof ProtectedIndexImport;
-      parentRoute: typeof ProtectedRouteImport;
-    };
+      id: '/_protected/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedIndexImport
+      parentRoute: typeof ProtectedRouteImport
+    }
     '/_protected/_admin/config': {
-      id: '/_protected/_admin/config';
-      path: '/config';
-      fullPath: '/config';
-      preLoaderRoute: typeof ProtectedAdminConfigRouteImport;
-      parentRoute: typeof ProtectedAdminRouteImport;
-    };
+      id: '/_protected/_admin/config'
+      path: '/config'
+      fullPath: '/config'
+      preLoaderRoute: typeof ProtectedAdminConfigRouteImport
+      parentRoute: typeof ProtectedAdminRouteImport
+    }
     '/_protected/config/profile': {
-      id: '/_protected/config/profile';
-      path: '/profile';
-      fullPath: '/config/profile';
-      preLoaderRoute: typeof ProtectedConfigProfileImport;
-      parentRoute: typeof ProtectedConfigRouteImport;
-    };
+      id: '/_protected/config/profile'
+      path: '/profile'
+      fullPath: '/config/profile'
+      preLoaderRoute: typeof ProtectedConfigProfileImport
+      parentRoute: typeof ProtectedConfigRouteImport
+    }
     '/_protected/_admin/config/agents': {
-      id: '/_protected/_admin/config/agents';
-      path: '/agents';
-      fullPath: '/config/agents';
-      preLoaderRoute: typeof ProtectedAdminConfigAgentsImport;
-      parentRoute: typeof ProtectedAdminConfigRouteImport;
-    };
+      id: '/_protected/_admin/config/agents'
+      path: '/agents'
+      fullPath: '/config/agents'
+      preLoaderRoute: typeof ProtectedAdminConfigAgentsImport
+      parentRoute: typeof ProtectedAdminConfigRouteImport
+    }
     '/_protected/_admin/config/knowledge-bases': {
-      id: '/_protected/_admin/config/knowledge-bases';
-      path: '/knowledge-bases';
-      fullPath: '/config/knowledge-bases';
-      preLoaderRoute: typeof ProtectedAdminConfigKnowledgeBasesImport;
-      parentRoute: typeof ProtectedAdminConfigRouteImport;
-    };
+      id: '/_protected/_admin/config/knowledge-bases'
+      path: '/knowledge-bases'
+      fullPath: '/config/knowledge-bases'
+      preLoaderRoute: typeof ProtectedAdminConfigKnowledgeBasesImport
+      parentRoute: typeof ProtectedAdminConfigRouteImport
+    }
     '/_protected/_admin/config/mcp-servers': {
-      id: '/_protected/_admin/config/mcp-servers';
-      path: '/mcp-servers';
-      fullPath: '/config/mcp-servers';
-      preLoaderRoute: typeof ProtectedAdminConfigMcpServersImport;
-      parentRoute: typeof ProtectedAdminConfigRouteImport;
-    };
+      id: '/_protected/_admin/config/mcp-servers'
+      path: '/mcp-servers'
+      fullPath: '/config/mcp-servers'
+      preLoaderRoute: typeof ProtectedAdminConfigMcpServersImport
+      parentRoute: typeof ProtectedAdminConfigRouteImport
+    }
+    '/_protected/_admin/config/models': {
+      id: '/_protected/_admin/config/models'
+      path: '/models'
+      fullPath: '/config/models'
+      preLoaderRoute: typeof ProtectedAdminConfigModelsImport
+      parentRoute: typeof ProtectedAdminConfigRouteImport
+    }
     '/_protected/_admin/config/users': {
-      id: '/_protected/_admin/config/users';
-      path: '/users';
-      fullPath: '/config/users';
-      preLoaderRoute: typeof ProtectedAdminConfigUsersImport;
-      parentRoute: typeof ProtectedAdminConfigRouteImport;
-    };
+      id: '/_protected/_admin/config/users'
+      path: '/users'
+      fullPath: '/config/users'
+      preLoaderRoute: typeof ProtectedAdminConfigUsersImport
+      parentRoute: typeof ProtectedAdminConfigRouteImport
+    }
   }
 }
 
 // Create and export the route tree
 
 interface ProtectedAdminConfigRouteRouteChildren {
-  ProtectedAdminConfigAgentsRoute: typeof ProtectedAdminConfigAgentsRoute;
-  ProtectedAdminConfigKnowledgeBasesRoute: typeof ProtectedAdminConfigKnowledgeBasesRoute;
-  ProtectedAdminConfigMcpServersRoute: typeof ProtectedAdminConfigMcpServersRoute;
-  ProtectedAdminConfigUsersRoute: typeof ProtectedAdminConfigUsersRoute;
+  ProtectedAdminConfigAgentsRoute: typeof ProtectedAdminConfigAgentsRoute
+  ProtectedAdminConfigKnowledgeBasesRoute: typeof ProtectedAdminConfigKnowledgeBasesRoute
+  ProtectedAdminConfigMcpServersRoute: typeof ProtectedAdminConfigMcpServersRoute
+  ProtectedAdminConfigModelsRoute: typeof ProtectedAdminConfigModelsRoute
+  ProtectedAdminConfigUsersRoute: typeof ProtectedAdminConfigUsersRoute
 }
 
-const ProtectedAdminConfigRouteRouteChildren: ProtectedAdminConfigRouteRouteChildren = {
-  ProtectedAdminConfigAgentsRoute: ProtectedAdminConfigAgentsRoute,
-  ProtectedAdminConfigKnowledgeBasesRoute: ProtectedAdminConfigKnowledgeBasesRoute,
-  ProtectedAdminConfigMcpServersRoute: ProtectedAdminConfigMcpServersRoute,
-  ProtectedAdminConfigUsersRoute: ProtectedAdminConfigUsersRoute,
-};
+const ProtectedAdminConfigRouteRouteChildren: ProtectedAdminConfigRouteRouteChildren =
+  {
+    ProtectedAdminConfigAgentsRoute: ProtectedAdminConfigAgentsRoute,
+    ProtectedAdminConfigKnowledgeBasesRoute:
+      ProtectedAdminConfigKnowledgeBasesRoute,
+    ProtectedAdminConfigMcpServersRoute: ProtectedAdminConfigMcpServersRoute,
+    ProtectedAdminConfigModelsRoute: ProtectedAdminConfigModelsRoute,
+    ProtectedAdminConfigUsersRoute: ProtectedAdminConfigUsersRoute,
+  }
 
-const ProtectedAdminConfigRouteRouteWithChildren = ProtectedAdminConfigRouteRoute._addFileChildren(
-  ProtectedAdminConfigRouteRouteChildren
-);
+const ProtectedAdminConfigRouteRouteWithChildren =
+  ProtectedAdminConfigRouteRoute._addFileChildren(
+    ProtectedAdminConfigRouteRouteChildren,
+  )
 
 interface ProtectedAdminRouteRouteChildren {
-  ProtectedAdminConfigRouteRoute: typeof ProtectedAdminConfigRouteRouteWithChildren;
+  ProtectedAdminConfigRouteRoute: typeof ProtectedAdminConfigRouteRouteWithChildren
 }
 
 const ProtectedAdminRouteRouteChildren: ProtectedAdminRouteRouteChildren = {
   ProtectedAdminConfigRouteRoute: ProtectedAdminConfigRouteRouteWithChildren,
-};
+}
 
-const ProtectedAdminRouteRouteWithChildren = ProtectedAdminRouteRoute._addFileChildren(
-  ProtectedAdminRouteRouteChildren
-);
+const ProtectedAdminRouteRouteWithChildren =
+  ProtectedAdminRouteRoute._addFileChildren(ProtectedAdminRouteRouteChildren)
 
 interface ProtectedConfigRouteRouteChildren {
-  ProtectedConfigProfileRoute: typeof ProtectedConfigProfileRoute;
+  ProtectedConfigProfileRoute: typeof ProtectedConfigProfileRoute
 }
 
 const ProtectedConfigRouteRouteChildren: ProtectedConfigRouteRouteChildren = {
   ProtectedConfigProfileRoute: ProtectedConfigProfileRoute,
-};
+}
 
-const ProtectedConfigRouteRouteWithChildren = ProtectedConfigRouteRoute._addFileChildren(
-  ProtectedConfigRouteRouteChildren
-);
+const ProtectedConfigRouteRouteWithChildren =
+  ProtectedConfigRouteRoute._addFileChildren(ProtectedConfigRouteRouteChildren)
 
 interface ProtectedRouteRouteChildren {
-  ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren;
-  ProtectedConfigRouteRoute: typeof ProtectedConfigRouteRouteWithChildren;
-  ProtectedIndexRoute: typeof ProtectedIndexRoute;
+  ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren
+  ProtectedConfigRouteRoute: typeof ProtectedConfigRouteRouteWithChildren
+  ProtectedIndexRoute: typeof ProtectedIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedAdminRouteRoute: ProtectedAdminRouteRouteWithChildren,
   ProtectedConfigRouteRoute: ProtectedConfigRouteRouteWithChildren,
   ProtectedIndexRoute: ProtectedIndexRoute,
-};
+}
 
 const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
-  ProtectedRouteRouteChildren
-);
+  ProtectedRouteRouteChildren,
+)
 
 export interface FileRoutesByFullPath {
-  '': typeof ProtectedAdminRouteRouteWithChildren;
-  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
-  '/': typeof ProtectedIndexRoute;
-  '/config/profile': typeof ProtectedConfigProfileRoute;
-  '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
-  '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
-  '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
-  '/config/users': typeof ProtectedAdminConfigUsersRoute;
+  '': typeof ProtectedAdminRouteRouteWithChildren
+  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren
+  '/oauth/sign_in': typeof OauthSigninRoute
+  '/': typeof ProtectedIndexRoute
+  '/config/profile': typeof ProtectedConfigProfileRoute
+  '/config/agents': typeof ProtectedAdminConfigAgentsRoute
+  '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute
+  '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute
+  '/config/models': typeof ProtectedAdminConfigModelsRoute
+  '/config/users': typeof ProtectedAdminConfigUsersRoute
 }
 
 export interface FileRoutesByTo {
-  '': typeof ProtectedAdminRouteRouteWithChildren;
-  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
-  '/': typeof ProtectedIndexRoute;
-  '/config/profile': typeof ProtectedConfigProfileRoute;
-  '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
-  '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
-  '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
-  '/config/users': typeof ProtectedAdminConfigUsersRoute;
+  '': typeof ProtectedAdminRouteRouteWithChildren
+  '/config': typeof ProtectedAdminConfigRouteRouteWithChildren
+  '/oauth/sign_in': typeof OauthSigninRoute
+  '/': typeof ProtectedIndexRoute
+  '/config/profile': typeof ProtectedConfigProfileRoute
+  '/config/agents': typeof ProtectedAdminConfigAgentsRoute
+  '/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute
+  '/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute
+  '/config/models': typeof ProtectedAdminConfigModelsRoute
+  '/config/users': typeof ProtectedAdminConfigUsersRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  '/_protected': typeof ProtectedRouteRouteWithChildren;
-  '/_protected/_admin': typeof ProtectedAdminRouteRouteWithChildren;
-  '/_protected/config': typeof ProtectedConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
-  '/_protected/': typeof ProtectedIndexRoute;
-  '/_protected/_admin/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
-  '/_protected/config/profile': typeof ProtectedConfigProfileRoute;
-  '/_protected/_admin/config/agents': typeof ProtectedAdminConfigAgentsRoute;
-  '/_protected/_admin/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute;
-  '/_protected/_admin/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute;
-  '/_protected/_admin/config/users': typeof ProtectedAdminConfigUsersRoute;
+  __root__: typeof rootRoute
+  '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/_protected/_admin': typeof ProtectedAdminRouteRouteWithChildren
+  '/_protected/config': typeof ProtectedConfigRouteRouteWithChildren
+  '/oauth/sign_in': typeof OauthSigninRoute
+  '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/_admin/config': typeof ProtectedAdminConfigRouteRouteWithChildren
+  '/_protected/config/profile': typeof ProtectedConfigProfileRoute
+  '/_protected/_admin/config/agents': typeof ProtectedAdminConfigAgentsRoute
+  '/_protected/_admin/config/knowledge-bases': typeof ProtectedAdminConfigKnowledgeBasesRoute
+  '/_protected/_admin/config/mcp-servers': typeof ProtectedAdminConfigMcpServersRoute
+  '/_protected/_admin/config/models': typeof ProtectedAdminConfigModelsRoute
+  '/_protected/_admin/config/users': typeof ProtectedAdminConfigUsersRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
     | '/config'
@@ -283,8 +309,9 @@ export interface FileRouteTypes {
     | '/config/agents'
     | '/config/knowledge-bases'
     | '/config/mcp-servers'
-    | '/config/users';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/config/models'
+    | '/config/users'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | ''
     | '/config'
@@ -294,7 +321,8 @@ export interface FileRouteTypes {
     | '/config/agents'
     | '/config/knowledge-bases'
     | '/config/mcp-servers'
-    | '/config/users';
+    | '/config/models'
+    | '/config/users'
   id:
     | '__root__'
     | '/_protected'
@@ -307,23 +335,24 @@ export interface FileRouteTypes {
     | '/_protected/_admin/config/agents'
     | '/_protected/_admin/config/knowledge-bases'
     | '/_protected/_admin/config/mcp-servers'
-    | '/_protected/_admin/config/users';
-  fileRoutesById: FileRoutesById;
+    | '/_protected/_admin/config/models'
+    | '/_protected/_admin/config/users'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren;
-  OauthSigninRoute: typeof OauthSigninRoute;
+  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  OauthSigninRoute: typeof OauthSigninRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
   OauthSigninRoute: OauthSigninRoute,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -371,6 +400,7 @@ export const routeTree = rootRoute
         "/_protected/_admin/config/agents",
         "/_protected/_admin/config/knowledge-bases",
         "/_protected/_admin/config/mcp-servers",
+        "/_protected/_admin/config/models",
         "/_protected/_admin/config/users"
       ]
     },
@@ -388,6 +418,10 @@ export const routeTree = rootRoute
     },
     "/_protected/_admin/config/mcp-servers": {
       "filePath": "_protected/_admin/config/mcp-servers.tsx",
+      "parent": "/_protected/_admin/config"
+    },
+    "/_protected/_admin/config/models": {
+      "filePath": "_protected/_admin/config/models.tsx",
       "parent": "/_protected/_admin/config"
     },
     "/_protected/_admin/config/users": {

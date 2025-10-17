@@ -1,8 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
-import { Model, EmbeddingModel, Provider } from '@/types';
-import { fetchModels, fetchEmbeddingModels, fetchProviders } from '@/services/models';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Model, Provider } from '@/types';
+import {
+  fetchModels,
+  fetchEmbeddingModels,
+  fetchProviders,
+  registerModel,
+  RegisterModelRequest,
+} from '@/services/models';
 
 export const useModels = () => {
+  const queryClient = useQueryClient();
+
   // Query for LLM models
   const modelsQuery = useQuery<Model[], Error>({
     queryKey: ['models'],
@@ -10,7 +18,7 @@ export const useModels = () => {
   });
 
   // Query for embedding models
-  const embeddingModelsQuery = useQuery<EmbeddingModel[], Error>({
+  const embeddingModelsQuery = useQuery<Model[], Error>({
     queryKey: ['embeddingModels'],
     queryFn: fetchEmbeddingModels,
   });
@@ -19,6 +27,16 @@ export const useModels = () => {
   const providersQuery = useQuery<Provider[], Error>({
     queryKey: ['providers'],
     queryFn: fetchProviders,
+  });
+
+  // Mutation for registering a new model
+  const registerModelMutation = useMutation<Model, Error, RegisterModelRequest>({
+    mutationFn: registerModel,
+    onSuccess: () => {
+      // Invalidate and refetch models after successful registration
+      void queryClient.invalidateQueries({ queryKey: ['models'] });
+      void queryClient.invalidateQueries({ queryKey: ['embeddingModels'] });
+    },
   });
 
   return {
@@ -36,6 +54,11 @@ export const useModels = () => {
     providers: providersQuery.data,
     isLoadingProviders: providersQuery.isLoading,
     providersError: providersQuery.error,
+
+    // Register model mutation
+    registerModel: registerModelMutation.mutate,
+    isRegisteringModel: registerModelMutation.isPending,
+    registerModelError: registerModelMutation.error,
 
     // Overall loading state
     isLoading: modelsQuery.isLoading || embeddingModelsQuery.isLoading || providersQuery.isLoading,

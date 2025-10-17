@@ -18,7 +18,7 @@ repos:
     rev: 25.1.0
     hooks:
       - id: black
-        language_version: python3.12
+        language_version: python3.13
         exclude: '^(backend/migrations/|migrations/)'
 
   - repo: https://github.com/pycqa/isort
