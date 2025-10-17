@@ -25,7 +25,7 @@ class TemplateInitializationRequest(BaseModel):
     """Schema for template initialization request.
 
     Added optional override fields to allow callers (UI) to customize
-    the target model and tools before deploying from a template.
+    the target model, tools, and knowledge bases before deploying from a template.
     """
 
     template_name: str
@@ -36,6 +36,7 @@ class TemplateInitializationRequest(BaseModel):
     # Optional overrides
     model_name: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = None
+    knowledge_base_ids: Optional[List[str]] = None
 
 
 class TemplateInitializationResponse(BaseModel):

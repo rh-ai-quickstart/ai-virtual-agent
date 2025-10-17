@@ -284,13 +284,13 @@ async def initialize_agent_from_template(
                         f"already exists, skipping creation"
                     )
                     knowledge_base_created = True
-                    knowledge_base_name = existing_kb.name
+                    knowledge_base_name = existing_kb.vector_store_name
                 else:
                     # Create knowledge base
                     kb_create = KnowledgeBaseCreate(**kb_config)
                     created_kb = await create_knowledge_base_internal(kb_create, db)
                     knowledge_base_created = True
-                    knowledge_base_name = created_kb.name
+                    knowledge_base_name = created_kb.vector_store_name
                     logger.info(
                         f"Successfully created knowledge base: " f"{created_kb.name}"
                     )
@@ -311,8 +311,20 @@ async def initialize_agent_from_template(
         else:
             tools = [ToolAssociationInfo(**tool) for tool in template.tools]
 
-        # Add RAG tool if knowledge base was created
-        if knowledge_base_created and template.knowledge_base_ids:
+        # Determine knowledge base IDs: prefer overrides if provided
+        if request.knowledge_base_ids is not None:
+            kb_ids = list(request.knowledge_base_ids)
+        else:
+            # If a knowledge base was created, use its vector_store_name
+            # Otherwise, use empty list (template.knowledge_base_ids contains placeholders)
+            kb_ids = (
+                [knowledge_base_name]
+                if knowledge_base_created and knowledge_base_name
+                else []
+            )
+
+        # Add RAG tool if knowledge bases are being used
+        if kb_ids and not any(tool.toolgroup_id == "builtin::rag" for tool in tools):
             tools.append(ToolAssociationInfo(toolgroup_id="builtin::rag"))
 
         # Determine model: prefer override if provided and non-empty
@@ -323,9 +335,7 @@ async def initialize_agent_from_template(
             prompt=agent_prompt,
             model_name=model_to_use,
             tools=tools,
-            knowledge_base_ids=(
-                template.knowledge_base_ids if knowledge_base_created else []
-            ),
+            knowledge_base_ids=kb_ids,
             temperature=0.1,
             top_p=0.95,
             max_tokens=4096,
@@ -339,8 +349,11 @@ async def initialize_agent_from_template(
         # Include template_id in the agent config
         agent_config.template_id = db_template.id
 
+        # Skip KB validation if we just created a KB (ingestion is async)
+        skip_validation = knowledge_base_created and knowledge_base_name is not None
+
         created_agent = await create_virtual_agent_internal(
-            agent_config, http_request, db
+            agent_config, http_request, db, skip_kb_validation=skip_validation
         )
 
         logger.info(

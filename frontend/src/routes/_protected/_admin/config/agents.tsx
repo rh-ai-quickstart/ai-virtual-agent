@@ -39,7 +39,7 @@ import {
   initializeAgentFromTemplate,
   getTemplateDetails as getTemplateDetailsApi,
 } from '@/services/agent-templates';
-import { useModels, useTools } from '@/hooks';
+import { useModels, useTools, useKnowledgeBases } from '@/hooks';
 import { MultiSelect, CustomSelectOptionProps } from '@/components/multi-select';
 import { ToolGroup } from '@/types';
 import { TemplateInitializationRequest } from '@/types/agent';
@@ -123,16 +123,23 @@ function AgentTemplates() {
       {
         model_name: string;
         tool_ids: string[];
+        knowledge_base_ids: string[];
         template_model?: string;
         template_tool_ids?: string[];
+        template_knowledge_base_ids?: string[];
       }
     >
   >({});
   const [templatesPrefetching, setTemplatesPrefetching] = useState<boolean>(false);
 
-  // Data for models and tools
+  // Data for models, tools, and knowledge bases
   const { models, isLoadingModels, modelsError } = useModels();
   const { tools, isLoading: isLoadingTools, error: toolsError } = useTools();
+  const {
+    knowledgeBases,
+    isLoading: isLoadingKnowledgeBases,
+    error: knowledgeBasesError,
+  } = useKnowledgeBases();
   const queryClient = useQueryClient();
 
   // Query for suites by category
@@ -252,8 +259,10 @@ function AgentTemplates() {
           next[id] = {
             model_name: '',
             tool_ids: [],
+            knowledge_base_ids: [],
             template_model: '',
             template_tool_ids: [],
+            template_knowledge_base_ids: [],
           };
         }
       }
@@ -280,6 +289,8 @@ function AgentTemplates() {
             if (!t) continue;
             // Default tools from template
             const defaultToolIds = (t.tools || []).map((x) => x.toolgroup_id);
+            // Default knowledge base IDs from template
+            const defaultKbIds = t.knowledge_base_ids || [];
             // Tentative model: will be reconciled against available models below
             const templateModel = t.model_name || '';
 
@@ -288,8 +299,12 @@ function AgentTemplates() {
             next[id] = {
               model_name: next[id]?.model_name || '',
               tool_ids: next[id]?.tool_ids?.length ? next[id].tool_ids : defaultToolIds,
+              knowledge_base_ids: next[id]?.knowledge_base_ids?.length
+                ? next[id].knowledge_base_ids
+                : defaultKbIds,
               template_model: templateModel,
               template_tool_ids: defaultToolIds,
+              template_knowledge_base_ids: defaultKbIds,
             };
           }
           return next;
@@ -368,6 +383,45 @@ function AgentTemplates() {
       id: `tools-option-${tool.toolgroup_id}`,
     }));
   }, [tools, isLoadingTools, toolsError]);
+
+  // Knowledge base options for MultiSelect
+  const knowledgeBaseOptions: CustomSelectOptionProps[] = useMemo(() => {
+    if (isLoadingKnowledgeBases) {
+      return [
+        {
+          value: 'loading_kb',
+          children: 'Loading knowledge bases...',
+          isDisabled: true,
+          id: 'loading_kb_opt',
+        },
+      ];
+    }
+    if (knowledgeBasesError) {
+      return [
+        {
+          value: 'error_kb',
+          children: 'Error loading knowledge bases',
+          isDisabled: true,
+          id: 'error_kb_opt',
+        },
+      ];
+    }
+    if (!knowledgeBases || knowledgeBases.length === 0) {
+      return [
+        {
+          value: 'no_kb_options',
+          children: 'No knowledge bases available',
+          isDisabled: true,
+          id: 'no_kb_options_opt',
+        },
+      ];
+    }
+    return knowledgeBases.map((kb) => ({
+      value: kb.vector_store_name,
+      children: kb.name,
+      id: `kb-option-${kb.vector_store_name}`,
+    }));
+  }, [knowledgeBases, isLoadingKnowledgeBases, knowledgeBasesError]);
 
   const modelOptions = useMemo(() => {
     if (isLoadingModels) {
@@ -721,7 +775,11 @@ function AgentTemplates() {
                                 setTemplateOverrides((prev) => ({
                                   ...prev,
                                   [pair.id]: {
-                                    ...(prev[pair.id] || { model_name: '', tool_ids: [] }),
+                                    ...(prev[pair.id] || {
+                                      model_name: '',
+                                      tool_ids: [],
+                                      knowledge_base_ids: [],
+                                    }),
                                     tool_ids: selectedIds,
                                   },
                                 }))
@@ -729,6 +787,34 @@ function AgentTemplates() {
                               ariaLabel={`Select tools for ${pair.name}`}
                               isDisabled={isLoadingTools || !!toolsError}
                               placeholder="Type or select tool groups..."
+                            />
+                          </FormGroup>
+                        </div>
+
+                        {/* Knowledge bases multiselect */}
+                        <div className="pf-v6-u-ml-lg" style={{ marginTop: 8 }}>
+                          <FormGroup label="Knowledge Bases" fieldId={`kb-${pair.id}`}>
+                            <MultiSelect
+                              id={`kb-${pair.id}-multiselect`}
+                              value={templateOverrides[pair.id]?.knowledge_base_ids || []}
+                              options={knowledgeBaseOptions}
+                              onBlur={() => {}}
+                              onChange={(selectedIds) =>
+                                setTemplateOverrides((prev) => ({
+                                  ...prev,
+                                  [pair.id]: {
+                                    ...(prev[pair.id] || {
+                                      model_name: '',
+                                      tool_ids: [],
+                                      knowledge_base_ids: [],
+                                    }),
+                                    knowledge_base_ids: selectedIds,
+                                  },
+                                }))
+                              }
+                              ariaLabel={`Select knowledge bases for ${pair.name}`}
+                              isDisabled={isLoadingKnowledgeBases || !!knowledgeBasesError}
+                              placeholder="Type or select knowledge bases..."
                             />
                           </FormGroup>
                         </div>
@@ -777,7 +863,11 @@ function AgentTemplates() {
                     const ids: string[] = selectedTemplateIds;
                     for (const id of ids) {
                       try {
-                        const overrides = templateOverrides[id] || { model_name: '', tool_ids: [] };
+                        const overrides = templateOverrides[id] || {
+                          model_name: '',
+                          tool_ids: [],
+                          knowledge_base_ids: [],
+                        };
 
                         // Determine if we should send a model override
                         const templateModel = overrides.template_model || '';
@@ -808,6 +898,17 @@ function AgentTemplates() {
                           ? selectedToolIds.map((toolId) => ({ toolgroup_id: toolId }))
                           : undefined;
 
+                        // Determine if knowledge bases changed compared to template defaults
+                        const selectedKbIds = overrides.knowledge_base_ids || [];
+                        const templateKbIds = overrides.template_knowledge_base_ids || [];
+                        const selectedKbSet = new Set(selectedKbIds);
+                        const templateKbSet = new Set(templateKbIds);
+                        const kbChanged =
+                          selectedKbIds.length !== templateKbIds.length ||
+                          [...selectedKbSet].some((x) => !templateKbSet.has(x)) ||
+                          [...templateKbSet].some((x) => !selectedKbSet.has(x));
+                        const kbPayload = kbChanged ? selectedKbIds : undefined;
+
                         const payload: TemplateInitializationRequest = {
                           template_name: id,
                           include_knowledge_base: true,
@@ -818,6 +919,9 @@ function AgentTemplates() {
                         }
                         if (toolsPayload) {
                           payload.tools = toolsPayload;
+                        }
+                        if (kbPayload !== undefined) {
+                          payload.knowledge_base_ids = kbPayload;
                         }
 
                         const result = await initializeAgentFromTemplate(payload);

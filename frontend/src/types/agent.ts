@@ -1,4 +1,5 @@
 import { ToolAssociationInfo } from './tools';
+import type { ReactNode } from 'react';
 
 export type SamplingStrategy = 'greedy' | 'top-p' | 'top-k';
 
@@ -73,6 +74,7 @@ export interface TemplateInitializationRequest {
   // Optional overrides when initializing from template
   model_name?: string;
   tools?: { toolgroup_id: string }[];
+  knowledge_base_ids?: string[];
 }
 
 export interface TemplateInitializationResponse {
@@ -90,7 +92,7 @@ export interface SuiteDetails {
   name: string;
   description: string;
   category: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   agents: string[];
   agentCount: number;

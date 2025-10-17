@@ -29,16 +29,24 @@ async def create_virtual_agent_internal(
     va: VirtualAgentCreate,
     request: Request,
     db: AsyncSession,
+    skip_kb_validation: bool = False,
 ) -> VirtualAgentResponse:
     """
     Internal utility function to create a virtual agent.
     Can be used by API endpoints and other services without dependency injection issues.
+
+    Args:
+        va: Virtual agent configuration
+        request: HTTP request object for LlamaStack client
+        db: Database session
+        skip_kb_validation: If True, skip validation that KBs exist in LlamaStack.
+                           Useful when KBs are newly created and ingestion is pending.
     """
     agent_uuid = uuid.uuid4()
 
     # Validate knowledge bases and get vector store IDs if needed
     vector_store_ids = []
-    if va.knowledge_base_ids:
+    if va.knowledge_base_ids and not skip_kb_validation:
         vector_store_ids = await validate_and_get_vector_store_ids(
             va.knowledge_base_ids, request
         )
