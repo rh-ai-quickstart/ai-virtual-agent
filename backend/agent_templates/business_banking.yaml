@@ -50,4 +50,4 @@ templates:
       is_external: false
       source: "URL"
       source_configuration:
-        - "https://www.vscpa.com/sites/default/files/resources/Session%205%20-%20Position%20Your%20Firm%20as%20Your%20Clients%27%20Most%20Trusted%20Business%20Advisor.pdf"
+        - "https://www.irs.gov/pub/irs-pdf/p583.pdf"

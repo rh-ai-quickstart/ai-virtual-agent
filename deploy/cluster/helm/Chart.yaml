@@ -43,5 +43,5 @@ dependencies:
     version: 0.1.0
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   - name: ingestion-pipeline
-    version: 0.2.22
+    version: 0.5.0
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts

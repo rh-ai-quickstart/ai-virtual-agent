@@ -231,7 +231,7 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
       };
       void loadDemoQuestions();
     }
-  }, [chatMessages.length, selectedAgentObj]);
+  }, [chatMessages.length, selectedAgentObj, demoQuestions.length]);
 
   const onSelectAgent = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,

@@ -16,16 +16,16 @@ templates:
       - "Can you review my portfolio’s diversification and fees?"
       - "How should I rebalance given current market conditions?"
       - "What are tax-efficient ways to harvest gains and losses this year?"
-    # knowledge_base_config:
-    #   name: "Investment Advisory Reference"
-    #   version: "1.0"
-    #   embedding_model: "all-MiniLM-L6-v2"
-    #   provider_id: "pgvector"
-    #   vector_store_name: "investment_kb"
-    #   is_external: false
-    #   source: "URL"
-    #   source_configuration:
-    #     - "ingest/data/compliance/compliance.md"
+    knowledge_base_config:
+      name: "Investment Advisory Reference"
+      version: "1.0"
+      embedding_model: "all-MiniLM-L6-v2"
+      provider_id: "pgvector"
+      vector_store_name: "investment_kb"
+      is_external: false
+      source: "URL"
+      source_configuration:
+        - "https://www.irs.gov/pub/irs-pdf/p550.pdf"
 
   financial_planning:
     name: "Financial Planning Specialist"
@@ -41,13 +41,13 @@ templates:
       - "What’s the best strategy to optimize 401(k), Roth, and HSA contributions?"
       - "How do I plan for college costs for two kids in 10 and 13 years?"
       - "What estate planning documents should I have in place right now?"
-    # knowledge_base_config:
-    #   name: "Financial Planning Reference"
-    #   version: "1.0"
-    #   embedding_model: "all-MiniLM-L6-v2"
-    #   provider_id: "pgvector"
-    #   vector_store_name: "financial_planning_kb"
-    #   is_external: false
-    #   source: "URL"
-    #   source_configuration:
-    #     - "ingest/data/compliance/compliance.md"
+    knowledge_base_config:
+      name: "Financial Planning Reference"
+      version: "1.0"
+      embedding_model: "all-MiniLM-L6-v2"
+      provider_id: "pgvector"
+      vector_store_name: "financial_planning_kb"
+      is_external: false
+      source: "URL"
+      source_configuration:
+        - "https://www.irs.gov/pub/irs-pdf/p590a.pdf"
