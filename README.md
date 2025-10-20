@@ -1,4 +1,4 @@
-# Build an AI-powered virtual agent 
+# Build an AI-powered virtual agent
 
 Build and deploy a conversational AI virtual agent on Red Hat OpenShift AI to automate customer interactions and provide instant support.
 
@@ -34,29 +34,29 @@ The platform integrates several components:
 
 📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
 
-## Requirements 
+## Requirements
 
-### Minimum hardware requirements 
+### Minimum hardware requirements
 
-### Minimum software requirements 
+### Minimum software requirements
 <!-- oc, make, others ? -->
 
-### Required user permissions 
+### Required user permissions
 
 
 ## Deploy
 
-<!-- 
-### Prerequisites 
+<!--
+### Prerequisites
 
-What needs to go here? 
+What needs to go here?
 
-oc login 
+oc login
 
-anything else? 
+anything else?
 
 
---> 
+-->
 
 ### Cluster Deployment
 
@@ -83,7 +83,7 @@ make install
 📖 **[Full Installation Guide →](INSTALLING.md)**
 
 
-### Delete 
+### Delete
 
 
 ## Example Use Cases
@@ -285,8 +285,8 @@ Notes:
 
 [MIT License](LICENSE) - Built with ❤️ by the Red Hat Ecosystem App Engineering team
 
-## Tags 
+## Tags
 
 * **Industry:** Cross-industry
-* **Product:** OpenShift AI 
+* **Product:** OpenShift AI
 * **Use case:** Conversational agents
