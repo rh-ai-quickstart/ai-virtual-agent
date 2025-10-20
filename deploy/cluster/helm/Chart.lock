@@ -1,24 +1,24 @@
 dependencies:
 - name: minio
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.1.0
+  version: 0.5.0
 - name: pgvector
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.1.0
+  version: 0.5.0
 - name: mcp-servers
-  repository: file://../../../../ai-architecture-charts/mcp-servers/helm
-  version: 0.1.0
+  repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
+  version: 0.5.1
 - name: llm-service
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.1.0
+  version: 0.5.0
 - name: llama-stack
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.2.22
+  version: 0.5.0
 - name: configure-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.1.0
+  version: 0.5.0
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.2.22
-digest: sha256:1c50ff76cddbca2a499783108587be5d32d38c3ef0aa89c9e2f3ef8991ae343e
-generated: "2025-10-07T21:11:52.929591-04:00"
+  version: 0.5.0
+digest: sha256:c60e5cecd7d14282cb866e4e90455df6ba5b05acab599575df2f4f13c3d3d962
+generated: "2025-10-20T14:30:52.165129-04:00"
