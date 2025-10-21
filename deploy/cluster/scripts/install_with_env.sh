@@ -92,9 +92,8 @@ build_helm_cmd() {
         # Ensure Toolhive CRDs/operator are enabled and Oracle SQLcl MCP is enabled in subchart
         cmd_args+=("--set" "mcp-servers.toolhive.crds.enabled=true")
         cmd_args+=("--set" "mcp-servers.toolhive.operator.enabled=true")
-        # Enable oracle-sqlcl MCP server (most config is already in default values)
+        # Enable oracle-sqlcl MCP server (configuration is now in ai-virtual-agent values.yaml)
         cmd_args+=("--set" "mcp-servers.mcp-servers.oracle-sqlcl.enabled=true")
-        cmd_args+=("--set" "mcp-servers.mcp-servers.oracle-sqlcl.image=quay.io/lrangine/sqlcl-mcp-server:4.0.3")
         # Enable 8B model in LlamaStack for Oracle deployment
         cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.enabled=true")
         cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.maxTokens=32768")
@@ -105,19 +104,6 @@ build_helm_cmd() {
         # Configure Oracle MCP server in LlamaStack
         cmd_args+=("--set" "llama-stack.mcp-servers.oracle_mcp_server.uri=http://mcp-oracle-sqlcl-proxy:8080/sse")
         echo "✅ Oracle MCP server configured in LlamaStack"
-    else
-        # Default deployment: Use 1B model for general use (most resource-efficient)
-        cmd_args+=("--set" "llm-service.models.llama-3-2-1b-instruct.enabled=true")
-        cmd_args+=("--set" "llm-service.models.llama-3-1-8b-instruct.enabled=false")
-        cmd_args+=("--set" "llm-service.models.llama-3-2-3b-instruct.enabled=false")
-        # Enable 1B model in LlamaStack for default deployment
-        cmd_args+=("--set" "llama-stack.models.llama-3-2-1b-instruct.enabled=true")
-        cmd_args+=("--set" "llama-stack.models.llama-3-2-1b-instruct.url=http://llama-3-2-1b-instruct-predictor.\${env.NAMESPACE}.svc.cluster.local:8080/v1")
-        cmd_args+=("--set" "llama-stack.models.llama-3-2-1b-instruct.apiToken=fake")
-        cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.enabled=false")
-        echo "✅ Default deployment: Using 1B model for general use (most resource-efficient)"
-    fi
-
 
     # seed admin user args
     if [ -n "$ADMIN_USERNAME" ]; then

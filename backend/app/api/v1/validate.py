@@ -120,11 +120,7 @@ async def validate_with_headers(request: Request) -> User:
             path="/",
             headers={
                 "x-forwarded-user": request.headers.get("X-Forwarded-User"),
-                **(
-                    {"x-forwarded-email": request.headers.get("X-Forwarded-Email")}
-                    if request.headers.get("X-Forwarded-Email")
-                    else {}
-                ),
+                "x-forwarded-email": request.headers.get("X-Forwarded-Email"),
             },
             params={},
         ),

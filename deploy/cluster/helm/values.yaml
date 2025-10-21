@@ -192,12 +192,14 @@ global:
   # Hugging Face token for accessing gated models
   hf_token: ${HF_TOKEN}
 
+# MCP servers configuration
+# mcp-servers:
 #   mcp-servers:
-#     mcp-weather:
-#       uri: http://rag-mcp-weather:8000/sse
-
-  # MCP servers configuration is now handled by the mcp-servers subchart
-  # See ai-architecture-charts/mcp-servers/helm/values.yaml for configuration
+#     oracle-sqlcl:
+#       enabled: true
+#       image:
+#         repository: quay.io/lrangine/sqlcl-mcp-server
+#         tag: "4.0.3"
 
 # LLM Service Configuration
 llm-service:
