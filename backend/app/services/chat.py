@@ -13,7 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..api.llamastack import get_client_from_request
+from ..api.v1.llama_stack.client import get_client_from_request
 from ..crud.virtual_agents import virtual_agents
 from ..models import ChatMessage, ChatSession
 

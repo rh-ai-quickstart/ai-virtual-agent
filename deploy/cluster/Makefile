@@ -116,7 +116,7 @@ install-help: ## Show detailed deployment help and configuration options
 
 deps: ## Update Helm dependencies
 	@echo "Updating Helm dependencies"
-	@helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
+	#@helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
 
 list-models: deps ## List available models
 	@helm template dummy-release $(AI_VIRTUAL_AGENT_CHART) --set llm-service._debugListModels=true | grep ^model:

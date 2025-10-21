@@ -27,7 +27,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .app.api.v1.router import api_router
 from .app.api.v1.validate import router as validate_router
-from .app.core.auth import is_local_dev_mode
 from .app.core.logging_config import setup_logging
 
 load_dotenv()
@@ -35,15 +34,6 @@ load_dotenv()
 # Configure centralized logging
 setup_logging(level="DEBUG")
 logger = logging.getLogger(__name__)
-
-
-def get_incluster_namespace() -> str:
-    """Get the current Kubernetes namespace."""
-    try:
-        with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace") as file:
-            return file.read().strip()
-    except Exception:
-        return "default"
 
 
 def wait_for_service_ready(
@@ -158,11 +148,7 @@ app.include_router(api_router, prefix="/api/v1")
 # For backward compatibility, also include some routes at the old paths
 # app.include_router(api_router, prefix="/api")
 
-# Include debug router only in local development mode
-if is_local_dev_mode():
-    from .app.api.v1.debug import router as debug_router
-
-    app.include_router(debug_router, prefix="/api")
+# Debug router has been removed
 
 # Include validate router at root for compatibility
 app.include_router(validate_router)

@@ -5,7 +5,7 @@ dependencies:
 - name: pgvector
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.1.0
-- name: mcp-weather
+- name: mcp-servers
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.1.0
 - name: llm-service
@@ -20,5 +20,5 @@ dependencies:
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.2.22
-digest: sha256:3418efd23abe090a3dc9189251631b58f712474eab0258ef02aea70ecd95afd1
-generated: "2025-09-19T10:23:34.244020518-04:00"
+digest: sha256:baf4a441cec77b9d955a565cbcb8a0fec68d5b75fa596b0d243e07c8d4650278
+generated: "2025-10-16T14:22:02.498590215-04:00"
