@@ -81,29 +81,19 @@ build_helm_cmd() {
     if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
         # Oracle deployment: Use 8B model with increased context length
         cmd_args+=("--set" "llm-service.models.llama-3-1-8b-instruct.enabled=true")
-        cmd_args+=("--set" "llm-service.models.llama-3-2-1b-instruct.enabled=false")
-        cmd_args+=("--set" "llm-service.models.llama-3-2-3b-instruct.enabled=false")
         # Add GPU toleration for G6E nodes
         cmd_args+=("--set-json" "llm-service.models.llama-3-1-8b-instruct.tolerations=[{\"key\":\"g6e-gpu\",\"effect\":\"NoSchedule\",\"operator\":\"Exists\"}]")
         echo "✅ Oracle deployment: Using 8B model with 131,072 token context length (default)"
 
-        # Enable Oracle database installation
-        cmd_args+=("--set" "mcp-servers.oracledb.enabled=true")
-        # Ensure Toolhive CRDs/operator are enabled and Oracle SQLcl MCP is enabled in subchart
-        cmd_args+=("--set" "mcp-servers.toolhive.crds.enabled=true")
-        cmd_args+=("--set" "mcp-servers.toolhive.operator.enabled=true")
         # Enable oracle-sqlcl MCP server (configuration is now in ai-virtual-agent values.yaml)
-        cmd_args+=("--set" "mcp-servers.mcp-servers.oracle-sqlcl.enabled=true")
+        cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
         # Enable 8B model in LlamaStack for Oracle deployment
         cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.enabled=true")
         cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.maxTokens=32768")
-        cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.url=http://llama-3-1-8b-instruct-predictor.\${env.NAMESPACE}.svc.cluster.local:8080/v1")
-        cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.apiToken=fake")
-        # Disable 1B model in LlamaStack for Oracle deployment
-        cmd_args+=("--set" "llama-stack.models.llama-3-2-1b-instruct.enabled=false")
         # Configure Oracle MCP server in LlamaStack
         cmd_args+=("--set" "llama-stack.mcp-servers.oracle_mcp_server.uri=http://mcp-oracle-sqlcl-proxy:8080/sse")
         echo "✅ Oracle MCP server configured in LlamaStack"
+    fi
 
     # seed admin user args
     if [ -n "$ADMIN_USERNAME" ]; then
