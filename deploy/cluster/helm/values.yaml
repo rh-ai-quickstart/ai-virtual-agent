@@ -11,7 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.3.0"
+  #tag: "1.1.0"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -187,21 +187,3 @@ llama-stack:
           max_infer_iters: 30
   secrets:
     TAVILY_SEARCH_API_KEY: ""
-
-global:
-  # Hugging Face token for accessing gated models
-  hf_token: ${HF_TOKEN}
-
-# MCP servers configuration
-# mcp-servers:
-#   mcp-servers:
-#     oracle-sqlcl:
-#       enabled: true
-#       image:
-#         repository: quay.io/lrangine/sqlcl-mcp-server
-#         tag: "4.0.3"
-
-# LLM Service Configuration
-llm-service:
-  secret:
-    hf_token: ${HF_TOKEN}

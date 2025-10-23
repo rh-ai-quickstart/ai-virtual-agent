@@ -1,7 +1,7 @@
 # AI Virtual Agent - Helm Deployment Makefile
 # Run `make help` to see available targets.
 
-.PHONY: help install install-help install-status deps uninstall install-namespace list-models uninstall-crds
+.PHONY: help install install-help install-status deps uninstall install-namespace list-models
 
 # -----------------------------------------------------------------------------
 # Helper
@@ -34,7 +34,6 @@ TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
 
 # Oracle MCP flag (default disabled). Override with: make install ORACLE=true
 ORACLE ?= false
-export ORACLE
 
 # Ingestion pipeline configuration
 SOURCE ?= S3
@@ -171,20 +170,10 @@ uninstall: ## Uninstall deployment and clean up resources
 	@echo "Cleaning up completed pipeline pods..."
 	@oc delete pods --field-selector=status.phase=Succeeded -n $(NAMESPACE) --ignore-not-found=true ||:
 	@echo "Pipeline cleanup completed."
-	@echo "Cleaning up Toolhive CRDs (cluster-scoped)..."
-	@echo "Note: Toolhive CRDs are cluster-scoped and may be used by other namespaces."
-	@echo "To remove them, run: oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev"
 	@echo "Checking for any remaining resources in namespace $(NAMESPACE)..."
 	@echo "If you want to completely remove the namespace, run: oc delete project $(NAMESPACE)"
 	@echo "Remaining resources in namespace $(NAMESPACE):"
 	@$(MAKE) install-status NAMESPACE=$(NAMESPACE)
-
-uninstall-crds: ## Remove Toolhive CRDs (cluster-scoped) - use with caution
-	@echo "⚠️  WARNING: This will remove Toolhive CRDs cluster-wide!"
-	@echo "Only run this if no other namespaces are using Toolhive."
-	@echo "Removing Toolhive CRDs..."
-	@oc delete crd mcpservers.toolhive.stacklok.dev mcptoolconfigs.toolhive.stacklok.dev mcpregistries.toolhive.stacklok.dev --ignore-not-found=true ||:
-	@echo "Toolhive CRDs removed."
 
 install-status: ## Check deployment status
 	@echo "Deployment status for namespace: $(NAMESPACE)"
