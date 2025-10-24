@@ -81,9 +81,7 @@ build_helm_cmd() {
     if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
         # Oracle deployment: Use 8B model with increased context length
         cmd_args+=("--set" "llm-service.models.llama-3-1-8b-instruct.enabled=true")
-        # Add GPU toleration for G6E nodes
-        cmd_args+=("--set-json" "llm-service.models.llama-3-1-8b-instruct.tolerations=[{\"key\":\"g6e-gpu\",\"effect\":\"NoSchedule\",\"operator\":\"Exists\"}]")
-        echo "✅ Oracle deployment: Using 8B model with 131,072 token context length (default)"
+        echo "✅ Oracle deployment: Using 8B model"
 
         # Enable oracle-sqlcl MCP server (configuration is now in ai-virtual-agent values.yaml)
         cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
