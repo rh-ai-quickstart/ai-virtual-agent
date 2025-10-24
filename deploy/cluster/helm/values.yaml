@@ -200,7 +200,3 @@ llama-stack:
 #       id: meta-llama/Llama-3.1-8B-Instruct
 #       enabled: true
 #       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
-
-#   mcp-servers:
-#     mcp-weather:
-#       uri: http://rag-mcp-weather:8000/sse
