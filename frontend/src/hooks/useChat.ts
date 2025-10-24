@@ -305,24 +305,11 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
         // Build a user-friendly error message
         let userFriendlyMessage = 'Something went wrong. Please try again.';
         if (error instanceof Error) {
-          // Timeout
+          // For timeout errors, provide specific guidance
           if (error.name === 'AbortError') {
-            userFriendlyMessage = 'Request timed out. The system may be busy or the query is too large. Try a simpler query or retry in a moment.';
-          } else if (error.message.includes('500') || error.message.toLowerCase().includes('internal server error')) {
-            // Backend 500s (e.g., Toolhive proxy issues like channel full)
-            userFriendlyMessage = 'Server error occurred while processing the request. If you asked for a very large dataset, try narrowing it (add filters or limits).';
-          } else if (error.message.includes('502') || error.message.toLowerCase().includes('bad gateway')) {
-            // Connectivity between services
-            userFriendlyMessage = 'Unable to reach the AI service. Please check that LlamaStack and the tool proxy are running, then try again.';
-          } else if (error.message.includes('403')) {
-            userFriendlyMessage = 'Authentication failed. Please refresh and try again.';
-          } else if (
-            error.message.toLowerCase().includes('context length') ||
-            error.message.toLowerCase().includes('tokens')
-          ) {
-            // LLM context limit exceeded
-            userFriendlyMessage = 'The response is too large to process. Please ask for fewer rows or a summarized result (use filters, LIMIT/ROWNUM, or COUNT).';
+            userFriendlyMessage = 'Request timed out. The AI service may be overloaded or the query is too complex. Try a simpler query (use specific filters, LIMIT, or ask for summaries instead of full datasets).';
           } else {
+            // Display the actual error message for better transparency
             userFriendlyMessage = error.message || userFriendlyMessage;
           }
         }
