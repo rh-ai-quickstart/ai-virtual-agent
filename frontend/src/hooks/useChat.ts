@@ -202,11 +202,21 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
           ...(sessionId ? { sessionId } : {}),
         };
 
+        // Add a timeout so the UI doesn't hang indefinitely on backend issues
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => {
+          controller.abort();
+        }, 180000); // 3 minutes
+
         const response = await fetch(CHAT_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
+          signal: controller.signal,
         });
+
+        // Clear the timeout once the request has returned
+        window.clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`API error: ${response.statusText}`);
@@ -291,8 +301,33 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
         }
       } catch (error) {
         console.error('Chat error:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        options?.onError?.(new Error(errorMessage));
+
+        // Build a user-friendly error message
+        let userFriendlyMessage = 'Something went wrong. Please try again.';
+        if (error instanceof Error) {
+          // Timeout
+          if (error.name === 'AbortError') {
+            userFriendlyMessage = 'Request timed out. The system may be busy or the query is too large. Try a simpler query or retry in a moment.';
+          } else if (error.message.includes('500') || error.message.toLowerCase().includes('internal server error')) {
+            // Backend 500s (e.g., Toolhive proxy issues like channel full)
+            userFriendlyMessage = 'Server error occurred while processing the request. If you asked for a very large dataset, try narrowing it (add filters or limits).';
+          } else if (error.message.includes('502') || error.message.toLowerCase().includes('bad gateway')) {
+            // Connectivity between services
+            userFriendlyMessage = 'Unable to reach the AI service. Please check that LlamaStack and the tool proxy are running, then try again.';
+          } else if (error.message.includes('403')) {
+            userFriendlyMessage = 'Authentication failed. Please refresh and try again.';
+          } else if (
+            error.message.toLowerCase().includes('context length') ||
+            error.message.toLowerCase().includes('tokens')
+          ) {
+            // LLM context limit exceeded
+            userFriendlyMessage = 'The response is too large to process. Please ask for fewer rows or a summarized result (use filters, LIMIT/ROWNUM, or COUNT).';
+          } else {
+            userFriendlyMessage = error.message || userFriendlyMessage;
+          }
+        }
+
+        options?.onError?.(new Error(userFriendlyMessage));
         setIsLoading(false);
 
         // Remove the loading assistant message on error
@@ -307,6 +342,20 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
             );
           })
         );
+
+        // Append a visible error message in the chat so users see what happened
+        const errorChatMessage: ChatMessage = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: [
+            {
+              type: 'output_text',
+              text: `❌ ${userFriendlyMessage}`,
+            },
+          ],
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorChatMessage]);
       }
     },
     [agentId, sessionId, isLoading, options]
