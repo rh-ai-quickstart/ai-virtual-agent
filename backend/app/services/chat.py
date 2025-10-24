@@ -154,12 +154,14 @@ class ChatService:
     Args:
         request: FastAPI request object for LlamaStack client access
         db: Database session for accessing virtual agent configurations
+        user_id: ID of the authenticated user
     """
 
-    def __init__(self, request: Request, db: AsyncSession):
+    def __init__(self, request: Request, db: AsyncSession, user_id):
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
         self.request = request
         self.db = db
+        self.user_id = user_id  # Can be UUID or string, SQLAlchemy handles conversion
 
     async def _prepare_conversation_input(self, session_id, user_input):
         """Prepare input with full conversation history."""
@@ -216,7 +218,9 @@ class ChatService:
 
         # Check if session exists, create if not
         result = await self.db.execute(
-            select(ChatSession).where(ChatSession.id == session_id)
+            select(ChatSession)
+            .where(ChatSession.id == session_id)
+            .where(ChatSession.user_id == self.user_id)
         )
         session = result.scalar_one_or_none()
 
@@ -234,11 +238,12 @@ class ChatService:
             title = txt[:50] + "..." if len(txt) > 50 else txt[:50]
 
         if not session:
-            # Create new session
+            # Create new session owned by the current user
             session = ChatSession(
                 id=session_id,
                 title=title,
                 agent_id=agent_id,
+                user_id=self.user_id,
                 session_state={"last_response_id": response_id},
             )
             self.db.add(session)
@@ -266,7 +271,14 @@ class ChatService:
             created_at=now + timedelta(microseconds=1),
         )
         self.db.add(assistant_message)
-        await self.db.commit()
+
+        try:
+            # Commit the transaction
+            await self.db.commit()
+        except Exception as e:
+            logger.error(f"Error during commit: {e}")
+            await self.db.rollback()
+            raise
 
     async def create_response(
         self, agent_id: str, user_input, session_id: Optional[str] = None

@@ -32,5 +32,10 @@ class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
+    # User/Agent Assignment
+    AUTO_ASSIGN_AGENTS_TO_USERS: bool = (
+        os.getenv("AUTO_ASSIGN_AGENTS_TO_USERS", "true").lower() == "true"
+    )
+
 
 settings = Settings()

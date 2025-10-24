@@ -53,52 +53,6 @@ def validate_exact_text(response, expected_text):
     )
 
 
-def validate_users_list_contains_admin(response):
-    """
-    Validate that the users list response contains an admin user.
-
-    Args:
-        response: HTTP response object
-
-    Returns:
-        True if validation passes
-
-    Raises:
-        AssertionError: If admin user not found or has wrong role
-    """
-    import json
-
-    # Parse JSON response
-    if hasattr(response, "json"):
-        users = response.json()
-    else:
-        users = json.loads(response.text)
-
-    # Check that response is a list
-    if not isinstance(users, list):
-        raise AssertionError(f"Expected list, got {type(users)}")
-
-    # Find admin user
-    admin_user = None
-    for user in users:
-        if user.get("username") == "admin" and user.get("email") == "admin@example.com":
-            admin_user = user
-            break
-
-    # Validate admin user exists
-    if not admin_user:
-        usernames = [u.get("username") for u in users]
-        raise AssertionError(f"Admin user not found. Available users: {usernames}")
-
-    # Validate admin user has admin role
-    if admin_user.get("role") != "admin":
-        raise AssertionError(
-            f"Admin user has role '{admin_user.get('role')}', expected 'admin'"
-        )
-
-    return True
-
-
 def parse_sse_response(response_text: str) -> dict:
     """
     Parse Server-Sent Events response text and extract JSON data.
@@ -185,104 +139,6 @@ def validate_sse_response_id(response):
 
     except Exception as e:
         print(f"✗ Response validation failed: {str(e)}")
-        print(f"Response text: {response.text[:500]}...")
-        raise
-
-
-def validate_sse_error(response, expected_error: str):
-    """
-    Validate that SSE response contains the expected error message.
-
-    This validator checks for error responses that should contain specific
-    error messages, such as "Response with id X not found".
-
-    Args:
-        response: Tavern response object
-        expected_error: Expected error message substring
-
-    Returns:
-        bool: True if validation passes
-
-    Raises:
-        AssertionError: If validation fails
-    """
-    try:
-        response_text = response.text
-
-        # Check that the expected error message is present
-        assert (
-            expected_error in response_text
-        ), f"Expected error '{expected_error}' not found in response: {response_text}"
-
-        # Parse JSON if possible to get structured error
-        try:
-            response_data = parse_sse_response(response_text)
-
-            # Check for error type
-            if "type" in response_data:
-                assert (
-                    response_data["type"] == "error"
-                ), f"Expected error type, got: {response_data['type']}"
-
-            print(f"✓ Expected error found: {expected_error}")
-
-        except ValueError:
-            # If we can't parse JSON, just check that error text is present
-            print(f"✓ Expected error found in text: {expected_error}")
-
-        return True
-
-    except Exception as e:
-        print(f"✗ Error validation failed: {str(e)}")
-        print(f"Response text: {response.text[:500]}...")
-        raise
-
-
-def validate_stored_responses_list(response, expected_count: int = None):
-    """
-    Validate that responses list API returns expected structure and count.
-
-    Args:
-        response: Tavern response object
-        expected_count: Expected number of responses in the list
-
-    Returns:
-        bool: True if validation passes
-
-    Raises:
-        AssertionError: If validation fails
-    """
-    try:
-        # Parse JSON response
-        if hasattr(response, "json"):
-            data = response.json()
-        else:
-            import json
-
-            data = json.loads(response.text)
-
-        # Check that data field exists
-        assert "data" in data, "Response missing 'data' field"
-        responses = data["data"]
-
-        # Check count if specified
-        if expected_count is not None:
-            assert (
-                len(responses) >= expected_count
-            ), f"Expected at least {expected_count} responses, got {len(responses)}"
-
-        # Validate response structure
-        for i, resp in enumerate(responses):
-            assert "id" in resp, f"Response {i} missing 'id' field"
-            assert resp["id"].startswith(
-                "resp-"
-            ), f"Response {i} has invalid ID format: {resp['id']}"
-
-        print(f"✓ Stored responses validation passed: {len(responses)} responses")
-        return True
-
-    except Exception as e:
-        print(f"✗ Stored responses validation failed: {str(e)}")
         print(f"Response text: {response.text[:500]}...")
         raise
 
@@ -506,63 +362,6 @@ def validate_list_not_empty(response):
 
     except Exception as e:
         print(f"✗ List validation failed: {str(e)}")
-        print(f"Response text: {response.text[:500]}...")
-        raise
-
-
-def validate_agent_has_template_metadata(
-    response, agent_id: str, expected_template_id: str
-):
-    """
-    Validate that an agent in the list has correct template metadata.
-
-    Args:
-        response: Tavern response object
-        agent_id: ID of the agent to check
-        expected_template_id: Expected template ID
-
-    Returns:
-        bool: True if validation passes
-
-    Raises:
-        AssertionError: If validation fails
-    """
-    try:
-        if hasattr(response, "json"):
-            agents = response.json()
-        else:
-            import json
-
-            agents = json.loads(response.text)
-
-        # Find the agent
-        target_agent = None
-        for agent in agents:
-            if agent.get("id") == agent_id:
-                target_agent = agent
-                break
-
-        assert target_agent is not None, f"Agent {agent_id} not found in response"
-
-        # Check template metadata
-        assert (
-            target_agent.get("template_id") == expected_template_id
-        ), f"Expected template_id {expected_template_id}, got {target_agent.get('template_id')}"
-
-        assert (
-            target_agent.get("template_name") is not None
-        ), "template_name should not be null"
-        assert target_agent.get("suite_id") is not None, "suite_id should not be null"
-        assert (
-            target_agent.get("suite_name") is not None
-        ), "suite_name should not be null"
-        assert target_agent.get("category") is not None, "category should not be null"
-
-        print(f"✓ Agent template metadata validation passed for {agent_id}")
-        return True
-
-    except Exception as e:
-        print(f"✗ Agent template metadata validation failed: {str(e)}")
         print(f"Response text: {response.text[:500]}...")
         raise
 
@@ -839,17 +638,83 @@ def validate_template_demo_questions(response):
         raise
 
 
-def validate_template_agent_exists(response, template_id: str, agent_name: str):
+def cleanup_deployed_agents(response, base_url: str):
     """
-    Validate that an agent with the given template_id and name exists in the list.
+    Delete all agents from a suite deployment response.
 
-    This is used when deployment may return "skipped" status but we still want to
-    verify the agent exists with proper template metadata.
+    This function loops through all agents in the deployment response
+    and deletes them via API calls.
+
+    Args:
+        response: Tavern response object from suite deployment
+        base_url: Base URL for the API (e.g., "http://localhost:8000")
+
+    Returns:
+        bool: True if cleanup succeeds
+    """
+    import json
+
+    import requests
+
+    try:
+        if hasattr(response, "json"):
+            results = response.json()
+        else:
+            results = json.loads(response.text)
+
+        if not isinstance(results, list):
+            print("⚠ Response is not a list, nothing to clean up")
+            return True
+
+        deleted_count = 0
+        failed_count = 0
+
+        for result in results:
+            agent_id = result.get("agent_id")
+            if not agent_id or agent_id == "nonexistent":
+                continue
+
+            try:
+                delete_response = requests.delete(
+                    f"{base_url}/api/v1/virtual_agents/{agent_id}",
+                    headers={
+                        "X-Forwarded-User": "admin",
+                        "X-Forwarded-Email": "admin@change.me",
+                    },
+                )
+                if delete_response.status_code in [204, 404]:
+                    deleted_count += 1
+                else:
+                    print(
+                        f"⚠ Failed to delete agent {agent_id}: {delete_response.status_code}"
+                    )
+                    failed_count += 1
+            except Exception as e:
+                print(f"⚠ Error deleting agent {agent_id}: {str(e)}")
+                failed_count += 1
+
+        print(f"✓ Cleanup completed: {deleted_count} deleted, {failed_count} failed")
+        return True
+
+    except Exception as e:
+        print(f"✗ Cleanup failed: {str(e)}")
+        # Don't raise - cleanup failures shouldn't fail tests
+        return True
+
+
+def validate_user_sessions(
+    response, expected_session_ids: list = None, unexpected_session_ids: list = None
+):
+    """
+    Validate that user can only see their own sessions.
+
+    This validator checks that the session list response contains only the expected
+    sessions and does not contain sessions belonging to other users.
 
     Args:
         response: Tavern response object
-        template_id: Expected template ID
-        agent_name: Expected agent name
+        expected_session_ids: List of session IDs that should be present
+        unexpected_session_ids: List of session IDs that should NOT be present
 
     Returns:
         bool: True if validation passes
@@ -858,78 +723,41 @@ def validate_template_agent_exists(response, template_id: str, agent_name: str):
         AssertionError: If validation fails
     """
     try:
+        # Parse JSON response
         if hasattr(response, "json"):
-            agents = response.json()
+            sessions = response.json()
         else:
             import json
 
-            agents = json.loads(response.text)
+            sessions = json.loads(response.text)
 
-        # Find the agent with matching template_id and name
-        target_agent = None
-        for agent in agents:
-            if (
-                agent.get("template_id") == template_id
-                and agent.get("name") == agent_name
-            ):
-                target_agent = agent
-                break
+        # Check that response is a list
+        assert isinstance(sessions, list), f"Expected list, got {type(sessions)}"
 
-        assert (
-            target_agent is not None
-        ), f"Agent with template_id '{template_id}' and name '{agent_name}' not found"
+        # Extract all session IDs from response
+        actual_session_ids = [session.get("id") for session in sessions]
 
-        # Validate template metadata
-        assert (
-            target_agent.get("template_id") == template_id
-        ), f"Expected template_id {template_id}, got {target_agent.get('template_id')}"
+        # Check that expected sessions are present
+        if expected_session_ids:
+            for expected_id in expected_session_ids:
+                assert (
+                    expected_id in actual_session_ids
+                ), f"Expected session {expected_id} not found in response. Found: {actual_session_ids}"
 
-        assert (
-            target_agent.get("template_name") is not None
-        ), "template_name should not be null"
-        assert target_agent.get("suite_id") is not None, "suite_id should not be null"
-        assert (
-            target_agent.get("suite_name") is not None
-        ), "suite_name should not be null"
-        assert target_agent.get("category") is not None, "category should not be null"
+        # Check that unexpected sessions are NOT present
+        if unexpected_session_ids:
+            for unexpected_id in unexpected_session_ids:
+                assert unexpected_id not in actual_session_ids, (
+                    f"Unexpected session {unexpected_id} found in response "
+                    f"(should be isolated). Found: {actual_session_ids}"
+                )
 
         print(
-            f"✓ Template agent validation passed for '{agent_name}' with template '{template_id}'"
+            f"✓ User session isolation validation passed: {len(actual_session_ids)} sessions visible to user"
         )
         return True
 
     except Exception as e:
-        print(f"✗ Template agent validation failed: {str(e)}")
+        print(f"✗ User session isolation validation failed: {str(e)}")
         print(f"Response text: {response.text[:500]}...")
         raise
-
-
-def extract_first_agent_id(response):
-    """
-    Extract the first agent ID from the response for cleanup purposes.
-
-    Args:
-        response: Tavern response object
-
-    Returns:
-        dict: Dictionary with first_agent_id key
-    """
-    try:
-        if hasattr(response, "json"):
-            agents = response.json()
-        else:
-            import json
-
-            agents = json.loads(response.text)
-
-        if agents and len(agents) > 0:
-            first_agent_id = agents[0].get("id")
-            return {"first_agent_id": first_agent_id}
-        else:
-            return {
-                "first_agent_id": "nonexistent"
-            }  # Will result in 404, which is acceptable
-
-    except Exception as e:
-        print(f"Failed to extract first agent ID: {e}")
-        return {"first_agent_id": "nonexistent"}

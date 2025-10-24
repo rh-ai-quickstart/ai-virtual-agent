@@ -35,10 +35,6 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
     },
     []
   );
-  interface SessionMessage {
-    role: 'user' | 'assistant' | 'system';
-    content: SimpleContentItem[];
-  }
   const loadSession = useCallback(
     async (sessionId: string) => {
       try {
@@ -58,20 +54,11 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
           throw new Error(`Session ${sessionId} not found for agent ${agentId}`);
         }
 
-        // Convert messages to our format
-        const convertedMessages: ChatMessage[] = sessionDetail.messages.map(
-          (msg: SessionMessage, index: number) => {
-            // Keep content as-is for all messages
-            const processedContent = msg.content;
-
-            return {
-              id: `${msg.role}-${sessionId}-${index}`,
-              role: msg.role,
-              content: processedContent,
-              timestamp: new Date(),
-            };
-          }
-        );
+        // Convert messages - parse timestamp string to Date
+        const convertedMessages: ChatMessage[] = sessionDetail.messages.map((msg) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp as unknown as string),
+        }));
 
         setMessages(convertedMessages);
 
@@ -121,20 +108,11 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
         throw new Error(`Session ${sessionId} not found for agent ${agentId}`);
       }
 
-      // Convert messages to our format
-      const convertedMessages: ChatMessage[] = sessionDetail.messages.map(
-        (msg: SessionMessage, index: number) => {
-          // Keep content as-is for all messages
-          const processedContent = msg.content;
-
-          return {
-            id: `${msg.role}-${sessionId}-${currentPage + 1}-${index}`,
-            role: msg.role,
-            content: processedContent,
-            timestamp: new Date(),
-          };
-        }
-      );
+      // Convert messages - parse timestamp string to Date
+      const convertedMessages: ChatMessage[] = sessionDetail.messages.map((msg) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp as unknown as string),
+      }));
 
       // Prepend older messages to the beginning of the array
       setMessages((prevMessages) => [...convertedMessages, ...prevMessages]);

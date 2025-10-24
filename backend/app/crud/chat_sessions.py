@@ -16,32 +16,44 @@ class CRUDChatSession(CRUDBase[ChatSession, dict, dict]):
     """CRUD operations for chat sessions."""
 
     async def get_by_agent(
-        self, db: AsyncSession, *, agent_id: str, limit: int = 50
+        self, db: AsyncSession, *, agent_id, user_id, limit: int = 50
     ) -> List[ChatSession]:
-        """Get chat sessions by agent ID."""
+        """Get chat sessions by agent ID and user ID (both UUIDs)."""
         try:
             result = await db.execute(
                 select(ChatSession)
                 .where(ChatSession.agent_id == agent_id)
+                .where(ChatSession.user_id == user_id)
                 .order_by(ChatSession.updated_at.desc())
                 .limit(limit)
             )
             return result.scalars().all()
         except Exception as e:
-            logger.error(f"Error getting sessions by agent {agent_id}: {str(e)}")
+            logger.error(
+                f"Error getting sessions by agent {agent_id} for user {user_id}: {str(e)}"
+            )
             raise
 
     async def get_with_agent(
-        self, db: AsyncSession, *, session_id: str
+        self, db: AsyncSession, *, session_id, user_id
     ) -> Optional[ChatSession]:
-        """Get chat session with agent relationship."""
+        """Get chat session with agent relationship, ensuring user owns the session.
+
+        Args:
+            session_id: Session UUID (string or UUID object)
+            user_id: User UUID (string or UUID object)
+        """
         try:
             result = await db.execute(
-                select(ChatSession).where(ChatSession.id == session_id)
+                select(ChatSession)
+                .where(ChatSession.id == session_id)
+                .where(ChatSession.user_id == user_id)
             )
             return result.scalar_one_or_none()
         except Exception as e:
-            logger.error(f"Error getting session {session_id}: {str(e)}")
+            logger.error(
+                f"Error getting session {session_id} for user {user_id}: {str(e)}"
+            )
             raise
 
     async def create_session(
@@ -59,30 +71,51 @@ class CRUDChatSession(CRUDBase[ChatSession, dict, dict]):
             logger.error(f"Error creating session: {str(e)}")
             raise
 
-    async def delete_session(self, db: AsyncSession, *, session_id: str) -> bool:
-        """Delete a chat session and related data."""
+    async def delete_session(self, db: AsyncSession, *, session_id, user_id) -> bool:
+        """Delete a chat session and related data, ensuring user owns the session.
+
+        Args:
+            session_id: Session UUID (string or UUID object)
+            user_id: User UUID (string or UUID object)
+        """
         try:
-            # Delete chat messages first
+            # First check if the session exists and user owns it
+            result = await db.execute(
+                select(ChatSession)
+                .where(ChatSession.id == session_id)
+                .where(ChatSession.user_id == user_id)
+            )
+            session = result.scalar_one_or_none()
+
+            if not session:
+                # Session doesn't exist or user doesn't own it
+                return False
+
+            # Now safe to delete messages (user owns the session)
             await db.execute(
                 delete(ChatMessage).where(ChatMessage.session_id == session_id)
             )
 
             # Delete the session
-            result = await db.execute(
-                delete(ChatSession).where(ChatSession.id == session_id)
-            )
+            await db.execute(delete(ChatSession).where(ChatSession.id == session_id))
 
             await db.commit()
-            return result.rowcount > 0
+            return True
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error deleting session {session_id}: {str(e)}")
+            logger.error(
+                f"Error deleting session {session_id} for user {user_id}: {str(e)}"
+            )
             raise
 
     async def load_messages_paginated(
-        self, db: AsyncSession, *, session_id: str, page: int = 1, page_size: int = 50
+        self, db: AsyncSession, *, session_id, page: int = 1, page_size: int = 50
     ) -> Tuple[List[dict], int, bool]:
-        """Load messages from ChatMessage table with pagination."""
+        """Load messages from ChatMessage table with pagination.
+
+        Args:
+            session_id: Session UUID (string or UUID object)
+        """
         try:
             # Get total count
             count_result = await db.execute(
@@ -114,7 +147,7 @@ class CRUDChatSession(CRUDBase[ChatSession, dict, dict]):
                         "role": msg.role,
                         "content": msg.content,
                         "session_id": msg.session_id,
-                        "created_at": (
+                        "timestamp": (
                             msg.created_at.isoformat() if msg.created_at else None
                         ),
                         "response_id": msg.response_id,

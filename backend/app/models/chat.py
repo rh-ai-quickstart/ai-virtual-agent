@@ -23,6 +23,11 @@ class ChatSession(Base):
         ForeignKey("virtual_agents.id", ondelete="CASCADE"),
         nullable=True,
     )  # Agent ID
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )  # User ID for session isolation
 
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(

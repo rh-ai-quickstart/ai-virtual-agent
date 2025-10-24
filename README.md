@@ -1,8 +1,8 @@
-# AI Virtual Agent Quickstart
+# Build an AI-powered virtual agent
 
-A platform for creating and managing AI-powered virtual agents with knowledge base integration, built on top of LlamaStack.
+Build and deploy a conversational AI virtual agent on Red Hat OpenShift AI to automate customer interactions and provide instant support.
 
-## What is this?
+## Detailed description
 
 This platform provides the tools to build and deploy conversational AI agents that can:
 
@@ -13,21 +13,145 @@ This platform provides the tools to build and deploy conversational AI agents th
 
 ### Key Features
 
-🤖 **Agent Management** - Create and configure AI agents with different capabilities
-📚 **Knowledge Integration** - Document search and question answering via RAG
-💬 **Real-time Chat** - Streaming conversations with session history
-🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
-🛡️ **Safety Controls** - Configurable guardrails and content filtering
+- 🤖 **Agent Management** - Create and configure AI agents with different capabilities
+- 📚 **Knowledge Integration** - Document search and question answering via RAG
+- 💬 **Real-time Chat** - Streaming conversations with session history
+- 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
+- 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
-## Quick Start
+
+### Architecture Overview
+
+The platform integrates several components:
+
+- **React Frontend** - Web interface for agent and chat management
+- **FastAPI Backend** - API server handling business logic and data persistence
+- **LlamaStack** - AI platform managing models, agents, and inference
+- **PostgreSQL + pgvector** - Data storage with vector search capabilities
+- **Kubernetes Pipeline** - Document processing and knowledge base ingestion
+
+![Architecture](docs/images/architecture.png)
+
+📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
+
+## Requirements
+
+### Minimum hardware requirements
+
+### Minimum software requirements
+<!-- oc, make, others ? -->
+
+### Required user permissions
+
+
+## Deploy
+
+<!--
+### Prerequisites
+
+What needs to go here?
+
+oc login
+
+anything else?
+
+
+-->
+
+### Cluster Deployment
+
+For production installation on Kubernetes/OpenShift:
+
+```bash
+# clone the repository
+git clone https://github.com/rh-ai-quickstart/ai-virtual-agent.git
+
+# Navigate to cluster deployment directory
+cd deploy/cluster
+
+# Install with interactive prompts for configuration
+make install NAMESPACE=your-namespace
+
+# Or set environment variables and install
+export NAMESPACE=ai-virtual-agent
+export HF_TOKEN=your-huggingface-token
+make install
+```
+
+🧭 **[Advanced instructions →](#advanced-instructions)**
+
+📖 **[Full Installation Guide →](INSTALLING.md)**
+
+
+### Delete
+
+
+## Example Use Cases
+
+**Customer Support Agent**
+```typescript
+const agent = await createAgent({
+  name: "Support Bot",
+  model: "llama3.1-8b-instruct",
+  knowledge_bases: ["support-docs"],
+  tools: ["builtin::rag", "builtin::web_search"]
+});
+```
+
+**Domain Expert (Banking)**
+```typescript
+const expert = await initializeAgentTemplate({
+  template: "commercial_banker",
+  knowledge_bases: ["banking-regulations"]
+});
+```
+
+## Advanced instructions
+
+### Getting Started Guides
+
+#### 👩‍💻 **For Developers**
+- **[Local Development Guide](DEVELOPMENT.md)** - Containerized development environment (without cluster)
+- **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
+- **[Backend API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Frontend Architecture](frontend/README.md)** - UI components and patterns
+
+#### 🚀 **For Deployment**
+- **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
+- **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
+- **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
+
+#### 🔧 **For Integration**
+- **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
+- **[Testing Guide](tests/README.md)** - Running integration tests
+- **[API Reference](docs/api-reference.md)** - Backend API endpoints
+
+### Project Structure
+
+```
+ai-virtual-agent/
+├── frontend/           # React UI with PatternFly components
+├── backend/            # FastAPI server with PostgreSQL
+├── mcpservers/         # Custom MCP tool servers
+├── docs/               # Architecture and API documentation
+├── deploy/
+│   ├── cluster/        # Kubernetes/Helm cluster deployment
+│   │   ├── helm/       # Helm chart files
+│   │   ├── scripts/    # Cluster deployment scripts
+│   │   ├── Containerfile # Cluster container image
+│   │   └── Makefile    # Cluster deployment commands
+│   └── local/          # Local development deployment
+│       ├── compose.dev.yaml # Docker Compose for local dev
+│       ├── dev/        # Local development configs
+│       └── Makefile    # Local development commands
+└── tests/              # Integration test suite
+```
 
 ### Local Development
 
 For local containerized development (without cluster):
 
 📖 **[→ See Local Development Guide](DEVELOPMENT.md)**
-
-### Local Development
 
 For local development setup:
 
@@ -60,99 +184,6 @@ cd ../frontend && npm install && npm run dev
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
 
-### Cluster Deployment
-
-For production installation on Kubernetes/OpenShift:
-
-```bash
-# Navigate to cluster deployment directory
-cd deploy/cluster
-
-# Install with interactive prompts for configuration
-make install NAMESPACE=your-namespace
-
-# Or set environment variables and install
-export NAMESPACE=ai-virtual-agent
-export HF_TOKEN=your-huggingface-token
-make install
-```
-
-📖 **[Full Installation Guide →](INSTALLING.md)**
-
-## Project Structure
-
-```
-ai-virtual-agent/
-├── frontend/           # React UI with PatternFly components
-├── backend/            # FastAPI server with PostgreSQL
-├── mcpservers/         # Custom MCP tool servers
-├── docs/               # Architecture and API documentation
-├── deploy/
-│   ├── cluster/        # Kubernetes/Helm cluster deployment
-│   │   ├── helm/       # Helm chart files
-│   │   ├── scripts/    # Cluster deployment scripts
-│   │   ├── Containerfile # Cluster container image
-│   │   └── Makefile    # Cluster deployment commands
-│   └── local/          # Local development deployment
-│       ├── compose.dev.yaml # Docker Compose for local dev
-│       ├── dev/        # Local development configs
-│       └── Makefile    # Local development commands
-└── tests/              # Integration test suite
-```
-
-## Architecture Overview
-
-The platform integrates several components:
-
-- **React Frontend** - Web interface for agent and chat management
-- **FastAPI Backend** - API server handling business logic and data persistence
-- **LlamaStack** - AI platform managing models, agents, and inference
-- **PostgreSQL + pgvector** - Data storage with vector search capabilities
-- **Kubernetes Pipeline** - Document processing and knowledge base ingestion
-
-![Architecture](docs/images/architecture.png)
-
-📖 **[Detailed Architecture →](docs/virtual-agents-architecture.md)**
-
-## Getting Started Guides
-
-### 👩‍💻 **For Developers**
-- **[Local Development Guide](DEVELOPMENT.md)** - Containerized development environment (without cluster)
-- **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
-- **[Backend API Reference](docs/api-reference.md)** - Complete API documentation
-- **[Frontend Architecture](frontend/README.md)** - UI components and patterns
-
-### 🚀 **For Deployment**
-- **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
-- **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
-- **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
-
-### 🔧 **For Integration**
-- **[MCP Servers](mcpservers/README.md)** - Building custom tool integrations
-- **[Testing Guide](tests/README.md)** - Running integration tests
-- **[API Reference](docs/api-reference.md)** - Backend API endpoints
-
-## Example Use Cases
-
-**Customer Support Agent**
-```typescript
-const agent = await createAgent({
-  name: "Support Bot",
-  model: "llama3.1-8b-instruct",
-  knowledge_bases: ["support-docs"],
-  tools: ["builtin::rag", "builtin::web_search"]
-});
-```
-
-**Domain Expert (Banking)**
-```typescript
-const expert = await initializeAgentTemplate({
-  template: "commercial_banker",
-  knowledge_bases: ["banking-regulations"]
-});
-```
-
-## Development Commands
 
 **Local Development:**
 ```bash
@@ -173,6 +204,8 @@ make compose-restart
 # Show status of development services
 make compose-status
 ```
+
+### Cluster development
 
 **Cluster Deployment:**
 ```bash
@@ -251,3 +284,9 @@ Notes:
 ## License
 
 [MIT License](LICENSE) - Built with ❤️ by the Red Hat Ecosystem App Engineering team
+
+## Tags
+
+* **Industry:** Cross-industry
+* **Product:** OpenShift AI
+* **Use case:** Conversational agents

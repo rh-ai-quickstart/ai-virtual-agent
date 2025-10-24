@@ -115,16 +115,13 @@ stages:
     response:
       status_code: 200
       json:
-        username: "dev-user"
-        email: "dev@localhost.dev"
+        username: "admin"
+        email: "admin@example.com"
         role: "admin"
         agent_ids: !anything
         id: !anything
         created_at: !anything
         updated_at: !anything
-
-# XXX: In local mode, we return dev-user always, and this user's role is admin,
-# so we can't execute the following tests
 #
 #   - name: Test cross-user access control enforcement
 #     request:

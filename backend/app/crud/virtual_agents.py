@@ -6,12 +6,12 @@ import logging
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..models import AgentTemplate, ChatSession, User, VirtualAgent
+from ..models import AgentTemplate, ChatMessage, ChatSession, User, VirtualAgent
 from ..schemas import VirtualAgentCreate
 from .base import CRUDBase
 
@@ -85,32 +85,29 @@ class CRUDVirtualAgent(CRUDBase[VirtualAgent, VirtualAgentCreate, dict]):
         return [row[0] for row in result.all()]
 
     async def delete_with_sessions(self, db: AsyncSession, *, id: str) -> bool:
-        """Delete virtual agent and all associated sessions."""
+        """Delete virtual agent and all associated sessions.
+
+        Note: ChatSession has a foreign key to VirtualAgent with CASCADE delete,
+        so deleting the agent will automatically delete associated sessions.
+        However, we must manually delete chat messages first.
+        """
         try:
             # Check if agent exists
             agent = await self.get(db, id=id)
             if not agent:
                 return False
 
-            # Get sessions associated with this agent
-            sessions_result = await db.execute(
-                select(ChatSession).where(
-                    text("session_state->>'agent_id' = :agent_id")
-                ),
-                {"agent_id": id},
-            )
-            sessions_to_delete = sessions_result.scalars().all()
-
-            # Delete sessions
-            if sessions_to_delete:
-                await db.execute(
-                    delete(ChatSession).where(
-                        text("session_state->>'agent_id' = :agent_id")
-                    ),
-                    {"agent_id": id},
+            # Delete messages for all sessions associated with this agent
+            # (must be done before CASCADE deletes the sessions)
+            await db.execute(
+                delete(ChatMessage).where(
+                    ChatMessage.session_id.in_(
+                        select(ChatSession.id).where(ChatSession.agent_id == id)
+                    )
                 )
+            )
 
-            # Delete the agent
+            # Delete the agent (CASCADE will delete associated sessions)
             await db.execute(delete(VirtualAgent).where(VirtualAgent.id == id))
 
             await db.commit()

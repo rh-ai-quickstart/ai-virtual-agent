@@ -1,0 +1,366 @@
+---
+# User Session Isolation Integration Test
+# Tests that users can only access their own chat sessions and cannot
+# view, modify, or delete sessions belonging to other users
+
+test_name: User Session Isolation Test
+
+stages:
+  # Global Setup: Get available models
+  - name: get_available_models
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      save:
+        json:
+          model_name: "[0].model_name"
+
+  # Global Setup: Create shared virtual agent
+  - name: create_shared_virtual_agent
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        name: "Session Isolation Test Agent {tavern.env_vars.TAVERN_UNIQUE}"
+        prompt: "You are a helpful assistant. Give concise answers."
+        model_name: "{model_name}"
+        temperature: 0.0
+        top_p: 0.9
+        max_tokens: 50
+        repetition_penalty: 1.0
+        max_infer_iters: 1
+        tools: []
+        knowledge_base_ids: []
+        input_shields: []
+        output_shields: []
+    response:
+      status_code: 201
+      headers:
+        content-type: application/json
+      save:
+        json:
+          agent_id: "id"
+
+  # User A: Create session (simulating user A via headers)
+  - name: user_a_create_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      json:
+        agent_id: "{agent_id}"
+        session_name: "User A's Session"
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      save:
+        json:
+          user_a_session_id: "id"
+
+  # User B: Create session (simulating user B via headers)
+  - name: user_b_create_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      json:
+        agent_id: "{agent_id}"
+        session_name: "User B's Session"
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      save:
+        json:
+          user_b_session_id: "id"
+
+  # User A: Send a message to their session
+  - name: user_a_send_message
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
+      method: POST
+      headers:
+        Content-Type: application/json
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      json:
+        virtualAgentId: "{agent_id}"
+        message:
+          role: user
+          content:
+            - type: input_text
+              text: "Hello from User A"
+        stream: false
+        sessionId: "{user_a_session_id}"
+        store: true
+    response:
+      status_code: 200
+      headers:
+        content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        function: tests.integration.validators:validate_sse_response_id
+
+  # User B: Send a message to their session
+  - name: user_b_send_message
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
+      method: POST
+      headers:
+        Content-Type: application/json
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      json:
+        virtualAgentId: "{agent_id}"
+        message:
+          role: user
+          content:
+            - type: input_text
+              text: "Hello from User B"
+        stream: false
+        sessionId: "{user_b_session_id}"
+        store: true
+    response:
+      status_code: 200
+      headers:
+        content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        function: tests.integration.validators:validate_sse_response_id
+
+  # User A: List their sessions (should only see their own)
+  - name: user_a_list_sessions
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      params:
+        agent_id: "{agent_id}"
+        limit: 50
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      verify_response_with:
+        function: tests.integration.validators:validate_user_sessions
+        extra_kwargs:
+          expected_session_ids: ["{user_a_session_id}"]
+          unexpected_session_ids: ["{user_b_session_id}"]
+
+  # User B: List their sessions (should only see their own)
+  - name: user_b_list_sessions
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      params:
+        agent_id: "{agent_id}"
+        limit: 50
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      verify_response_with:
+        function: tests.integration.validators:validate_user_sessions
+        extra_kwargs:
+          expected_session_ids: ["{user_b_session_id}"]
+          unexpected_session_ids: ["{user_a_session_id}"]
+
+  # User A: Fetch their own session (should succeed)
+  - name: user_a_fetch_own_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_a_session_id}"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      params:
+        agent_id: "{agent_id}"
+        load_messages: true
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      json:
+        id: "{user_a_session_id}"
+        title: !anything
+        agent_name: !anything
+        agent_id: "{agent_id}"
+        messages: !anything
+        created_at: !anything
+        updated_at: !anything
+        last_response_id: !anything
+        pagination:
+          total_messages: 2  # 1 user + 1 assistant
+          page: !anything
+          page_size: !anything
+          has_more: !anything
+          messages_loaded: !anything
+
+  # User A: Try to fetch User B's session (should not see messages)
+  - name: user_a_try_fetch_user_b_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      params:
+        agent_id: "{agent_id}"
+        load_messages: true
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      json:
+        id: "{user_b_session_id}"
+        title: !anything
+        agent_name: !anything
+        agent_id: "{agent_id}"
+        messages: []  # Should not see messages because session doesn't belong to user A
+        created_at: !anything
+        updated_at: !anything
+        last_response_id: !anything
+        pagination:
+          total_messages: 0
+          page: !anything
+          page_size: !anything
+          has_more: !anything
+          messages_loaded: !anything
+
+  # User B: Fetch their own session (should succeed and see messages)
+  - name: user_b_fetch_own_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      params:
+        agent_id: "{agent_id}"
+        load_messages: true
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      json:
+        id: "{user_b_session_id}"
+        title: !anything
+        agent_name: !anything
+        agent_id: "{agent_id}"
+        messages: !anything
+        created_at: !anything
+        updated_at: !anything
+        last_response_id: !anything
+        pagination:
+          total_messages: 2  # 1 user + 1 assistant
+          page: !anything
+          page_size: !anything
+          has_more: !anything
+          messages_loaded: !anything
+
+  # User A: Try to delete User B's session (should fail with 404)
+  - name: user_a_try_delete_user_b_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
+      method: DELETE
+      headers:
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      params:
+        agent_id: "{agent_id}"
+    response:
+      status_code: 404  # Session not found for this user
+
+  # Verify User B's session still exists
+  - name: verify_user_b_session_still_exists
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
+      method: GET
+      headers:
+        Accept: application/json
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      params:
+        agent_id: "{agent_id}"
+        load_messages: true
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      json:
+        id: "{user_b_session_id}"
+        title: !anything
+        agent_name: !anything
+        agent_id: "{agent_id}"
+        messages: !anything
+        created_at: !anything
+        updated_at: !anything
+        last_response_id: !anything
+        pagination:
+          total_messages: 2  # Messages still intact
+          page: !anything
+          page_size: !anything
+          has_more: !anything
+          messages_loaded: !anything
+
+  # User A: Delete their own session (should succeed)
+  - name: user_a_delete_own_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_a_session_id}"
+      method: DELETE
+      headers:
+        X-Forwarded-User: "test_user_a"
+        X-Forwarded-Email: "user_a@example.com"
+      params:
+        agent_id: "{agent_id}"
+    response:
+      status_code: 200
+
+  # User B: Delete their own session (should succeed)
+  - name: user_b_delete_own_session
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
+      method: DELETE
+      headers:
+        X-Forwarded-User: "test_user_b"
+        X-Forwarded-Email: "user_b@example.com"
+      params:
+        agent_id: "{agent_id}"
+    response:
+      status_code: 200
+
+  # Global Cleanup: Delete the shared test agent
+  - name: cleanup_shared_agent
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}"
+      method: DELETE
+      headers:
+        Accept: application/json
+    response:
+      status_code: 204

@@ -9,7 +9,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.auth import get_or_create_dev_user, is_local_dev_mode
+from ...config import settings
+from ...core.auth import is_local_dev_mode
 from ...crud.user import user
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
@@ -73,35 +74,51 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
     """
     Get or create user from OAuth proxy headers.
 
-    SECURITY WARNING: This function trusts that OAuth proxy headers are
-    validated and cannot be forged.
+    SECURITY WARNING: In production, this function trusts that OAuth proxy
+    headers are validated and cannot be forged. In local dev mode, headers
+    are trusted without OAuth validation for testing purposes.
     """
-    # Check if local development mode is enabled
-    if is_local_dev_mode():
-        logger.info("LOCAL_DEV_ENV_MODE is enabled, using development user")
-        return await get_or_create_dev_user(db)
-
     username = headers.get("X-Forwarded-User") or headers.get("x-forwarded-user")
     email = headers.get("X-Forwarded-Email") or headers.get("x-forwarded-email")
-    if not username and not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
+
+    # In dev mode, provide defaults if no headers present
+    if is_local_dev_mode():
+        if not username and not email:
+            logger.info("LOCAL_DEV_ENV_MODE: No headers provided, using defaults")
+            username = "dev-user"
+            email = "dev@localhost.dev"
+        else:
+            logger.info(
+                f"LOCAL_DEV_ENV_MODE: Using headers username={username}, email={email}"
+            )
+    else:
+        # In production, require headers
+        if not username and not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
 
     # Try to find existing user
+    logger.info(f"Looking up user: username={username}, email={email}")
     existing_user = await user.get_by_username_or_email(
         db, username=username, email=email
     )
 
     # If user doesn't exist, create them
     if not existing_user:
+        # In dev mode, grant admin role to all auto-created users for testing
+        role = "admin" if is_local_dev_mode() else "user"
         logger.info(
-            f"Creating user from OAuth headers: username={username}, email={email}"
+            f"User not found, creating: username={username}, email={email}, role={role}"
         )
         existing_user = await user.create_user(
-            db, username=username, email=email, role="user", agent_ids=[]
+            db, username=username, email=email, role=role, agent_ids=[]
         )
         logger.info(f"Successfully created user {existing_user.id}")
+    else:
+        logger.info(
+            f"Found existing user: {existing_user.id} (username={existing_user.username})"
+        )
 
     return existing_user
 
@@ -209,7 +226,17 @@ async def create_user(
             detail="A user with this username or email already exists.",
         )
 
-    return await user.create(db, obj_in=user_data)
+    created_user = await user.create(db, obj_in=user_data)
+
+    # Sync all users with all agents if enabled
+    if settings.AUTO_ASSIGN_AGENTS_TO_USERS:
+        try:
+            sync_result = await virtual_agents.sync_all_users_with_all_agents(db)
+            logger.info(f"Agent-user sync completed after user creation: {sync_result}")
+        except Exception as sync_error:
+            logger.error(f"Error syncing agents to new user: {str(sync_error)}")
+
+    return created_user
 
 
 @router.put("/{user_id}", response_model=UserResponse)

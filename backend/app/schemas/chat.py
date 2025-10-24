@@ -42,7 +42,7 @@ class ChatMessageResponse(ChatMessage):
 
     id: UUID
     session_id: UUID
-    created_at: datetime
+    timestamp: datetime
 
 
 class ChatSessionBase(BaseModel):

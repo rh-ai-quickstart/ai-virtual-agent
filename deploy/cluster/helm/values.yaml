@@ -132,19 +132,20 @@ pgvector:
   - name: ai_virtual_agent
     vectordb: false
 
-minio:
-  secret:
-    user: minio_rag_user
-    password: minio_rag_password
-    host: minio
-    port: "9000"
+configure-pipeline:
+  minio:
+    secret:
+      user: minio_rag_user
+      password: minio_rag_password
+      host: minio
+      port: "9000"
 
-    # Upload sample files to the minio bucket
-  sampleFileUpload:
-    enabled: true
-    bucket: documents
-    urls:
-    - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
+      # Upload sample files to the minio bucket
+    sampleFileUpload:
+      enabled: true
+      bucket: documents
+      urls:
+      - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
 
 llama-stack:
   auth:

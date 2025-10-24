@@ -12,6 +12,7 @@ from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
 from ...schemas import ChatRequest
 from ...services.chat import ChatService
+from .users import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ async def chat(
     chat_request: ChatRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """
     Main chat endpoint for streaming conversations with LlamaStack agents.
@@ -33,9 +35,6 @@ async def chat(
     try:
         logger.info(f"Received chatRequest: {chat_request.model_dump()}")
 
-        # Create chat service instance
-        chat_service = ChatService(request, db)
-
         # Validate agent exists early to return proper 404 error for invalid agents
         agent = await virtual_agents.get_with_template(
             db, id=chat_request.virtualAgentId
@@ -45,6 +44,9 @@ async def chat(
                 status_code=404,
                 detail=f"Virtual agent {chat_request.virtualAgentId} not found",
             )
+
+        # Create chat service with the database session
+        chat_service = ChatService(request, db, user_id=current_user.id)
 
         async def chat_stream():
             try:

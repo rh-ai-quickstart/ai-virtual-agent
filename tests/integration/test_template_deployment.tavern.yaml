@@ -220,59 +220,22 @@ stages:
       verify_response_with:
         - function: tests.integration.validators:validate_agents_grouped_by_suite
 
-  # Cleanup: Get all agents and delete them individually
-  - name: get_all_agents_for_cleanup
+  # Cleanup: Re-fetch deployment results and delete all agents
+  - name: get_deployment_results_for_cleanup
     request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
-      method: GET
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize-suite/{first_suite}"
+      method: POST
       headers:
+        Content-Type: application/json
         Accept: application/json
         X-Forwarded-User: admin
         X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
-      save:
-        $ext:
-          function: tests.integration.validators:extract_first_agent_id
-
-  # Delete first agent if it exists
-  - name: cleanup_first_agent
-    request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{first_agent_id}"
-      method: DELETE
-      headers:
-        Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
-    response:
-      status_code: [204, 404]  # 404 if no agents exist
-
-  # Get remaining agents for second cleanup attempt
-  - name: get_remaining_agents_for_cleanup
-    request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
-      method: GET
-      headers:
-        Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
-    response:
-      status_code: 200
-      save:
-        $ext:
-          function: tests.integration.validators:extract_first_agent_id
-
-  # Delete second agent if it exists
-  - name: cleanup_second_agent
-    request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{first_agent_id}"
-      method: DELETE
-      headers:
-        Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
-    response:
-      status_code: [204, 404]  # 404 if no more agents exist
+      verify_response_with:
+        - function: tests.integration.validators:cleanup_deployed_agents
+          extra_kwargs:
+            base_url: "{tavern.env_vars.TEST_BACKEND_URL}"
 
 ---
 test_name: Test Template Categories and Grouping

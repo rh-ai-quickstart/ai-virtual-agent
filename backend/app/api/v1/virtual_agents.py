@@ -3,7 +3,6 @@ Virtual Agents API endpoints.
 """
 
 import logging
-import os
 import uuid
 from typing import List
 
@@ -11,16 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.llamastack import get_client_from_request
+from ...config import settings
 from ...crud.virtual_agents import DuplicateVirtualAgentNameError, virtual_agents
 from ...database import get_db
 from ...schemas import VirtualAgentCreate, VirtualAgentResponse
 
 logger = logging.getLogger(__name__)
-
-# Feature flag for auto-assignment of agents to users
-AUTO_ASSIGN_AGENTS_TO_USERS = (
-    os.getenv("AUTO_ASSIGN_AGENTS_TO_USERS", "true").lower() == "true"
-)
 
 router = APIRouter(prefix="/virtual_agents", tags=["virtual_agents"])
 
@@ -85,7 +80,7 @@ async def create_virtual_agent_internal(
     logger.info(f"Created virtual agent: {agent_uuid}")
 
     # Sync all users with all agents if enabled
-    if AUTO_ASSIGN_AGENTS_TO_USERS:
+    if settings.AUTO_ASSIGN_AGENTS_TO_USERS:
         try:
             sync_result = await virtual_agents.sync_all_users_with_all_agents(db)
             logger.info(f"Agent-user sync completed: {sync_result}")
@@ -247,7 +242,7 @@ async def delete_virtual_agent(va_id: str, db: AsyncSession = Depends(get_db)):
         logger.info(f"Successfully deleted virtual agent {va_id}")
 
         # Sync all users with remaining agents if enabled
-        if AUTO_ASSIGN_AGENTS_TO_USERS:
+        if settings.AUTO_ASSIGN_AGENTS_TO_USERS:
             try:
                 sync_result = await virtual_agents.sync_all_users_with_all_agents(db)
                 logger.info(f"Agent-user sync completed after deletion: {sync_result}")

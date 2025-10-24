@@ -37,6 +37,7 @@ from ...schemas.chat_sessions import (
     DeleteSessionResponse,
 )
 from . import attachments
+from .users import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat_sessions", tags=["chat_sessions"])
@@ -65,6 +66,7 @@ async def get_chat_sessions(
     request: Request,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ) -> List[ChatSessionSummary]:
     """
     Get a list of chat sessions for a specific agent from LlamaStack.
@@ -91,9 +93,9 @@ async def get_chat_sessions(
     try:
         logger.info(f"Attempting to list sessions for agent {agent_id}")
 
-        # Get sessions from database
+        # Get sessions from database filtered by user
         local_sessions = await chat_sessions.get_by_agent(
-            db, agent_id=agent_id, limit=limit
+            db, agent_id=agent_id, user_id=current_user.id, limit=limit
         )
 
         logger.info(
@@ -152,6 +154,7 @@ async def get_chat_session(
     page: int = 1,
     page_size: int = 50,
     load_messages: bool = True,
+    current_user=Depends(get_current_user),
 ) -> ChatSessionDetail:
     """
     Get detailed information for a specific chat session including message
@@ -190,13 +193,10 @@ async def get_chat_session(
         # Get agent name from our VirtualAgent
         agent_name = agent_config.name if agent_config.name else "Unknown Agent"
 
-        logger.info(
-            f"Returning session structure for {session_id} "
-            f"(Responses API doesn't store session history)"
+        # Try to get session from database to retrieve state (filtered by user)
+        session = await chat_sessions.get_with_agent(
+            db, session_id=session_id, user_id=current_user.id
         )
-
-        # Try to get session from database to retrieve state
-        session = await chat_sessions.get_with_agent(db, session_id=session_id)
 
         # Get last_response_id from session state if available
         last_response_id = None
@@ -259,6 +259,7 @@ async def delete_chat_session(
     agent_id: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ) -> DeleteSessionResponse:
     """
     Delete a chat session from LlamaStack.
@@ -284,8 +285,10 @@ async def delete_chat_session(
             logger.error(f"Agent {agent_id} not found in VirtualAgent")
             raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
 
-        # Delete session and related data
-        deleted = await chat_sessions.delete_session(db, session_id=session_id)
+        # Delete session and related data (only if user owns it)
+        deleted = await chat_sessions.delete_session(
+            db, session_id=session_id, user_id=current_user.id
+        )
 
         if not deleted:
             raise HTTPException(
@@ -324,6 +327,7 @@ async def create_chat_session(
     sessionRequest: CreateSessionRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ) -> ChatSessionDetail:
     """
     Create a new chat session for an agent using LlamaStack.
@@ -385,6 +389,7 @@ async def create_chat_session(
             "id": session_id,
             "title": session_name,
             "agent_id": sessionRequest.agent_id,
+            "user_id": current_user.id,
             "session_state": {
                 "last_response_id": None,  # No responses yet
             },

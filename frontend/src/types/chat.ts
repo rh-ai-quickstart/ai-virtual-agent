@@ -49,10 +49,7 @@ export interface ChatSessionDetail {
   title: string;
   agent_name: string;
   agent_id: string;
-  messages: Array<{
-    role: 'user' | 'assistant';
-    content: SimpleContentItem[];
-  }>;
+  messages: ChatMessage[];
   created_at: string;
   updated_at: string;
   last_response_id?: string | null;

@@ -54,42 +54,6 @@ $(error NAMESPACE is not set. Use: make <target> NAMESPACE=<your-namespace>)
 endif
 endif
 
-# Helm argument builders
-helm_pgvector_args = \
-    --set pgvector.secret.user=$(POSTGRES_USER) \
-    --set pgvector.secret.password=$(POSTGRES_PASSWORD) \
-    --set pgvector.secret.dbname=$(POSTGRES_DBNAME)
-
-helm_minio_args = \
-    --set minio.secret.user=$(MINIO_USER) \
-    --set minio.secret.password=$(MINIO_PASSWORD)
-
-helm_llm_service_args = \
-    --set llm-service.secret.hf_token=$(HF_TOKEN) \
-    $(if $(LLM),--set global.models.$(LLM).enabled=true,) \
-    $(if $(SAFETY),--set global.models.$(SAFETY).enabled=true,) \
-    $(if $(LLM_TOLERATION),--set-json global.models.$(LLM).tolerations='$(call TOLERATIONS_TEMPLATE,$(LLM_TOLERATION))',) \
-    $(if $(SAFETY_TOLERATION),--set-json global.models.$(SAFETY).tolerations='$(call TOLERATIONS_TEMPLATE,$(SAFETY_TOLERATION))',)
-
-helm_llama_stack_args = \
-    $(if $(LLM),--set global.models.$(LLM).enabled=true,) \
-    $(if $(SAFETY),--set global.models.$(SAFETY).enabled=true,) \
-    $(if $(LLM_URL),--set global.models.$(LLM).url='$(LLM_URL)',) \
-    $(if $(SAFETY_URL),--set global.models.$(SAFETY).url='$(SAFETY_URL)',) \
-    $(if $(LLM_API_TOKEN),--set global.models.$(LLM).apiToken='$(LLM_API_TOKEN)',) \
-    $(if $(SAFETY_API_TOKEN),--set global.models.$(SAFETY).apiToken='$(SAFETY_API_TOKEN)',) \
-    $(if $(TAVILY_API_KEY),--set llama-stack.secrets.TAVILY_SEARCH_API_KEY='$(TAVILY_API_KEY)',) \
-    $(if $(LLAMA_STACK_ENV),--set-json llama-stack.secrets='$(LLAMA_STACK_ENV)',)
-
-helm_ingestion_args = \
-	--set configure-pipeline.notebook.create=false \
-	--set ingestion-pipeline.defaultPipeline.enabled=false \
-	--set ingestion-pipeline.authUser=$(AUTH_INGESTION_PIPELINE_USER)
-
-helm_seed_admin_user_args = \
-    $(if $(ADMIN_USERNAME),--set seed.admin_user.username='$(ADMIN_USERNAME)',) \
-    $(if $(ADMIN_EMAIL),--set seed.admin_user.email='$(ADMIN_EMAIL)',)
-
 install-help: ## Show detailed deployment help and configuration options
 	@echo "AI Virtual Agent Deployment Help"
 	@echo "================================"
