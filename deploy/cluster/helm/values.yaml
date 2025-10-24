@@ -192,3 +192,10 @@ llama-stack:
       description: users can read, update and delete resources they own
   secrets:
     TAVILY_SEARCH_API_KEY: ""
+
+# global:
+#   models:
+#     llama-3-1-8b-instruct:
+#       id: meta-llama/Llama-3.1-8B-Instruct
+#       enabled: true
+#       url: http://llama-3-1-8b-instruct-predictor.rag-demo-16.svc.cluster.local:8080/v1
