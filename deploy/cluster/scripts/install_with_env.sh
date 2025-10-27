@@ -79,8 +79,8 @@ build_helm_cmd() {
 
     # Model selection and Oracle MCP server enablement based on Oracle deployment
     if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
-        # Enable oracle-sqlcl MCP server (configuration is now in ai-virtual-agent values.yaml)
-        cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
+        # Enable oracle-sqlcl MCP server in subchart (note nested key: <subchart>.mcp-servers.<server>)
+        cmd_args+=("--set" "mcp-servers.mcp-servers.oracle-sqlcl.enabled=true")
 
         # Configure Oracle MCP server in LlamaStack
         cmd_args+=("--set" "llama-stack.mcp-servers.oracle_mcp_server.uri=http://mcp-oracle-sqlcl-proxy:8080/sse")
