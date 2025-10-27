@@ -79,15 +79,9 @@ build_helm_cmd() {
 
     # Model selection and Oracle MCP server enablement based on Oracle deployment
     if [[ "${ORACLE:-}" =~ ^(1|true|TRUE|yes|YES)$ ]]; then
-        # Oracle deployment: Use 8B model with increased context length
-        cmd_args+=("--set" "llm-service.models.llama-3-1-8b-instruct.enabled=true")
-        echo "✅ Oracle deployment: Using 8B model"
-
         # Enable oracle-sqlcl MCP server (configuration is now in ai-virtual-agent values.yaml)
         cmd_args+=("--set" "mcp-servers.oracle-sqlcl.enabled=true")
-        # Enable 8B model in LlamaStack for Oracle deployment
-        cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.enabled=true")
-        cmd_args+=("--set" "llama-stack.models.llama-3-1-8b-instruct.maxTokens=32768")
+
         # Configure Oracle MCP server in LlamaStack
         cmd_args+=("--set" "llama-stack.mcp-servers.oracle_mcp_server.uri=http://mcp-oracle-sqlcl-proxy:8080/sse")
         echo "✅ Oracle MCP server configured in LlamaStack"

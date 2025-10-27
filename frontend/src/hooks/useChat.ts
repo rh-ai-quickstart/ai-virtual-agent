@@ -180,21 +180,11 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
           ...(sessionId ? { sessionId } : {}),
         };
 
-        // Add a timeout so the UI doesn't hang indefinitely on backend issues
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => {
-          controller.abort();
-        }, 180000); // 3 minutes
-
         const response = await fetch(CHAT_API_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
-          signal: controller.signal,
         });
-
-        // Clear the timeout once the request has returned
-        window.clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`API error: ${response.statusText}`);
@@ -279,48 +269,17 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
         }
       } catch (error) {
         console.error('Chat error:', error);
-
-        // Build a user-friendly error message
-        let userFriendlyMessage = 'Something went wrong. Please try again.';
-        if (error instanceof Error) {
-          // For timeout errors, provide specific guidance
-          if (error.name === 'AbortError') {
-            userFriendlyMessage = 'Request timed out. The AI service may be overloaded or the query is too complex. Try a simpler query (use specific filters, LIMIT, or ask for summaries instead of full datasets).';
-          } else {
-            // Display the actual error message for better transparency
-            userFriendlyMessage = error.message || userFriendlyMessage;
-          }
-        }
-
-        options?.onError?.(new Error(userFriendlyMessage));
-        setIsLoading(false);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        options?.onError?.(new Error(errorMessage));
 
         // Remove the loading assistant message on error
         setMessages((prev) =>
           prev.filter((msg) => {
-            // Keep non-assistant messages and assistant messages with actual content
-            return (
-              msg.role !== 'assistant' ||
-              (msg.content.length > 0 &&
-                msg.content[0].type === 'output_text' &&
-                msg.content[0].text.trim() !== '')
-            );
+            return msg.role !== 'assistant' || msg.content.length > 0;
           })
         );
-
-        // Append a visible error message in the chat so users see what happened
-        const errorChatMessage: ChatMessage = {
-          id: `error-${Date.now()}`,
-          role: 'assistant',
-          content: [
-            {
-              type: 'output_text',
-              text: `❌ ${userFriendlyMessage}`,
-            },
-          ],
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorChatMessage]);
+      } finally {
+        setIsLoading(false);
       }
     },
     [agentId, sessionId, isLoading, options]
