@@ -310,6 +310,6 @@ DISABLE_ATTACHMENTS=true
 
 ## Tags
 
-* **Industry:** Cross-industry
 * **Product:** OpenShift AI
 * **Use case:** Conversational agents
+* **Business challenge:** Adopt and scale AI
