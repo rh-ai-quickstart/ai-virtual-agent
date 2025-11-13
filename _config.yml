@@ -1,0 +1,14 @@
+title: AI Virtual Agent Blog
+description: Technical blog posts about AI Virtual Agents, OpenShift AI, and cloud-native AI solutions
+url: "https://yuvalturg.github.io"
+baseurl: "/ai-virtual-agent"
+
+# Build settings
+markdown: kramdown
+remote_theme: pages-themes/cayman@v0.2.0
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-remote-theme
