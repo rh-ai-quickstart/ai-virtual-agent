@@ -8,8 +8,6 @@ stages:
       headers:
         Accept: application/json
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
         email: "workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -26,8 +24,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 200
       json:
@@ -46,8 +42,6 @@ stages:
       headers:
         Accept: application/json
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "updated_workflow_user_{tavern.env_vars.TAVERN_UNIQUE}"
         email: "updated_workflow_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -67,9 +61,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: GET
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 200
       json:
@@ -85,9 +76,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: DELETE
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 204
 
@@ -95,9 +83,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: GET
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 404
 
@@ -110,13 +95,11 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 200
       json:
-        username: "admin"
-        email: "admin@example.com"
+        username: "dev-user"
+        email: "dev@localhost.dev"
         role: "admin"
         agent_ids: !anything
         id: !anything
@@ -129,8 +112,6 @@ stages:
 #       method: GET
 #       headers:
 #         Accept: application/json
-#         X-Forwarded-User: regular_user
-#         X-Forwarded-Email: user@example.com
 #     response:
 #       status_code: 403
 #       json:
@@ -146,8 +127,6 @@ stages:
 #       headers:
 #         Accept: application/json
 #         Content-Type: application/json
-#         X-Forwarded-User: admin
-#         X-Forwarded-Email: admin@example.com
 #       json:
 #         username: "admin"  # This should conflict with existing admin user
 #         email: "conflict_test@example.com"
@@ -163,8 +142,6 @@ stages:
 #       method: GET
 #       headers:
 #         Accept: application/json
-#         X-Forwarded-User: admin
-#         X-Forwarded-Email: admin@example.com
 #     response:
 #       status_code: 200
 #       json:

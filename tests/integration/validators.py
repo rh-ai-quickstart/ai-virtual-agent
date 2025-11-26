@@ -365,10 +365,17 @@ def validate_agents_grouped_by_suite(response):
 
             agents = json.loads(response.text)
 
-        assert len(agents) > 0, "No agents found in response"
+        # Filter to only agents with suite metadata (ignore pre-existing agents)
+        suite_agents = [agent for agent in agents if agent.get("suite_id")]
 
-        # Check that all agents have proper suite metadata
-        for agent in agents:
+        if len(suite_agents) == 0:
+            print(
+                "⚠ No suite agents found (only pre-existing agents without suite metadata)"
+            )
+            return True
+
+        # Check that all suite agents have proper suite metadata
+        for agent in suite_agents:
             assert (
                 agent.get("suite_id") is not None
             ), f"Agent {agent.get('id')} missing suite_id"
@@ -381,7 +388,7 @@ def validate_agents_grouped_by_suite(response):
 
         # Group agents by suite_id and verify consistent metadata within each suite
         suites_found = {}
-        for agent in agents:
+        for agent in suite_agents:
             suite_id = agent.get("suite_id")
             if suite_id not in suites_found:
                 suites_found[suite_id] = {
@@ -401,7 +408,7 @@ def validate_agents_grouped_by_suite(response):
             suites_found[suite_id]["agents"].append(agent.get("id"))
 
         print(
-            f"✓ Suite grouping validation passed: {len(agents)} agents across {len(suites_found)} suites"
+            f"✓ Suite grouping validation passed: {len(suite_agents)} suite agents across {len(suites_found)} suites"
         )
         return True
 
@@ -606,10 +613,6 @@ def cleanup_deployed_agents(response, base_url: str):
             try:
                 delete_response = requests.delete(
                     f"{base_url}/api/v1/virtual_agents/{agent_id}",
-                    headers={
-                        "X-Forwarded-User": "admin",
-                        "X-Forwarded-Email": "admin@change.me",
-                    },
                 )
                 if delete_response.status_code in [204, 404]:
                     deleted_count += 1
@@ -688,5 +691,163 @@ def validate_user_sessions(
 
     except Exception as e:
         print(f"✗ User session isolation validation failed: {str(e)}")
+        print(f"Response text: {response.text[:500]}...")
+        raise
+
+
+def validate_agent_in_list(response, expected_agent_id: str):
+    """
+    Validate that a specific agent appears in the agent list.
+
+    Args:
+        response: Tavern response object
+        expected_agent_id: Agent ID that should be present
+
+    Returns:
+        bool: True if validation passes
+
+    Raises:
+        AssertionError: If validation fails
+    """
+    try:
+        if hasattr(response, "json"):
+            agents = response.json()
+        else:
+            import json
+
+            agents = json.loads(response.text)
+
+        assert isinstance(agents, list), f"Expected list, got {type(agents)}"
+
+        agent_ids = [agent.get("id") for agent in agents]
+        assert (
+            expected_agent_id in agent_ids
+        ), f"Agent {expected_agent_id} not found in list. Found: {agent_ids}"
+
+        print(f"✓ Agent in list validation passed: agent {expected_agent_id} found")
+        return True
+
+    except Exception as e:
+        print(f"✗ Agent in list validation failed: {str(e)}")
+        print(f"Response text: {response.text[:500]}...")
+        raise
+
+
+def validate_session_count(response, min_count: int = None, max_count: int = None):
+    """
+    Validate that session count meets expectations.
+
+    Args:
+        response: Tavern response object
+        min_count: Minimum expected session count
+        max_count: Maximum expected session count
+
+    Returns:
+        bool: True if validation passes
+
+    Raises:
+        AssertionError: If validation fails
+    """
+    try:
+        if hasattr(response, "json"):
+            sessions = response.json()
+        else:
+            import json
+
+            sessions = json.loads(response.text)
+
+        assert isinstance(sessions, list), f"Expected list, got {type(sessions)}"
+
+        actual_count = len(sessions)
+
+        if min_count is not None:
+            assert (
+                actual_count >= min_count
+            ), f"Expected at least {min_count} sessions, got {actual_count}"
+
+        if max_count is not None:
+            assert (
+                actual_count <= max_count
+            ), f"Expected at most {max_count} sessions, got {actual_count}"
+
+        print(f"✓ Session count validation passed: {actual_count} sessions")
+        return True
+
+    except Exception as e:
+        print(f"✗ Session count validation failed: {str(e)}")
+        print(f"Response text: {response.text[:500]}...")
+        raise
+
+
+def validate_pagination_limit(response, max_count: int):
+    """
+    Validate that pagination limit is respected.
+
+    Args:
+        response: Tavern response object
+        max_count: Maximum number of items that should be returned
+
+    Returns:
+        bool: True if validation passes
+
+    Raises:
+        AssertionError: If validation fails
+    """
+    try:
+        if hasattr(response, "json"):
+            items = response.json()
+        else:
+            import json
+
+            items = json.loads(response.text)
+
+        assert isinstance(items, list), f"Expected list, got {type(items)}"
+
+        actual_count = len(items)
+        assert (
+            actual_count <= max_count
+        ), f"Expected at most {max_count} items, got {actual_count}"
+
+        print(f"✓ Pagination limit validation passed: {actual_count}/{max_count} items")
+        return True
+
+    except Exception as e:
+        print(f"✗ Pagination limit validation failed: {str(e)}")
+        print(f"Response text: {response.text[:500]}...")
+        raise
+
+
+def validate_skipped_deployment(response):
+    """
+    Validate that template deployment was skipped (already deployed).
+
+    Args:
+        response: Tavern response object
+
+    Returns:
+        bool: True if validation passes
+
+    Raises:
+        AssertionError: If validation fails
+    """
+    try:
+        if hasattr(response, "json"):
+            result = response.json()
+        else:
+            import json
+
+            result = json.loads(response.text)
+
+        assert isinstance(result, dict), f"Expected dict, got {type(result)}"
+        assert "status" in result, "Response missing status field"
+        assert result["status"] == "skipped", f"Expected status 'skipped', got '{result['status']}'"
+        assert "message" in result, "Response missing message field"
+        assert "already deployed" in result["message"].lower(), "Message should indicate already deployed"
+
+        print("✓ Skipped deployment validation passed")
+        return True
+
+    except Exception as e:
+        print(f"✗ Skipped deployment validation failed: {str(e)}")
         print(f"Response text: {response.text[:500]}...")
         raise

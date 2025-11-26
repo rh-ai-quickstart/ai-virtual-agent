@@ -20,6 +20,12 @@ COPY backend/requirements.txt .
 # Install Python dependencies with optimizations
 RUN pip install --prefer-binary --no-cache-dir -r requirements.txt
 
+# Install coverage for integration test coverage collection
+RUN pip install --prefer-binary --no-cache-dir 'coverage[toml]>=7.0.0'
+
+# Copy coverage configuration from project root
+COPY .coveragerc /app/.coveragerc
+
 # Note: backend code will be mounted via volume in compose.yaml
 # No need to COPY it here for dev environment
 

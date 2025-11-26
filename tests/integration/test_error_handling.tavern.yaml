@@ -106,8 +106,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "invalid_email_user_{tavern.env_vars.TAVERN_UNIQUE}"
         email: "invalid-email-format"
@@ -126,8 +124,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "test_user"
         email: "test@example.com"
@@ -143,8 +139,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 404
       json:
@@ -157,8 +151,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: regular_user
-        X-Forwarded-Email: regular@example.com
       json:
         username: "new_user_{tavern.env_vars.TAVERN_UNIQUE}"
         email: "new_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -176,8 +168,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: regular_user
-        X-Forwarded-Email: regular@example.com
     response:
       status_code: [403, 200]  # In dev mode, may allow regular users to list users
       json: !anything  # Could be error message or user list
@@ -189,8 +179,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404]  # 404 if user wasn't created
 
@@ -200,8 +188,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404, 422]  # 422 if UUID is None, 404 if user wasn't created, 204 if deleted
 
@@ -211,8 +197,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404]  # 404 if user wasn't created
 
@@ -249,8 +233,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         # Missing name field
         prompt: "You are a helpful assistant."
@@ -266,8 +248,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 404
       json:
@@ -279,8 +259,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: 404
       json:
@@ -293,8 +271,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         name: "Test Agent"
         prompt: "You are a helpful assistant."
@@ -351,8 +327,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       data: "invalid json {{"
     response:
       status_code: 422
@@ -364,8 +338,6 @@ stages:
       headers:
         Content-Type: text/plain
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       data: "plain text data"
     response:
       status_code: 422
@@ -376,8 +348,6 @@ stages:
       method: POST
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "test_user_unique_{tavern.env_vars.TAVERN_UNIQUE}"
         email: "test_unique_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -395,8 +365,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404, 422]  # 422 if UUID is None, 404 if user wasn't created, 204 if deleted
 
@@ -410,8 +378,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"  # Very long username
         email: "longtest_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -448,8 +414,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
       json:
         username: "'; DROP TABLE users; --{tavern.env_vars.TAVERN_UNIQUE}"
         email: "hacker_{tavern.env_vars.TAVERN_UNIQUE}@example.com"
@@ -468,8 +432,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404, 422]  # 422 if UUID is None, 404 if user wasn't created, 204 if deleted
 
@@ -479,7 +441,5 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@example.com
     response:
       status_code: [204, 404]  # 404 if user wasn't created

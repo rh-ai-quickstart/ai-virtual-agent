@@ -1,223 +1,162 @@
 #!/bin/bash
-
 # AI Virtual Agent Test Runner
 set -e
 
-# Generate a unique identifier for this test run
+# Generate unique identifier for this test run
 export TAVERN_UNIQUE="test${RANDOM}"
 
-echo "🧪 AI Virtual Agent Test Suite"
-echo "====================================="
+# Pytest commands
+PYTEST_CMD="pytest -n auto"
+PYTEST_INTEG_CMD="pytest -n auto --dist loadfile"
+PYTEST_OPTS="-W ignore::DeprecationWarning"
 
-# Parse command line arguments
+# Parse arguments
 RUN_UNIT=false
 RUN_INTEGRATION=false
 SPECIFIC_TESTS=""
 
-# Default to running both if no arguments
 if [[ $# -eq 0 ]]; then
     RUN_UNIT=true
     RUN_INTEGRATION=true
 else
-    # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --unit)
-                RUN_UNIT=true
-                shift
-                ;;
-            --integration)
-                RUN_INTEGRATION=true
-                shift
-                ;;
-            --all)
-                RUN_UNIT=true
-                RUN_INTEGRATION=true
-                shift
-                ;;
-            *)
-                # Assume it's a specific test file/pattern
-                SPECIFIC_TESTS="$SPECIFIC_TESTS $1"
-                shift
-                ;;
+            --unit) RUN_UNIT=true; shift ;;
+            --integration) RUN_INTEGRATION=true; shift ;;
+            --all) RUN_UNIT=true; RUN_INTEGRATION=true; shift ;;
+            *) SPECIFIC_TESTS="$SPECIFIC_TESTS $1"; shift ;;
         esac
     done
 fi
 
-# If specific tests are provided, determine type based on path
+# Auto-detect test type from path
 if [[ -n "$SPECIFIC_TESTS" ]]; then
     if [[ "$SPECIFIC_TESTS" == *"unit"* ]]; then
-        RUN_UNIT=true
-        RUN_INTEGRATION=false
+        RUN_UNIT=true; RUN_INTEGRATION=false
     elif [[ "$SPECIFIC_TESTS" == *"integration"* ]]; then
-        RUN_UNIT=false
-        RUN_INTEGRATION=true
+        RUN_UNIT=false; RUN_INTEGRATION=true
     else
-        # Default to running the specific test without type detection
-        RUN_UNIT=false
-        RUN_INTEGRATION=false
+        RUN_UNIT=false; RUN_INTEGRATION=false
     fi
 fi
 
-# Default URLs (can be overridden by environment variables)
-FRONTEND_URL=${TEST_FRONTEND_URL:-"http://localhost:5173"}
-BACKEND_URL=${TEST_BACKEND_URL:-"http://localhost:8000"}
-LLAMASTACK_URL=${TEST_LLAMASTACK_URL:-"http://localhost:8321"}
+# Ensure PYTHONPATH includes project root
+[[ ":$PYTHONPATH:" != *":.:"* ]] && export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}."
 
-echo "🔧 Configuration:"
-echo "  For postgresql server run: podman compose --file deploy/local/compose.yaml up --detach"
-echo "  Frontend URL: $FRONTEND_URL"
-echo "  Backend URL: $BACKEND_URL"
-echo "  LlamaStack URL: $LLAMASTACK_URL"
-echo ""
+# Helper: Run pytest with error handling
+run_pytest() {
+    local test_path=$1
+    local coverage_file=$2
+    local pytest_cmd=$3
 
-# Check if we're already in a virtual environment
-if [[ -z "$VIRTUAL_ENV" ]] && [[ -z "$CONDA_DEFAULT_ENV" ]]; then
-    echo "⚠️  Warning: Not running in a virtual environment!"
-    echo "   It's recommended to activate a virtual environment or conda environment before running tests."
-    echo ""
-fi
-
-# Ensure project root is on PYTHONPATH so 'backend' is importable
-if [[ ":$PYTHONPATH:" != *":.:"* ]]; then
-    export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}."
-fi
-
-# Run unit tests first (they don't need services)
-if [[ "$RUN_UNIT" == true ]]; then
-    echo ""
-    echo "🧪 Running unit tests..."
-    echo "------------------------"
-    # Make unit tests not dependent on Minio or attachments.
-    export DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-true}
-    if [[ -n "$SPECIFIC_TESTS" ]]; then
-        pytest $SPECIFIC_TESTS -ra --cov=backend --cov-report=term-missing --cov-branch -W ignore::DeprecationWarning || {
-            echo ""
-            echo "❌ Unit tests failed!"
-            echo "   If you see pytest not found or import errors, try: pip install -r tests/requirements.txt -r backend/requirements.txt"
-            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
+    if [ -n "$coverage_file" ]; then
+        COVERAGE_FILE=$coverage_file $pytest_cmd $test_path -ra --cov=backend --cov-report= --cov-branch $PYTEST_OPTS || {
+            echo "❌ Tests failed! Try: pip install -r tests/requirements.txt -r backend/requirements.txt"
             exit 1
         }
     else
-        pytest tests/unit -ra --cov=backend --cov-report=term-missing --cov-branch -W ignore::DeprecationWarning || {
-            echo ""
-            echo "❌ Unit tests failed!"
-            echo "   If you see pytest not found or import errors, try: pip install -r tests/requirements.txt -r backend/requirements.txt"
-            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
+        $pytest_cmd $test_path -v $PYTEST_OPTS || {
+            echo "❌ Tests failed! Try: pip install -r tests/requirements.txt"
             exit 1
         }
-    fi
-    echo ""
-    echo "✅ Unit tests completed!"
-fi
-
-# Only check services if we're running integration tests
-if [[ "$RUN_INTEGRATION" == true ]]; then
-
-# Check if services are running
-echo "🔍 Checking if services are running..."
-
-# Function to check service
-check_service() {
-    local name=$1
-    local url=$2
-
-    if curl -s "$url" > /dev/null 2>&1; then
-        echo "✅ $name is running at $url"
-        return 0
-    else
-        echo "❌ $name is not running at $url"
-        return 1
     fi
 }
 
-# Check all services
-services_ok=true
+echo "🧪 AI Virtual Agent Test Suite"
+echo "====================================="
 
-if ! check_service "Backend" "$BACKEND_URL"; then
-    services_ok=false
-fi
-
-if ! check_service "Frontend" "$FRONTEND_URL"; then
-    services_ok=false
-fi
-
-if ! check_service "LlamaStack" "$LLAMASTACK_URL"; then
-    services_ok=false
-fi
-
-# Exit if services are not running
-if [[ "$services_ok" == false ]]; then
-    echo ""
-    echo "❌ Some services are not running. Please start them before running tests."
-    echo ""
-    echo "To start the services, run:"
-    echo "  # Use the new containerized development setup: make compose-up"
-    echo ""
-    echo "Or start them individually:"
-    echo "  1. podman compose --file deploy/local/compose.yaml up --detach"
-    echo "  2. Backend: cd backend && python -m uvicorn main:app --reload --port 8000"
-    echo "  3. Frontend: cd frontend && npm run dev"
-    echo "  # LlamaStack is now integrated into the compose setup"
-    echo ""
-    echo "Then run the tests again:"
-    echo "  ./run_tests.sh"
-    echo ""
-    exit 1
-fi
-
-echo ""
-echo "✅ All services are running!"
-echo ""
-
-# Export environment variables for tests
-export TEST_FRONTEND_URL="$FRONTEND_URL"
-export TEST_BACKEND_URL="$BACKEND_URL"
-export TEST_LLAMASTACK_URL="$LLAMASTACK_URL"
-
-    # Run integration tests
-    echo "🚀 Running integration tests..."
-    echo "------------------------------"
+# Run unit tests
+if [[ "$RUN_UNIT" == true ]]; then
+    echo "🧪 Running unit tests..."
+    export DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-true}
 
     if [[ -n "$SPECIFIC_TESTS" ]]; then
-        pytest $SPECIFIC_TESTS -v -W ignore::DeprecationWarning || {
-            echo ""
-            echo "❌ Integration tests failed!"
-            echo "   If you see import errors, try: pip install -r tests/requirements.txt"
-            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
-            exit 1
-        }
+        run_pytest "$SPECIFIC_TESTS" ".coverage.unit" "$PYTEST_CMD"
     else
-        pytest tests/integration/ -v -W ignore::DeprecationWarning || {
-            echo ""
-            echo "❌ Integration tests failed!"
-            echo "   If you see import errors, try: pip install -r tests/requirements.txt"
-            echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
-            exit 1
-        }
+        run_pytest "tests/unit" ".coverage.unit" "$PYTEST_CMD"
     fi
-    echo ""
-    echo "✅ Integration tests completed!"
+    echo "✅ Unit tests completed!"
 fi
 
-# Run specific tests if neither unit nor integration was explicitly chosen
+# Run integration tests
+if [[ "$RUN_INTEGRATION" == true ]]; then
+    # Check services
+    echo "🔍 Checking services..."
+
+    BACKEND_URL=${TEST_BACKEND_URL:-"http://localhost:8000"}
+    FRONTEND_URL=${TEST_FRONTEND_URL:-"http://localhost:5173"}
+    LLAMASTACK_URL=${TEST_LLAMASTACK_URL:-"http://localhost:8321"}
+
+    services_ok=true
+    for service in "Backend:$BACKEND_URL" "Frontend:$FRONTEND_URL" "LlamaStack:$LLAMASTACK_URL"; do
+        name="${service%%:*}"
+        url="${service#*:}"
+        if curl -s "$url" > /dev/null 2>&1; then
+            echo "✅ $name is running"
+        else
+            echo "❌ $name is not running at $url"
+            services_ok=false
+        fi
+    done
+
+    if [[ "$services_ok" == false ]]; then
+        echo ""
+        echo "❌ Services not running. Start with: ./deploy/local/scripts/start-dev.sh"
+        exit 1
+    fi
+
+    export TEST_FRONTEND_URL="$FRONTEND_URL"
+    export TEST_BACKEND_URL="$BACKEND_URL"
+    export TEST_LLAMASTACK_URL="$LLAMASTACK_URL"
+
+    echo "🚀 Running integration tests..."
+
+    if [[ -n "$SPECIFIC_TESTS" ]]; then
+        run_pytest "$SPECIFIC_TESTS" "" "$PYTEST_INTEG_CMD"
+    else
+        run_pytest "tests/integration/" "" "$PYTEST_INTEG_CMD"
+    fi
+    echo "✅ Integration tests completed!"
+
+    # Extract coverage via HTTP
+    echo "📊 Extracting integration coverage..."
+
+    if curl -s -f "$BACKEND_URL/admin/coverage" -o .coverage.integration; then
+        echo "✅ Coverage extracted"
+    else
+        echo "ℹ️  No integration coverage found"
+    fi
+fi
+
+# Run specific tests (neither unit nor integration)
 if [[ "$RUN_UNIT" == false && "$RUN_INTEGRATION" == false && -n "$SPECIFIC_TESTS" ]]; then
     echo "🚀 Running specified tests..."
-    pytest $SPECIFIC_TESTS -v -W ignore::DeprecationWarning || {
+    run_pytest "$SPECIFIC_TESTS" "" "$PYTEST_CMD"
+fi
+
+echo "✅ All tests completed!"
+
+# Combine coverage
+if [ -f ".coverage.unit" ] || [ -f ".coverage.integration" ]; then
+    echo "📊 Combining coverage..."
+
+    COVERAGE_FILES=""
+    [ -f ".coverage.unit" ] && COVERAGE_FILES="$COVERAGE_FILES .coverage.unit"
+    [ -f ".coverage.integration" ] && COVERAGE_FILES="$COVERAGE_FILES .coverage.integration"
+
+    if [ -n "$COVERAGE_FILES" ]; then
+        coverage combine $COVERAGE_FILES 2>/dev/null || true
         echo ""
-        echo "❌ Tests failed!"
-        echo "   If you see import errors, try: pip install -r tests/requirements.txt"
-        echo "   If you see 'ModuleNotFoundError: No module named backend', try: export PYTHONPATH=.:$PYTHONPATH"
-        exit 1
-    }
+        echo "📈 Coverage Report:"
+        coverage report
+        echo ""
+        echo "💡 HTML report: coverage html && open htmlcov/index.html"
+    fi
 fi
 
 echo ""
-echo "✅ All tests completed successfully!"
-echo ""
 echo "Usage:"
-echo "  ./run_tests.sh              # Run all tests (unit + integration)"
-echo "  ./run_tests.sh --unit       # Run only unit tests"
-echo "  ./run_tests.sh --integration # Run only integration tests"
-echo "  ./run_tests.sh --all        # Run all tests (same as no args)"
-echo "  ./run_tests.sh tests/unit/test_specific.py  # Run specific test file"
+echo "  ./run_tests.sh              # Run all tests"
+echo "  ./run_tests.sh --unit       # Unit tests only"
+echo "  ./run_tests.sh --integration # Integration tests only"
+echo "  ./run_tests.sh tests/unit/test_specific.py  # Specific test"

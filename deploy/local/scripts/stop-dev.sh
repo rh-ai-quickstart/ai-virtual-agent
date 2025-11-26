@@ -4,20 +4,20 @@
 
 set -e
 
-# Change to project root directory
-PROJECT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-cd "$PROJECT_ROOT"
-COMPOSE_FILE="$PROJECT_ROOT/deploy/local/compose.yaml"
+# Change to deploy/local directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DEPLOY_LOCAL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$DEPLOY_LOCAL_DIR"
 
 echo "🛑 Stopping AI Virtual Agent Development Environment..."
 
 # Stop all services (including all profiles)
-podman compose -f "$COMPOSE_FILE" --profile attachments down
+podman compose --profile attachments down
 
 echo "✅ All services stopped successfully"
 echo ""
 echo "💡 To remove all data (including database):"
-echo "   podman compose -f \"$COMPOSE_FILE\" --profile attachments down --volumes"
+echo "   podman compose --profile attachments down --volumes"
 echo ""
 echo "🔄 To restart:"
 echo "   make compose-up"

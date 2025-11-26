@@ -24,8 +24,6 @@ stages:
       method: POST
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         name: "Test Assistant"
         prompt: "You are a helpful assistant."
@@ -48,8 +46,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -85,8 +81,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 204
 ---
@@ -98,8 +92,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       json:

@@ -5,10 +5,10 @@
 
 set -e
 
-# Change to project root directory
-PROJECT_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-cd "$PROJECT_ROOT"
-COMPOSE_FILE="$PROJECT_ROOT/deploy/local/compose.yaml"
+# Determine directories
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+DEPLOY_LOCAL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "🚀 Starting AI Virtual Agent Development Environment..."
 
@@ -26,12 +26,16 @@ if ! podman compose --help &> /dev/null; then
     exit 1
 fi
 
-# Create .env if it doesn't exist
-if [ ! -f .env ]; then
+# Create .env if it doesn't exist (in project root)
+if [ ! -f "$PROJECT_ROOT/.env" ]; then
     echo "📄 Creating .env from template..."
-    cp .env.example .env
+    cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
     echo "✅ Created .env - you can customize it if needed"
 fi
+
+# Change to deploy/local directory for compose commands
+cd "$DEPLOY_LOCAL_DIR"
+COMPOSE_FILE="compose.yaml"
 
 # Check if attachments should be enabled
 ENABLE_ATTACHMENTS=${ENABLE_ATTACHMENTS:-true}
@@ -83,4 +87,6 @@ echo "🔧 Development features:"
 echo "   ✅ Hot reload enabled for backend and frontend"
 echo "   ✅ Database persisted in volume"
 echo "   ✅ Auto-migrations run on startup"
+echo ""
+echo "📊 To collect test coverage, run: ENABLE_COVERAGE=true ./scripts/start-dev.sh"
 echo ""

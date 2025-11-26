@@ -1,0 +1,38 @@
+---
+# Virtual Agents CRUD - Error Cases
+
+test_name: Virtual Agents - Error Handling
+
+stages:
+  # Test getting non-existent agent
+  - name: get_nonexistent_agent
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/00000000-0000-0000-0000-000000000000"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 404
+
+  # Test creating agent with invalid data
+  - name: create_agent_missing_required_fields
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        prompt: "Missing name and model"
+    response:
+      status_code: 422
+
+  # Test deleting non-existent agent
+  - name: delete_nonexistent_agent
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/00000000-0000-0000-0000-000000000000"
+      method: DELETE
+      headers:
+        Accept: application/json
+    response:
+      status_code: 404

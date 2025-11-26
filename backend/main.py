@@ -12,14 +12,16 @@ capabilities.
 
 import asyncio
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -110,6 +112,31 @@ if is_local_dev_mode():
 
 # Include validate router at root for compatibility
 app.include_router(validate_router)
+
+
+@app.get("/admin/coverage", include_in_schema=False)
+async def get_coverage():
+    """Save and download coverage data file (dev/test only)."""
+    # First, save the coverage data
+    if os.getenv("ENABLE_COVERAGE") == "true":
+        try:
+            import coverage
+
+            cov = coverage.Coverage.current()
+            if cov:
+                cov.save()
+        except Exception:
+            pass  # Continue anyway, file might still exist
+
+    # Then return the file
+    coverage_file = Path("/app/.coverage.integration")
+    if coverage_file.exists():
+        return FileResponse(
+            path=str(coverage_file),
+            filename=".coverage.integration",
+            media_type="application/octet-stream",
+        )
+    raise HTTPException(status_code=404, detail="Coverage file not found")
 
 
 class SPAStaticFiles(StaticFiles):

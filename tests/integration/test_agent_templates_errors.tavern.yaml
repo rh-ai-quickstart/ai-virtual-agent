@@ -1,0 +1,264 @@
+---
+# Agent Templates - Error Cases and Edge Conditions
+
+test_name: Agent Templates - Error Handling
+
+stages:
+  # Test getting non-existent template
+  - name: get_nonexistent_template
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/nonexistent-template-id"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 404
+
+  # Test getting non-existent suite details
+  - name: get_nonexistent_suite
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/nonexistent-suite/details"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 404
+
+  # Test initializing template with invalid name
+  - name: initialize_invalid_template
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        template_name: "nonexistent-template-12345"
+        model_name: "test-model"
+    response:
+      status_code: [404, 400]
+
+  # Test initializing suite with invalid ID
+  - name: initialize_invalid_suite
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize-suite/invalid-suite-id"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+    response:
+      status_code: [404, 400]
+
+---
+test_name: Agent Templates - Missing Required Fields
+
+stages:
+  # Try to initialize without template_name
+  - name: initialize_without_template_name
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        model_name: "test-model"
+    response:
+      status_code: 422
+
+---
+test_name: Agent Templates - Individual Template GET
+
+stages:
+  # Get list of templates
+  - name: get_template_list
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tests.integration.validators:validate_list_not_empty
+      save:
+        json:
+          first_template_id: "[0]"
+          second_template_id: "[1]"
+
+  # Get first template details
+  - name: get_first_template_details
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/{first_template_id}"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      strict:
+        - json:off
+      json:
+        name: !anystr
+        persona: !anystr
+        prompt: !anystr
+        model_name: !anystr
+
+  # Get second template details
+  - name: get_second_template_details
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/{second_template_id}"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      strict:
+        - json:off
+      json:
+        name: !anystr
+        persona: !anystr
+        prompt: !anystr
+        model_name: !anystr
+
+---
+test_name: Agent Templates - Deployment Validation
+
+stages:
+  # Get valid template and model
+  - name: setup_get_template
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      save:
+        json:
+          deploy_template: "[0]"
+
+  - name: setup_get_model
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      save:
+        json:
+          deploy_model: "[0].model_name"
+
+  # Deploy template without knowledge base
+  - name: deploy_without_kb
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        template_name: "{deploy_template}"
+        model_name: "{deploy_model}"
+        include_knowledge_base: false
+    response:
+      status_code: 200
+      strict:
+        - json:off
+      json:
+        status: !anystr
+        agent_id: !anystr
+        knowledge_base_created: false
+      save:
+        json:
+          deployed_agent_for_validation: "agent_id"
+
+  # Try deploying same template again
+  - name: redeploy_same_template
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
+      method: POST
+      headers:
+        Content-Type: application/json
+        Accept: application/json
+      json:
+        template_name: "{deploy_template}"
+        model_name: "{deploy_model}"
+        include_knowledge_base: false
+    response:
+      status_code: 200
+      strict:
+        - json:off
+      json:
+        status: "skipped"
+      verify_response_with:
+        - function: tests.integration.validators:validate_skipped_deployment
+
+  # Cleanup deployed agent
+  - name: cleanup_deployed_validation_agent
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{deployed_agent_for_validation}"
+      method: DELETE
+    response:
+      status_code: [204, 404]
+
+---
+test_name: Agent Templates - Categories and Suites
+
+stages:
+  # Test getting categories
+  - name: get_categories
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/categories"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tests.integration.validators:validate_categories_structure
+
+  # Test getting category info
+  - name: get_category_info
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/categories/info"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tests.integration.validators:validate_categories_info_structure
+
+  # Get suites list
+  - name: get_suites_list
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tests.integration.validators:validate_list_not_empty
+      save:
+        json:
+          test_suite_id: "[0]"
+
+  # Get specific suite details
+  - name: get_suite_details
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/{test_suite_id}/details"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      json:
+        id: "{test_suite_id}"
+        name: !anystr
+        description: !anystr
+        category: !anystr
+        agent_count: !anyint
+        agent_names: !anylist
+        template_ids: !anylist

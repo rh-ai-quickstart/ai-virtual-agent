@@ -12,8 +12,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -30,8 +28,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         name: "Shared Test Assistant"
         prompt: "You are a helpful assistant for testing conversation history functionality."
@@ -59,8 +55,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         agent_id: "{agent_id}"
         session_name: "First Test Session"
@@ -77,8 +71,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -100,8 +92,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -123,8 +113,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         agent_id: "{agent_id}"
         session_name: "Second Test Session"
@@ -141,8 +129,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -165,8 +151,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         agent_id: "{agent_id}"
         session_name: "Message Fetch Test Session"
@@ -183,8 +167,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -205,8 +187,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -225,9 +205,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{message_test_session_id}/messages"
       method: GET
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -250,9 +227,6 @@ stages:
       method: DELETE
       params:
         agent_id: "{agent_id}"
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
 
@@ -262,9 +236,6 @@ stages:
       method: DELETE
       params:
         agent_id: "{agent_id}"
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
 
@@ -274,9 +245,6 @@ stages:
       method: DELETE
       params:
         agent_id: "{agent_id}"
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
 
@@ -287,7 +255,5 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 204

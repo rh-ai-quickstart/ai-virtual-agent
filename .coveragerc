@@ -1,0 +1,18 @@
+[run]
+branch = True
+omit =
+    */tests/*
+    */app/tests/*
+    */__pycache__/*
+
+[paths]
+source =
+    backend
+    /app/backend
+
+[report]
+skip_covered = True
+omit =
+    */tests/*
+    */app/tests/*
+    */__pycache__/*

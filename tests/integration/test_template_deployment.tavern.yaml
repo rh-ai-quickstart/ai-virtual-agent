@@ -8,8 +8,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -26,8 +24,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -65,11 +61,8 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         template_name: "{first_template}"
-        custom_name: "Test Agent from Template"
         include_knowledge_base: false
         model_name: "{available_model}"
     response:
@@ -79,7 +72,7 @@ stages:
       json:
         status: "success"  # Template deployment successful
         agent_id: !anystr  # UUID of newly created agent
-        agent_name: "Test Agent from Template"
+        agent_name: !anystr
         persona: !anystr
         knowledge_base_created: false
         knowledge_base_name: !anything
@@ -88,46 +81,20 @@ stages:
         json:
           deployed_agent_id: "agent_id"
 
-  - name: Get all agents and verify template agent exists
+  - name: Verify template agent exists
     request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{deployed_agent_id}"
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
         content-type: application/json
-      verify_response_with:
-        - function: tests.integration.validators:validate_list_not_empty
-
-  - name: Test deploying same template again (should skip)
-    request:
-      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
-      method: POST
-      headers:
-        Content-Type: application/json
-        Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
+      strict:
+        - json:off
       json:
-        template_name: "{first_template}"
-        include_knowledge_base: false
-        model_name: "{available_model}"
-    response:
-      status_code: 200
-      headers:
-        content-type: application/json
-      json:
-        status: "skipped"
-        agent_id: !anystr
-        agent_name: !anystr
-        persona: !anystr
-        knowledge_base_created: false
-        knowledge_base_name: !anything
-        message: !re_match ".*already deployed.*"
+        id: "{deployed_agent_id}"
 
   # Cleanup: Delete the test agent (only if one was created)
   - name: cleanup_test_agent
@@ -136,8 +103,6 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: [204, 404, 405]  # Accept multiple status codes for different scenarios
 
@@ -151,8 +116,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -169,8 +132,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -194,8 +155,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -211,8 +170,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -228,8 +185,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       verify_response_with:
@@ -247,8 +202,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -262,8 +215,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:

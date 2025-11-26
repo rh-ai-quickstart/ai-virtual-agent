@@ -1,0 +1,18 @@
+# Docker Compose override for GitHub Actions CI
+# This file adds build caching for faster CI builds
+# Usage: docker compose -f compose.yaml -f compose.ci.yaml up
+
+services:
+  backend:
+    build:
+      cache_from:
+        - type=gha,scope=backend
+      cache_to:
+        - type=gha,mode=max,scope=backend
+
+  frontend:
+    build:
+      cache_from:
+        - type=gha,scope=frontend
+      cache_to:
+        - type=gha,mode=max,scope=frontend

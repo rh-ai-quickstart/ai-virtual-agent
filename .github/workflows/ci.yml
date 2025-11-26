@@ -6,30 +6,6 @@ on:
     branches: [ main, dev ]
 
 jobs:
-  backend-unit-tests:
-    name: Backend unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r tests/requirements.txt -r backend/requirements.txt
-
-      - name: Run unit tests
-        env:
-          PYTHONPATH: .
-        run: |
-          pytest tests/unit -ra --cov=backend --cov-branch --cov-report=term-missing
-
   frontend-checks:
     name: Frontend lint and build
     runs-on: ubuntu-latest
@@ -120,3 +96,75 @@ jobs:
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files --config backend/.pre-commit-config.yaml
+
+  run-tests:
+    name: Run unit and integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt -r backend/requirements.txt
+
+      - name: Build and start services
+        working-directory: deploy/local
+        run: docker compose -f compose.yaml -f compose.ci.yaml up -d --wait
+        env:
+          ENABLE_ATTACHMENTS: false
+          LOCAL_DEV_ENV_MODE: true
+          ENABLE_COVERAGE: true
+          BUILDKIT_PROGRESS: plain
+          DOCKER_BUILDKIT: 1
+
+      - name: Run integration tests
+        run: ./tests/run_tests.sh
+
+      - name: Display coverage report
+        if: always()
+        run: |
+          if [ -f ".coverage" ]; then
+            echo "📊 Coverage Summary:"
+            coverage report
+          fi
+
+      - name: Upload coverage reports as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            .coverage
+            .coverage.unit
+            .coverage.integration
+            htmlcov/
+          retention-days: 30
+
+      - name: Show logs on failure
+        if: failure()
+        working-directory: deploy/local
+        run: |
+          echo "=== Service Status ==="
+          docker compose -f compose.yaml -f compose.ci.yaml ps
+          echo "=== Backend Logs ==="
+          docker compose -f compose.yaml -f compose.ci.yaml logs backend
+          echo "=== LlamaStack Logs ==="
+          docker compose -f compose.yaml -f compose.ci.yaml logs llamastack
+          echo "=== Database Logs ==="
+          docker compose -f compose.yaml -f compose.ci.yaml logs db
+
+      - name: Tear down
+        if: always()
+        working-directory: deploy/local
+        run: docker compose -f compose.yaml -f compose.ci.yaml down -v

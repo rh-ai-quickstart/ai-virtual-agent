@@ -12,8 +12,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -30,8 +28,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         name: "Session Switching Test Assistant"
         prompt: "You are a helpful assistant. Give concise, accurate answers."
@@ -61,8 +57,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         agent_id: "{agent_id}"
         session_name: "Math Session"
@@ -82,8 +76,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         agent_id: "{agent_id}"
         session_name: "Geography Session"
@@ -102,8 +94,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -116,6 +106,10 @@ stages:
       status_code: 200
       headers:
         content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        - function: tests.integration.validators:validate_exact_text
+          extra_kwargs:
+            expected_text: "10"
 
   - name: send_message_to_session1_second
     request:
@@ -123,8 +117,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -137,6 +129,10 @@ stages:
       status_code: 200
       headers:
         content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        - function: tests.integration.validators:validate_exact_text
+          extra_kwargs:
+            expected_text: "12"
 
   # Send messages to second session
   - name: send_message_to_session2_first
@@ -145,8 +141,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -159,6 +153,10 @@ stages:
       status_code: 200
       headers:
         content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        - function: tests.integration.validators:validate_exact_text
+          extra_kwargs:
+            expected_text: "Paris"
 
   - name: send_message_to_session2_second
     request:
@@ -166,8 +164,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -180,6 +176,10 @@ stages:
       status_code: 200
       headers:
         content-type: text/event-stream; charset=utf-8
+      verify_response_with:
+        - function: tests.integration.validators:validate_exact_text
+          extra_kwargs:
+            expected_text: "Berlin"
 
   # Test session switching: Fetch first session messages using new endpoint
   - name: fetch_session1_messages
@@ -188,8 +188,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -210,8 +208,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -228,8 +224,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -250,8 +244,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
       headers:
@@ -268,9 +260,6 @@ stages:
       method: DELETE
       params:
         agent_id: "{agent_id}"
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
 
@@ -280,9 +269,6 @@ stages:
       method: DELETE
       params:
         agent_id: "{agent_id}"
-      headers:
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 200
 
@@ -293,7 +279,5 @@ stages:
       method: DELETE
       headers:
         Accept: application/json
-        X-Forwarded-User: admin
-        X-Forwarded-Email: admin@change.me
     response:
       status_code: 204
