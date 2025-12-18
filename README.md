@@ -129,12 +129,9 @@ kb_response = requests.post(
 print(f"Knowledge base created: {kb_response.status_code}")
 
 # 2. Create a support agent
+# Note: Requires OAuth authentication via Keycloak session cookie
 agent_response = requests.post(
     f"{BASE_URL}/virtual_agents",
-    headers={
-        "X-Forwarded-User": "admin",
-        "X-Forwarded-Email": "admin@change.me"
-    },
     json={
         "name": "Support Agent",
         "model_name": "meta-llama/Llama-3.2-3B-Instruct",

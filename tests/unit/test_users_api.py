@@ -516,3 +516,137 @@ class TestUserAgents:
             f"/api/v1/users/{regular_user.id}/agents", json=agent_data
         )
         assert response.status_code == status.HTTP_200_OK
+
+
+class TestOAuthUserManagement:
+    """Test OAuth-based user creation and management."""
+
+    @pytest.mark.asyncio
+    @patch("backend.app.api.v1.users.user")
+    async def test_get_or_create_user_existing_user(
+        self, mock_user_crud, mock_db_session
+    ):
+        """Test getting existing user from OAuth session."""
+        from backend.app.api.v1.users import get_or_create_user_from_oauth
+
+        # Mock existing user
+        existing_user = User(
+            id=uuid.uuid4(),
+            username="existing-user",
+            email="existing@example.com",
+            role=RoleEnum.user,
+        )
+        mock_user_crud.get_by_username_or_email = AsyncMock(return_value=existing_user)
+
+        session_data = {
+            "username": "existing-user",
+            "email": "existing@example.com",
+            "role": "user",
+        }
+
+        result = await get_or_create_user_from_oauth(session_data, mock_db_session)
+
+        assert result == existing_user
+        mock_user_crud.get_by_username_or_email.assert_called_once()
+        mock_user_crud.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("backend.app.api.v1.users.user")
+    async def test_get_or_create_user_new_user(self, mock_user_crud, mock_db_session):
+        """Test creating new user from OAuth session."""
+        from backend.app.api.v1.users import get_or_create_user_from_oauth
+
+        # Mock no existing user
+        mock_user_crud.get_by_username_or_email = AsyncMock(return_value=None)
+
+        # Mock user creation
+        new_user = User(
+            id=uuid.uuid4(),
+            username="new-user",
+            email="new@example.com",
+            role=RoleEnum.admin,
+        )
+        mock_user_crud.create_user = AsyncMock(return_value=new_user)
+
+        session_data = {
+            "username": "new-user",
+            "email": "new@example.com",
+            "role": "admin",
+        }
+
+        result = await get_or_create_user_from_oauth(session_data, mock_db_session)
+
+        assert result == new_user
+        mock_user_crud.get_by_username_or_email.assert_called_once()
+        mock_user_crud.create_user.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_or_create_user_missing_username(self, mock_db_session):
+        """Test error when username is missing from session."""
+        from fastapi import HTTPException
+
+        from backend.app.api.v1.users import get_or_create_user_from_oauth
+
+        session_data = {
+            "email": "test@example.com",
+            "role": "user",
+            # Missing username
+        }
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_or_create_user_from_oauth(session_data, mock_db_session)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Invalid session data" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_get_or_create_user_missing_email(self, mock_db_session):
+        """Test error when email is missing from session."""
+        from fastapi import HTTPException
+
+        from backend.app.api.v1.users import get_or_create_user_from_oauth
+
+        session_data = {
+            "username": "test-user",
+            "role": "user",
+            # Missing email
+        }
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_or_create_user_from_oauth(session_data, mock_db_session)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Invalid session data" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    @patch("backend.app.api.v1.users.user")
+    async def test_get_or_create_user_default_role(
+        self, mock_user_crud, mock_db_session
+    ):
+        """Test that default role is 'user' if not specified."""
+        from backend.app.api.v1.users import get_or_create_user_from_oauth
+
+        # Mock no existing user
+        mock_user_crud.get_by_username_or_email = AsyncMock(return_value=None)
+
+        # Mock user creation
+        new_user = User(
+            id=uuid.uuid4(),
+            username="default-role-user",
+            email="default@example.com",
+            role=RoleEnum.user,
+        )
+        mock_user_crud.create_user = AsyncMock(return_value=new_user)
+
+        session_data = {
+            "username": "default-role-user",
+            "email": "default@example.com",
+            # No role specified
+        }
+
+        result = await get_or_create_user_from_oauth(session_data, mock_db_session)
+
+        assert result == new_user
+        # Verify create_user was called with default role
+        create_call = mock_user_crud.create_user.call_args
+        assert create_call is not None

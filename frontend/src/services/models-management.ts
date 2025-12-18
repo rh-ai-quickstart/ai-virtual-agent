@@ -3,7 +3,7 @@ import { Model, ModelCreate, ModelUpdate, ModelProvider, ProviderCreate } from '
 import { ErrorResponse } from '@/types';
 
 export const fetchModels = async (): Promise<Model[]> => {
-  const response = await fetch(MODELS_API_ENDPOINT);
+  const response = await fetch(MODELS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -16,6 +16,7 @@ export const fetchModels = async (): Promise<Model[]> => {
 
 export const createModel = async (newModel: ModelCreate): Promise<Model> => {
   const response = await fetch(MODELS_API_ENDPOINT, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -34,6 +35,7 @@ export const createModel = async (newModel: ModelCreate): Promise<Model> => {
 
 export const updateModel = async (model_id: string, modelUpdate: ModelUpdate): Promise<Model> => {
   const response = await fetch(MODELS_API_ENDPOINT + model_id, {
+    credentials: 'include',
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -52,6 +54,7 @@ export const updateModel = async (model_id: string, modelUpdate: ModelUpdate): P
 
 export const deleteModel = async (model_id: string): Promise<void> => {
   const response = await fetch(MODELS_API_ENDPOINT + model_id, {
+    credentials: 'include',
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -64,7 +67,7 @@ export const deleteModel = async (model_id: string): Promise<void> => {
 };
 
 export const fetchModelProviders = async (): Promise<ModelProvider[]> => {
-  const response = await fetch(MODEL_PROVIDERS_API_ENDPOINT);
+  const response = await fetch(MODEL_PROVIDERS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -77,6 +80,7 @@ export const fetchModelProviders = async (): Promise<ModelProvider[]> => {
 
 export const createProvider = async (newProvider: ProviderCreate): Promise<ModelProvider> => {
   const response = await fetch('/api/v1/models/providers/', {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -300,6 +300,33 @@ async def get_conversation_messages(
 
             logger.info(f"Total items received: {len(items_response.data)}")
 
+            # DEBUG: Log what LlamaStack is returning
+            logger.info("=== ITEMS FROM LLAMASTACK (order='asc') ===")
+            for idx, item in enumerate(items_response.data):
+                item_dict = jsonable_encoder(item)
+                msg_type = item_dict.get("type")
+                msg_role = item_dict.get("role", "N/A")
+                msg_id = str(item_dict.get("id", ""))[:12]
+                if msg_type == "message":
+                    content = item_dict.get("content", [])
+                    if isinstance(content, str):
+                        text = content[:40]
+                    elif isinstance(content, list) and content:
+                        first = content[0]
+                        text = (
+                            first.get("text", str(first))[:40]
+                            if isinstance(first, dict)
+                            else str(first)[:40]
+                        )
+                    else:
+                        text = ""
+                    logger.info(
+                        f"  [{idx}] type={msg_type}, role={msg_role}, id={msg_id}, text='{text}'"
+                    )
+                else:
+                    logger.info(f"  [{idx}] type={msg_type}, id={msg_id}")
+            logger.info("=== END LLAMASTACK ITEMS ===")
+
             for item in items_response.data:
                 item_dict = jsonable_encoder(item)
                 item_type = item_dict.get("type")

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import settings
-from ...core.auth import is_local_dev_mode
+from ...core.oauth import get_session_from_request
 from ...crud.user import user
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
@@ -70,46 +70,39 @@ async def remove_agents_from_user(
     return remaining_agent_ids
 
 
-async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
+async def get_or_create_user_from_oauth(session_data: dict, db: AsyncSession):
     """
-    Get or create user from OAuth proxy headers.
+    Get or create user from OAuth session data.
 
-    SECURITY WARNING: In production, this function trusts that OAuth proxy
-    headers are validated and cannot be forged. In local dev mode, headers
-    are trusted without OAuth validation for testing purposes.
+    Args:
+        session_data: OAuth session data containing username, email, and role
+        db: Database session
+
+    Returns:
+        User object
     """
-    username = headers.get("X-Forwarded-User") or headers.get("x-forwarded-user")
-    email = headers.get("X-Forwarded-Email") or headers.get("x-forwarded-email")
+    username = session_data.get("username")
+    email = session_data.get("email")
+    role = session_data.get("role", "user")
 
-    # In dev mode, provide defaults if no headers present
-    if is_local_dev_mode():
-        if not username and not email:
-            logger.info("LOCAL_DEV_ENV_MODE: No headers provided, using defaults")
-            username = "dev-user"
-            email = "dev@localhost.dev"
-        else:
-            logger.info(
-                f"LOCAL_DEV_ENV_MODE: Using headers username={username}, email={email}"
-            )
-    else:
-        # In production, require headers
-        if not username and not email:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            )
+    if not username or not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session data",
+        )
 
     # Try to find existing user
-    logger.info(f"Looking up user: username={username}, email={email}")
+    logger.info(
+        f"Looking up user from OAuth: username={username}, email={email}, role={role}"
+    )
     existing_user = await user.get_by_username_or_email(
         db, username=username, email=email
     )
 
-    # If user doesn't exist, create them
+    # If user doesn't exist, create them with role from OAuth
     if not existing_user:
-        # In dev mode, grant admin role to all auto-created users for testing
-        role = "admin" if is_local_dev_mode() else "user"
         logger.info(
-            f"User not found, creating: username={username}, email={email}, role={role}"
+            f"User not found, creating from OAuth: username={username}, email={email}, role={role}"
         )
         existing_user = await user.create_user(
             db, username=username, email=email, role=role, agent_ids=[]
@@ -119,27 +112,32 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
         logger.info(
             f"Found existing user: {existing_user.id} (username={existing_user.username})"
         )
+        # Update role if it changed in OAuth
+        if existing_user.role.value != role:
+            logger.info(f"Updating user role from {existing_user.role.value} to {role}")
+            existing_user.role = RoleEnum[role]
+            db.add(existing_user)
+            await db.commit()
+            await db.refresh(existing_user)
 
     return existing_user
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
-    """FastAPI dependency to get the current authenticated user."""
-    if logger.isEnabledFor(logging.DEBUG):
-        forwarded_user = request.headers.get("x-forwarded-user")
-        forwarded_email = request.headers.get("x-forwarded-email")
-        logger.debug(
-            f"Authentication attempt - User: {forwarded_user}, Email: {forwarded_email}"
+    """FastAPI dependency to get the current authenticated user from OAuth session."""
+    session_data = get_session_from_request(request)
+    if not session_data:
+        logger.warning("Authentication failed - No session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
         )
 
-    current_user = await get_user_from_headers(request.headers, db)
+    current_user = await get_or_create_user_from_oauth(session_data, db)
 
-    if current_user:
-        logger.info(
-            f"User authenticated - ID: {current_user.id}, Username: {current_user.username}"
-        )
-    else:
-        logger.warning("Authentication failed - User not found")
+    logger.info(
+        f"User authenticated - ID: {current_user.id}, Username: {current_user.username}"
+    )
 
     return current_user
 
@@ -158,14 +156,8 @@ async def require_admin_role(current_user=Depends(get_current_user)):
 
 
 @router.get("/profile", response_model=UserResponse)
-async def read_profile(request: Request, db: AsyncSession = Depends(get_db)):
+async def read_profile(current_user=Depends(get_current_user)):
     """Retrieve an authorized user's profile."""
-    current_user = await get_user_from_headers(request.headers, db)
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User not found"
-        )
-
     # Convert the user for serialization
     user_dict = {
         "id": current_user.id,

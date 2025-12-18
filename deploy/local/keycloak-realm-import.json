@@ -1,0 +1,109 @@
+{
+  "realm": "ai-apps",
+  "enabled": true,
+  "sslRequired": "none",
+  "clientScopeMappings": {
+    "realm-management": [
+      {
+        "client": "ai-virtual-agent",
+        "roles": ["view-users", "query-users"]
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ai-virtual-agent",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "ai-virtual-agent-secret",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "llama-stack",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "llama-stack-secret",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "ingestion-pipeline",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "ingestion-pipeline-secret",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "roles": {
+    "realm": [
+      {"name": "user"},
+      {"name": "devops"},
+      {"name": "admin"}
+    ]
+  },
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "email": "testuser@example.com",
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["user"],
+      "requiredActions": []
+    },
+    {
+      "username": "devops",
+      "enabled": true,
+      "email": "devops@example.com",
+      "emailVerified": true,
+      "firstName": "DevOps",
+      "lastName": "User",
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["devops", "user"],
+      "requiredActions": []
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["admin", "devops", "user"],
+      "requiredActions": []
+    }
+  ]
+}

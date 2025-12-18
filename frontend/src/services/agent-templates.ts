@@ -25,7 +25,9 @@ const API_BASE_URL = '/api/v1';
  * Get list of available agent templates.
  */
 export async function getAvailableTemplates(): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/agent_templates/`);
+  const response = await fetch(`${API_BASE_URL}/agent_templates/`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({
       detail: `Failed to fetch templates: ${response.statusText}`,
@@ -39,7 +41,9 @@ export async function getAvailableTemplates(): Promise<string[]> {
  * Get detailed information about a specific template.
  */
 export async function getTemplateDetails(templateName: string): Promise<AgentTemplate> {
-  const response = await fetch(`${API_BASE_URL}/agent_templates/${templateName}`);
+  const response = await fetch(`${API_BASE_URL}/agent_templates/${templateName}`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({
       detail: `Failed to fetch template details: ${response.statusText}`,
@@ -56,6 +60,7 @@ export async function initializeAgentFromTemplate(
   request: TemplateInitializationRequest
 ): Promise<TemplateInitializationResponse> {
   const response = await fetch(`${API_BASE_URL}/agent_templates/initialize`, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,6 +84,7 @@ export async function initializeAgentFromTemplate(
  */
 export async function initializeAllTemplates(): Promise<TemplateInitializationResponse[]> {
   const response = await fetch(`${API_BASE_URL}/agent_templates/initialize-all`, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -103,6 +109,7 @@ export async function initializeAllTemplates(): Promise<TemplateInitializationRe
  */
 export async function initializeSuite(suiteId: string): Promise<TemplateInitializationResponse[]> {
   const response = await fetch(`/api/v1/agent_templates/initialize-suite/${suiteId}`, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -123,7 +130,9 @@ export async function initializeSuite(suiteId: string): Promise<TemplateInitiali
  * Get suites grouped by category.
  */
 export async function getSuitesByCategory(): Promise<Record<string, string[]>> {
-  const response = await fetch(`/api/v1/agent_templates/suites/categories`);
+  const response = await fetch(`/api/v1/agent_templates/suites/categories`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({
       detail: `Failed to fetch suites by category: ${response.statusText}`,
@@ -147,7 +156,9 @@ export async function getSuiteDetails(suiteId: string): Promise<{
   agent_names: string[];
   template_ids?: string[];
 }> {
-  const response = await fetch(`/api/v1/agent_templates/suites/${suiteId}/details`);
+  const response = await fetch(`/api/v1/agent_templates/suites/${suiteId}/details`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({
       detail: `Failed to fetch suite details: ${response.statusText}`,
@@ -179,7 +190,9 @@ export async function getCategoriesInfo(): Promise<
     }
   >
 > {
-  const response = await fetch(`/api/v1/agent_templates/categories/info`);
+  const response = await fetch(`/api/v1/agent_templates/categories/info`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response.json().catch(() => ({
       detail: `Failed to fetch categories info: ${response.statusText}`,

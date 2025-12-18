@@ -10,6 +10,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/nonexistent-template-id"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 404
@@ -20,6 +21,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/nonexistent-suite/details"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 404
@@ -30,6 +32,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -44,6 +47,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize-suite/invalid-suite-id"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
     response:
@@ -59,6 +63,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -76,6 +81,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -92,6 +98,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/{first_template_id}"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -109,6 +116,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/{second_template_id}"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -130,6 +138,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -142,6 +151,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -155,6 +165,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -179,6 +190,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/initialize"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -212,6 +224,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/categories"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -224,6 +237,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/categories/info"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -236,6 +250,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -251,6 +266,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/agent_templates/suites/{test_suite_id}/details"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200

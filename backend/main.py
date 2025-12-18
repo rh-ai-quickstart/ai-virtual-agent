@@ -24,10 +24,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.sessions import SessionMiddleware
 
+from .app.api.v1.auth import router as auth_router
 from .app.api.v1.router import api_router
 from .app.api.v1.validate import router as validate_router
-from .app.core.auth import is_local_dev_mode
 from .app.core.logging_config import setup_logging
 
 load_dotenv()
@@ -91,6 +92,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Add session middleware for OAuth flow
+SESSION_SECRET = os.getenv("SESSION_SECRET_KEY", "dev-secret-key-change-in-production")
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    session_cookie="session",
+    max_age=14 * 24 * 60 * 60,  # 14 days in seconds
+    path="/",
+    domain=None,  # No domain restriction - works across ports on localhost
+    same_site="lax",
+    https_only=SESSION_COOKIE_SECURE,  # Configurable: False for local dev, True for production
+)
+
 origins = ["*"]  # Update this with the frontend domain in production
 
 app.add_middleware(
@@ -104,11 +119,8 @@ app.add_middleware(
 # Include the main API router with all endpoints
 app.include_router(api_router, prefix="/api/v1")
 
-# Include debug router only in local development mode
-if is_local_dev_mode():
-    from .app.api.v1.debug import router as debug_router
-
-    app.include_router(debug_router, prefix="/api")
+# Include auth router for OAuth login/callback
+app.include_router(auth_router)
 
 # Include validate router at root for compatibility
 app.include_router(validate_router)

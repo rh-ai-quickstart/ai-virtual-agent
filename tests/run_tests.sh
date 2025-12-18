@@ -7,7 +7,8 @@ export TAVERN_UNIQUE="test${RANDOM}"
 
 # Pytest commands
 PYTEST_CMD="pytest -n auto"
-PYTEST_INTEG_CMD="pytest -n auto --dist loadfile"
+#PYTEST_INTEG_CMD="pytest -n auto --dist loadfile"
+PYTEST_INTEG_CMD="pytest"
 PYTEST_OPTS="-W ignore::DeprecationWarning"
 
 # Parse arguments

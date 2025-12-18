@@ -6,6 +6,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
         Content-Type: application/json
       json:
@@ -23,6 +24,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -40,6 +42,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: PUT
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
         Content-Type: application/json
       json:
@@ -61,6 +64,8 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: GET
+      headers:
+        Cookie: "session={admin_session_cookie}"
     response:
       status_code: 200
       json:
@@ -76,6 +81,8 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: DELETE
+      headers:
+        Cookie: "session={admin_session_cookie}"
     response:
       status_code: 204
 
@@ -83,72 +90,27 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/{workflow_user_id}"
       method: GET
+      headers:
+        Cookie: "session={admin_session_cookie}"
     response:
       status_code: 404
 
 ---
-test_name: Test OAuth Headers Integration
+test_name: Test OAuth Session Authentication
 stages:
-  - name: Test OAuth proxy authentication with admin headers
+  - name: Test OAuth authentication with admin session
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/profile"
       method: GET
       headers:
-        Accept: application/json
+        Cookie: "session={admin_session_cookie}"
     response:
       status_code: 200
       json:
-        username: "dev-user"
-        email: "dev@localhost.dev"
+        username: "admin"
+        email: "admin@example.com"
         role: "admin"
         agent_ids: !anything
         id: !anything
         created_at: !anything
         updated_at: !anything
-#
-#   - name: Test cross-user access control enforcement
-#     request:
-#       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/"
-#       method: GET
-#       headers:
-#         Accept: application/json
-#     response:
-#       status_code: 403
-#       json:
-#         detail: "Admin privileges required to access this resource."
-
-# ---
-# test_name: Test Database Transaction Integrity
-# stages:
-#   - name: Test duplicate username conflict with database state
-#     request:
-#       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/"
-#       method: POST
-#       headers:
-#         Accept: application/json
-#         Content-Type: application/json
-#       json:
-#         username: "admin"  # This should conflict with existing admin user
-#         email: "conflict_test@example.com"
-#         role: "user"
-#     response:
-#       status_code: 409
-#       json:
-#         detail: "A user with this username or email already exists."
-
-#   - name: Verify original admin user is unchanged after conflict
-#     request:
-#       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/users/profile"
-#       method: GET
-#       headers:
-#         Accept: application/json
-#     response:
-#       status_code: 200
-#       json:
-#         username: "admin"
-#         email: "admin@example.com"  # Original email should be intact
-#         role: "admin"
-#         agent_ids: !anything
-#         id: !anything
-#         created_at: !anything
-#         updated_at: !anything

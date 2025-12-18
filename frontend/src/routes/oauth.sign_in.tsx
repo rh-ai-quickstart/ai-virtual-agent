@@ -60,11 +60,11 @@ function OAuthSignIn() {
             </CardTitle>
           </CardHeader>
           <CardBody>
-            <p>Configure OAuth provider for production deployment.</p>
+            <p>Configure Keycloak for production deployment.</p>
             <ul>
-              <li>Set up OAuth proxy (oauth2-proxy, etc.)</li>
-              <li>Configure OAuth provider (GitHub, Google, etc.)</li>
-              <li>Set OAuth headers: X-Forwarded-User, X-Forwarded-Email</li>
+              <li>Set up Keycloak server with configured realm</li>
+              <li>Configure OAuth client credentials in backend</li>
+              <li>Set KEYCLOAK_BASE_URL environment variable</li>
               <li>Ensure LOCAL_DEV_ENV_MODE=false</li>
             </ul>
             <Button

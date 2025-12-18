@@ -6,12 +6,13 @@
 test_name: User Session Isolation Test
 
 stages:
-  # Global Setup: Get available models
+  # Global Setup: Get available models (admin)
   - name: get_available_models
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -21,12 +22,13 @@ stages:
         json:
           model_name: "[0].model_name"
 
-  # Global Setup: Create shared virtual agent
+  # Global Setup: Create shared virtual agent (admin)
   - name: create_shared_virtual_agent
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -50,16 +52,15 @@ stages:
         json:
           agent_id: "id"
 
-  # User A: Create session (simulating user A via headers)
+  # User A (testuser): Create session
   - name: user_a_create_session
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={user_session_cookie}"
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
       json:
         agent_id: "{agent_id}"
         session_name: "User A's Session"
@@ -71,16 +72,15 @@ stages:
         json:
           user_a_session_id: "id"
 
-  # User B: Create session (simulating user B via headers)
+  # User B (devops): Create session
   - name: user_b_create_session
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={devops_session_cookie}"
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
       json:
         agent_id: "{agent_id}"
         session_name: "User B's Session"
@@ -98,9 +98,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={user_session_cookie}"
         Content-Type: application/json
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -121,9 +120,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={devops_session_cookie}"
         Content-Type: application/json
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
       json:
         virtualAgentId: "{agent_id}"
         message:
@@ -144,9 +142,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: GET
       headers:
+        Cookie: "session={user_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
       params:
         agent_id: "{agent_id}"
         limit: 50
@@ -166,9 +163,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: GET
       headers:
+        Cookie: "session={devops_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
       params:
         agent_id: "{agent_id}"
         limit: 50
@@ -188,9 +184,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_a_session_id}/messages"
       method: GET
       headers:
+        Cookie: "session={user_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
     response:
       status_code: 200
       headers:
@@ -210,9 +205,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}/messages"
       method: GET
       headers:
+        Cookie: "session={user_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
     response:
       status_code: 404  # Session doesn't belong to user A
 
@@ -222,9 +216,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}/messages"
       method: GET
       headers:
+        Cookie: "session={devops_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
     response:
       status_code: 200
       headers:
@@ -244,8 +237,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
       method: DELETE
       headers:
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
+        Cookie: "session={user_session_cookie}"
       params:
         agent_id: "{agent_id}"
     response:
@@ -257,9 +249,8 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}/messages"
       method: GET
       headers:
+        Cookie: "session={devops_session_cookie}"
         Accept: application/json
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
     response:
       status_code: 200
       headers:
@@ -279,8 +270,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_a_session_id}"
       method: DELETE
       headers:
-        X-Forwarded-User: "test_user_a"
-        X-Forwarded-Email: "user_a@example.com"
+        Cookie: "session={user_session_cookie}"
       params:
         agent_id: "{agent_id}"
     response:
@@ -292,19 +282,19 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{user_b_session_id}"
       method: DELETE
       headers:
-        X-Forwarded-User: "test_user_b"
-        X-Forwarded-Email: "user_b@example.com"
+        Cookie: "session={devops_session_cookie}"
       params:
         agent_id: "{agent_id}"
     response:
       status_code: 200
 
-  # Global Cleanup: Delete the shared test agent
+  # Global Cleanup: Delete the shared test agent (admin)
   - name: cleanup_shared_agent
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}"
       method: DELETE
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 204

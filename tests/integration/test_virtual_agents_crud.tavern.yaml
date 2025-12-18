@@ -10,6 +10,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/00000000-0000-0000-0000-000000000000"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 404
@@ -20,6 +21,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -33,6 +35,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/00000000-0000-0000-0000-000000000000"
       method: DELETE
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 404

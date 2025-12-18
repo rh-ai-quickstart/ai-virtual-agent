@@ -11,6 +11,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -26,6 +27,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -54,6 +56,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         agent_id: "{agent_id}"
@@ -70,6 +73,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         virtualAgentId: "{agent_id}"
@@ -91,6 +95,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         virtualAgentId: "{agent_id}"
@@ -112,6 +117,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         agent_id: "{agent_id}"
@@ -128,6 +134,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         virtualAgentId: "{agent_id}"
@@ -150,6 +157,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         agent_id: "{agent_id}"
@@ -166,6 +174,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         virtualAgentId: "{agent_id}"
@@ -186,6 +195,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
       json:
         virtualAgentId: "{agent_id}"
@@ -205,6 +215,9 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{message_test_session_id}/messages"
       method: GET
+      headers:
+        Cookie: "session={admin_session_cookie}"
+        Accept: application/json
     response:
       status_code: 200
       headers:
@@ -254,6 +267,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}"
       method: DELETE
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 204

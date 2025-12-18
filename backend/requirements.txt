@@ -23,3 +23,7 @@ boto3
 python-multipart
 python-magic
 pyyaml
+authlib
+pyjwt
+starlette
+itsdangerous

@@ -13,7 +13,7 @@ interface BackendShield {
 }
 
 export const fetchShields = async (): Promise<Shield[]> => {
-  const response = await fetch(SHIELDS_API_ENDPOINT);
+  const response = await fetch(SHIELDS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()

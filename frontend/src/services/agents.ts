@@ -3,7 +3,9 @@ import { Agent, NewAgent, ErrorResponse } from '@/types';
 import { getUserAgents } from '@/services/users';
 
 export const fetchAgents = async (): Promise<Agent[]> => {
-  const response = await fetch(AGENTS_API_ENDPOINT);
+  const response = await fetch(AGENTS_API_ENDPOINT, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -41,6 +43,7 @@ export const fetchUserAgents = async (userId: string): Promise<Agent[]> => {
 
 export const createAgent = async (newAgent: NewAgent): Promise<Agent> => {
   const response = await fetch(AGENTS_API_ENDPOINT, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -59,6 +62,7 @@ export const createAgent = async (newAgent: NewAgent): Promise<Agent> => {
 
 export const deleteAgent = async (agent_id: string): Promise<void> => {
   const response = await fetch(AGENTS_API_ENDPOINT + agent_id, {
+    credentials: 'include',
     method: 'DELETE',
   });
   if (!response.ok) {

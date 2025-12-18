@@ -3,9 +3,10 @@ test_name: Test Models API Endpoint
 stages:
   - name: Test GET /api/v1/llama_stack/llms
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/llms"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -23,6 +24,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
       json:
         name: "Test Assistant"
@@ -45,6 +47,7 @@ stages:
         {tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -80,6 +83,7 @@ stages:
         {tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}
       method: DELETE
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 204
@@ -91,6 +95,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/providers"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200

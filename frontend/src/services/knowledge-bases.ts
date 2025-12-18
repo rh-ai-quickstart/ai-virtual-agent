@@ -2,7 +2,7 @@ import { KNOWLEDGE_BASES_API_ENDPOINT } from '@/config/api';
 import { KnowledgeBase, KnowledgeBaseWithStatus, ErrorResponse } from '@/types';
 
 export const fetchKnowledgeBasesWithStatus = async (): Promise<KnowledgeBaseWithStatus[]> => {
-  const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT);
+  const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -17,6 +17,7 @@ export const createKnowledgeBase = async (
   newKnowledgeBase: Omit<KnowledgeBase, 'created_at' | 'updated_at'>
 ): Promise<KnowledgeBase> => {
   const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -35,6 +36,7 @@ export const createKnowledgeBase = async (
 
 export const deleteKnowledgeBase = async (vectorStoreName: string): Promise<void> => {
   const response = await fetch(KNOWLEDGE_BASES_API_ENDPOINT + vectorStoreName, {
+    credentials: 'include',
     method: 'DELETE',
   });
   if (!response.ok) {

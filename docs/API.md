@@ -955,10 +955,9 @@ curl -X POST http://localhost:8000/api/v1/knowledge_bases \
   }'
 
 # 2. Create an agent
+# Note: Requires OAuth authentication via Keycloak session cookie
 curl -X POST http://localhost:8000/api/v1/virtual_agents \
   -H "Content-Type: application/json" \
-  -H "X-Forwarded-User: admin" \
-  -H "X-Forwarded-Email: admin@change.me" \
   -d '{
     "name": "Support Agent",
     "model_name": "meta-llama/Llama-3.2-3B-Instruct",

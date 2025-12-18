@@ -3,9 +3,10 @@ test_name: Test Complete Chat Pipeline - First and Second USA President
 stages:
   - name: Get available models
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/llms"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -17,9 +18,10 @@ stages:
 
   - name: Create virtual agent with 2-word limit
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/virtual_agents/"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -45,9 +47,10 @@ stages:
 
   - name: List existing sessions for potential reuse
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat_sessions/?agent_id={agent_id}&limit=1"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/?agent_id={agent_id}&limit=1"
       method: GET
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 200
@@ -57,9 +60,10 @@ stages:
 
   - name: Ensure test session exists
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat_sessions/"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -75,9 +79,10 @@ stages:
 
   - name: Ask about first USA president (Test 1)
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -97,9 +102,10 @@ stages:
 
   - name: Ask about second USA president (Test 2 - Same Agent)
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
+        Cookie: "session={admin_session_cookie}"
         Content-Type: application/json
         Accept: application/json
       json:
@@ -123,6 +129,7 @@ stages:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/{agent_id}"
       method: DELETE
       headers:
+        Cookie: "session={admin_session_cookie}"
         Accept: application/json
     response:
       status_code: 204

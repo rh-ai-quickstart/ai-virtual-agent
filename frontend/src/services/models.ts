@@ -6,7 +6,7 @@ import {
 import { EmbeddingModel, Model, Provider, ErrorResponse } from '@/types';
 
 export const fetchModels = async (): Promise<Model[]> => {
-  const response = await fetch(LLMS_API_ENDPOINT);
+  const response = await fetch(LLMS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -18,7 +18,7 @@ export const fetchModels = async (): Promise<Model[]> => {
 };
 
 export const fetchEmbeddingModels = async (): Promise<EmbeddingModel[]> => {
-  const response = await fetch(EMBEDDING_MODELS_API_ENDPOINT);
+  const response = await fetch(EMBEDDING_MODELS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -30,7 +30,7 @@ export const fetchEmbeddingModels = async (): Promise<EmbeddingModel[]> => {
 };
 
 export const fetchProviders = async (): Promise<Provider[]> => {
-  const response = await fetch(PROVIDERS_API_ENDPOINT);
+  const response = await fetch(PROVIDERS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()

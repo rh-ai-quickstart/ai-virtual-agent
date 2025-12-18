@@ -14,7 +14,7 @@ export async function fetchChatSessions(agentId?: string): Promise<ChatSessionSu
     ? `${CHAT_SESSIONS_API_ENDPOINT}?agent_id=${agentId}`
     : CHAT_SESSIONS_API_ENDPOINT;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -25,7 +25,9 @@ export async function fetchChatSessions(agentId?: string): Promise<ChatSessionSu
 }
 
 export async function fetchSessionMessages(sessionId: string): Promise<ChatMessage[]> {
-  const response = await fetch(`${CHAT_SESSIONS_API_ENDPOINT}${sessionId}/messages`);
+  const response = await fetch(`${CHAT_SESSIONS_API_ENDPOINT}${sessionId}/messages`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -45,7 +47,9 @@ export async function fetchChatSession(
     agent_id: agentId,
   });
 
-  const response = await fetch(`${CHAT_SESSIONS_API_ENDPOINT}${sessionId}?${params}`);
+  const response = await fetch(`${CHAT_SESSIONS_API_ENDPOINT}${sessionId}?${params}`, {
+    credentials: 'include',
+  });
   if (!response.ok) {
     const errorData = (await response
       .json()
@@ -66,6 +70,7 @@ export async function fetchChatSession(
 
 export async function deleteChatSession(sessionId: string, agentId: string): Promise<void> {
   const response = await fetch(`${CHAT_SESSIONS_API_ENDPOINT}${sessionId}?agent_id=${agentId}`, {
+    credentials: 'include',
     method: 'DELETE',
   });
   if (!response.ok) {
@@ -81,6 +86,7 @@ export async function createChatSession(
   sessionName?: string
 ): Promise<ChatSessionDetail> {
   const response = await fetch(CHAT_SESSIONS_API_ENDPOINT, {
+    credentials: 'include',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

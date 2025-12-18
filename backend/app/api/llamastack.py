@@ -1,7 +1,6 @@
-import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
@@ -15,20 +14,6 @@ LLAMASTACK_TIMEOUT = float(os.getenv("LLAMASTACK_TIMEOUT", "180.0"))
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
-
-def get_header_case_insensitive(request: Request, header_name: str) -> Optional[str]:
-    """
-    Get a header value with case-insensitive fallback.
-
-    Args:
-        request: FastAPI request object
-        header_name: The header name to look for
-
-    Returns:
-        Optional[str]: The header value if found, None otherwise
-    """
-    return request.headers.get(header_name) or request.headers.get(header_name.lower())
 
 
 def get_sa_token() -> Optional[str]:
@@ -76,13 +61,13 @@ def get_client(
 
 
 def get_client_from_request(
-    request: Optional[Request],
+    _request: Optional[Request] = None,
 ) -> AsyncLlamaStackClient:
     """
     Create a client configured with authentication from the request context.
 
     Args:
-        request: Optional FastAPI request object
+        _request: Optional FastAPI request object (unused, kept for API compatibility)
 
     Returns:
         AsyncLlamaStackClient: Configured client instance
@@ -94,9 +79,6 @@ def get_client_from_request(
         headers.update(token_to_auth_header(token))
     else:
         logger.warning("No service account token available")
-
-    user_headers = get_user_headers_from_request(request)
-    headers.update(user_headers)
 
     return get_client(token, headers)
 
@@ -119,35 +101,6 @@ def token_to_auth_header(token: str) -> dict[str, str]:
     return {"Authorization": auth_header_value}
 
 
-def get_user_headers_from_request(
-    request: Optional[Request],
-) -> dict[str, str]:
-    """
-    Extract user-related headers from the request.
-
-    Args:
-        request: Optional FastAPI request object
-
-    Returns:
-        dict[str, str]: Dictionary of user headers
-    """
-    headers = {}
-    if request is None:
-        return headers
-
-    # Get user header
-    user_header = get_header_case_insensitive(request, "X-Forwarded-User")
-    if user_header:
-        headers["X-Forwarded-User"] = user_header
-
-    # Get email header
-    email_header = get_header_case_insensitive(request, "X-Forwarded-Email")
-    if email_header:
-        headers["X-Forwarded-Email"] = email_header
-
-    return headers
-
-
 def get_sync_client() -> AsyncLlamaStackClient:
     """
     Create a sync client with admin credentials.
@@ -164,40 +117,8 @@ def get_sync_client() -> AsyncLlamaStackClient:
     else:
         logger.warning("No service account token available for sync client")
 
-    # Get admin username with fallback
-    admin_username = os.getenv("ADMIN_USERNAME")
-    if admin_username:
-        headers["X-Forwarded-User"] = admin_username
-    else:
-        logger.warning("ADMIN_USERNAME environment variable not set")
-
     return get_client(token, headers)
 
 
 # Create sync client instance
 sync_client = get_sync_client()
-
-
-def create_tool_call_trace_entry(item: Any) -> dict:
-    """Create trace entry for MCP tool call."""
-    args = item.arguments
-    if args and isinstance(args, str):
-        try:
-            args = json.loads(args)
-        except Exception:
-            pass
-
-    return {
-        "type": "tool_call",
-        "name": item.name or "tool",
-        "server_label": item.server_label,
-        "arguments": args,
-        "output": item.output,
-        "error": item.error,
-        "status": "failed" if item.error else "completed",
-    }
-
-
-ERROR_NO_RESPONSE_MESSAGE = (
-    "⚠️ Unable to generate a response. Please try rephrasing your question or try again."
-)

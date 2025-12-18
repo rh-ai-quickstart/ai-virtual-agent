@@ -102,6 +102,14 @@ services:
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
       - ENABLE_COVERAGE=${ENABLE_COVERAGE:-false}
+      - KEYCLOAK_SERVER_URL=http://localhost:8080
+      - KEYCLOAK_SERVER_URL_INTERNAL=http://keycloak:8080
+      - KEYCLOAK_REALM=ai-apps
+      - KEYCLOAK_CLIENT_ID=ai-virtual-agent
+      - KEYCLOAK_CLIENT_SECRET=ai-virtual-agent-secret
+      - SESSION_SECRET_KEY=dev-secret-key-change-in-production
+      - SESSION_COOKIE_SECURE=false
+      - FRONTEND_URL=http://localhost:5173
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:
@@ -110,6 +118,8 @@ services:
       db:
         condition: service_healthy
       llamastack:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -131,7 +141,7 @@ services:
     container_name: ai-va-frontend-dev
     restart: unless-stopped
     environment:
-      - VITE_API_BASE_URL=http://backend:8000
+      - VITE_API_BASE_URL=http://localhost:8000
     ports:
       - '${FRONTEND_PORT:-5173}:5173'
     volumes:
@@ -148,6 +158,37 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+
+  # Keycloak service for authentication
+  # Test users: testuser/password (user role), devops/password (devops role), admin/password (admin role)
+  # Admin console: http://localhost:8080 (admin/admin)
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: keycloak-dev
+    restart: unless-stopped
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - '${KEYCLOAK_PORT:-8080}:8080'
+    volumes:
+      - ./keycloak-realm-import.json:/opt/keycloak/data/import/realm.json:Z
+      - keycloak_data:/opt/keycloak/data
+    command:
+      - start-dev
+      - --import-realm
+    networks:
+      - ai-va-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # MinIO service for attachments (optional - use profile 'attachments')
   minio:
@@ -180,6 +221,7 @@ volumes:
   ollama:
   llama:
   llamadist:
+  keycloak_data:
 
 networks:
   ai-va-network:

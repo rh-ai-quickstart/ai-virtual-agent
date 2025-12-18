@@ -53,8 +53,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
  * The backend determines the current user based on OAuth proxy authentication headers.
  *
  * Authentication flow:
- * - If user is not authenticated (401/403), protected routes will redirect to /oauth/sign_in
- * - OAuth proxy handles session management and token refresh automatically
+ * - If user is not authenticated (401/403), protected routes will redirect to /auth/login
+ * - Backend handles OAuth flow with Keycloak and session management
  * - Users are auto-created in the database on first successful authentication
  *
  * @returns {UserContextType} Object containing:

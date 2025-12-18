@@ -2,7 +2,7 @@ import { LLAMA_STACK_TOOLS_API_ENDPOINT } from '@/config/api';
 import { ToolGroup, ErrorResponse } from '@/types';
 
 export const fetchTools = async (): Promise<ToolGroup[]> => {
-  const response = await fetch(LLAMA_STACK_TOOLS_API_ENDPOINT);
+  const response = await fetch(LLAMA_STACK_TOOLS_API_ENDPOINT, { credentials: 'include' });
   if (!response.ok) {
     const errorData = (await response
       .json()
