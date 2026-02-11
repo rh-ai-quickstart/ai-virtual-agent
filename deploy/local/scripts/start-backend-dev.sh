@@ -10,9 +10,19 @@ echo "🚀 Starting backend with auto-migrations..."
 # Change to backend directory for alembic
 cd /app/backend
 
-# Wait for database to be ready
+# Wait for database to be ready (Python-based, no nc/ncat required)
 echo "⏳ Waiting for database..."
-while ! nc -z db 5432; do
+until python -c "
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(2)
+try:
+    s.connect(('db', 5432))
+    s.close()
+    exit(0)
+except (socket.error, OSError):
+    exit(1)
+" 2>/dev/null; do
     echo "Database not ready, waiting..."
     sleep 2
 done
