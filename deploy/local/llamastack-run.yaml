@@ -60,7 +60,7 @@ storage:
 registered_resources:
   models:
   - metadata: {}
-    model_id: llama3.2:1b-instruct-fp16
+    model_id: llama3.2:1b
     provider_id: ollama
     model_type: llm
   shields: []

@@ -15,6 +15,8 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 
 from ...api.llamastack import get_client_from_request
+from ...config import settings
+from ...core.auth import is_local_dev_mode
 from ...models import ChatSession
 from .base import BaseRunner
 
@@ -559,8 +561,16 @@ class LlamaStackRunner(BaseRunner):
 
             openai_input = await self._prepare_conversation_input(prompt)
 
+            model_for_request = agent.model_name
+            if is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
+                model_for_request = settings.DEFAULT_INFERENCE_MODEL
+                logger.debug(
+                    f"Local dev: using DEFAULT_INFERENCE_MODEL={model_for_request} "
+                    f"for chat (agent had model_name={agent.model_name})"
+                )
+
             response_params = {
-                "model": agent.model_name,
+                "model": model_for_request,
                 "input": openai_input,
                 "stream": True,
             }
@@ -594,6 +604,26 @@ class LlamaStackRunner(BaseRunner):
                     session_id, client
                 )
                 response_params["conversation"] = conversation_id
+
+                if is_local_dev_mode():
+                    try:
+                        models_list = await client.models.list()
+                        available_ids = [str(m.identifier) for m in models_list]
+                        if (
+                            available_ids
+                            and response_params["model"] not in available_ids
+                        ):
+                            fallback = available_ids[0]
+                            logger.info(
+                                f"Local dev: requested model "
+                                f"'{response_params['model']}' not in LlamaStack "
+                                f"(available: {available_ids}), using '{fallback}'"
+                            )
+                            response_params["model"] = fallback
+                    except Exception as e:
+                        logger.warning(
+                            f"Local dev: could not list models from LlamaStack: {e}"
+                        )
 
                 excluded_tools: set = set()
                 max_retries = len(tools) if tools else 0
