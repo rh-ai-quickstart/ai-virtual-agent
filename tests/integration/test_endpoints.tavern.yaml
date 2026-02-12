@@ -58,6 +58,7 @@ stages:
         suite_name: null
         sampling_strategy: null
         name: "Test Assistant"
+        runner_type: "llamastack"
         prompt: "You are a helpful assistant."
         model_name: "ollama/llama3.2:1b-instruct-fp16"
         input_shields: []
