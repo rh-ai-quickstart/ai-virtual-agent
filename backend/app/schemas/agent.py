@@ -15,6 +15,7 @@ class VirtualAgentBase(BaseModel):
     """Base virtual agent config schema."""
 
     name: str
+    runner_type: str = "llamastack"  # "llamastack" | "langgraph" | "crewai"
     model_name: str
     prompt: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = []
@@ -41,6 +42,7 @@ class VirtualAgentUpdate(BaseModel):
     """Schema for updating a virtual agent config."""
 
     name: Optional[str] = None
+    runner_type: Optional[str] = None
     model_name: Optional[str] = None
     template_id: Optional[UUID] = None
     prompt: Optional[str] = None

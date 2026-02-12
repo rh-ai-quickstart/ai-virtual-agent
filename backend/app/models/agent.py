@@ -24,6 +24,9 @@ class VirtualAgent(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False, unique=True)
+    runner_type = Column(
+        String(50), nullable=False, server_default="llamastack"
+    )  # "llamastack" | "langgraph" | "crewai"
     model_name = Column(String(255), nullable=False)
     template_id = Column(
         UUID(as_uuid=True),
