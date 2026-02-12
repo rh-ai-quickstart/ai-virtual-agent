@@ -13,6 +13,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..api.llamastack import get_client_from_request
+from ..config import settings
+from ..core.auth import is_local_dev_mode
 from ..models import ChatSession
 
 logger = logging.getLogger(__name__)
@@ -753,9 +755,19 @@ class ChatService:
             # Prepare input with just the current message
             openai_input = await self._prepare_conversation_input(prompt)
 
+            # In local dev, use DEFAULT_INFERENCE_MODEL so agents created from
+            # templates (which use production model names) work with Ollama.
+            model_for_request = agent.model_name
+            if is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
+                model_for_request = settings.DEFAULT_INFERENCE_MODEL
+                logger.debug(
+                    f"Local dev: using DEFAULT_INFERENCE_MODEL={model_for_request} "
+                    f"for chat (agent had model_name={agent.model_name})"
+                )
+
             # Prepare streaming request parameters
             response_params = {
-                "model": agent.model_name,
+                "model": model_for_request,
                 "input": openai_input,
                 "stream": True,  # Enable streaming!
             }
@@ -767,13 +779,40 @@ class ChatService:
                 response_params["max_infer_iters"] = agent.max_infer_iters
             if agent.prompt:
                 response_params["instructions"] = agent.prompt
-            if tools:
+            # In local dev, LlamaStack often has no tool_groups registered (e.g. no
+            # web_search). Omit tools so the model can still respond; production has
+            # tools configured.
+            if tools and not is_local_dev_mode():
                 response_params["tools"] = tools
+            elif tools and is_local_dev_mode():
+                logger.debug(
+                    "Local dev: omitting agent tools so LlamaStack can respond "
+                    "(dev stack has no tool_groups registered)"
+                )
 
             # Stream from LlamaStack with aggregation layer
             aggregator = StreamAggregator(str(session_id))
 
             async with get_client_from_request(self.request) as client:
+                # In local dev, ensure we use a model LlamaStack actually has
+                if is_local_dev_mode():
+                    try:
+                        models_list = await client.models.list()
+                        available_ids = [str(m.identifier) for m in models_list]
+                        if (
+                            available_ids
+                            and response_params["model"] not in available_ids
+                        ):
+                            response_params["model"] = available_ids[0]
+                            logger.info(
+                                f"Local dev: requested model not in LlamaStack "
+                                f"(available: {available_ids}), using {response_params['model']}"
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Local dev: could not list models from LlamaStack: {e}"
+                        )
+
                 # Run input shields manually before creating the response
                 if agent.input_shields and len(agent.input_shields) > 0:
                     violation = await self._run_input_shields(
@@ -792,7 +831,7 @@ class ChatService:
 
                 # Log the request we're sending to LlamaStack
                 logger.info(
-                    f"Starting stream for session {session_id}, model={agent.model_name}, "
+                    f"Starting stream for session {session_id}, model={response_params['model']}, "
                     f"conversation={conversation_id}"
                 )
                 logger.debug(

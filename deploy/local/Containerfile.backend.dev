@@ -2,10 +2,7 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 USER root
 
-# Install only essential runtime dependencies
-RUN dnf install -y nmap-ncat && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+# No extra packages needed: start-backend-dev.sh uses Python for DB wait
 
 # Set working directory
 WORKDIR /app

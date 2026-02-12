@@ -23,6 +23,11 @@ class Settings:
     # LlamaStack Configuration
     LLAMA_STACK_URL: Optional[str] = os.getenv("LLAMA_STACK_URL")
 
+    # Default inference model for local dev (e.g. Ollama model name).
+    # When set and LOCAL_DEV_ENV_MODE is true, template-initialized agents use
+    # this model instead of the template's production model name.
+    DEFAULT_INFERENCE_MODEL: Optional[str] = os.getenv("DEFAULT_INFERENCE_MODEL")
+
     # Attachments
     ATTACHMENTS_INTERNAL_API_ENDPOINT: str = os.getenv(
         "ATTACHMENTS_INTERNAL_API_ENDPOINT", "http://ai-virtual-agent:8000"
