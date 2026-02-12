@@ -12,8 +12,8 @@ stages:
       headers:
         content-type: application/json
       json:
-        - model_name: "ollama/llama3.2:1b-instruct-fp16"
-          provider_resource_id: "llama3.2:1b-instruct-fp16"
+        - model_name: "ollama/llama3.2:1b"
+          provider_resource_id: "llama3.2:1b"
           model_type: "llm"
 ---
 test_name: Test Virtual Agents API Endpoint
@@ -27,7 +27,7 @@ stages:
       json:
         name: "Test Assistant"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
         input_shields: []
         output_shields: []
         knowledge_base_ids: []
@@ -60,7 +60,7 @@ stages:
         name: "Test Assistant"
         runner_type: "llamastack"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
         input_shields: []
         output_shields: []
         temperature: null
