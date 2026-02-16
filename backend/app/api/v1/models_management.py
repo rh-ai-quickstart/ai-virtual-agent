@@ -39,12 +39,13 @@ async def register_model(model_data: ModelCreate, request: Request):
         logger.info(f"Successfully registered model: {model_data.model_id}")
 
         # Convert to response schema
+        reg_metadata = registered_model.custom_metadata or {}
         return ModelRead(
-            model_id=str(registered_model.identifier),
-            provider_id=registered_model.provider_id,
-            provider_model_id=registered_model.provider_resource_id,
-            model_type=registered_model.model_type,
-            metadata=registered_model.metadata,
+            model_id=str(registered_model.id),
+            provider_id=reg_metadata.get("provider_id", ""),
+            provider_model_id=reg_metadata.get("provider_resource_id", ""),
+            model_type=reg_metadata.get("model_type", ""),
+            metadata=reg_metadata,
         )
 
     except Exception as e:
@@ -64,12 +65,24 @@ async def list_models(request: Request):
     client = get_client_from_request(request)
     try:
         # Fetch models and shields in parallel
+        logger.debug("Calling client.models.list()")
         models = await client.models.list()
+        logger.debug(f"client.models.list() returned {len(models)} models")
+        for model in models:
+            metadata = model.custom_metadata or {}
+            logger.debug(
+                f"  Model: id={model.id}, "
+                f"provider_id={metadata.get('provider_id')}, "
+                f"provider_resource_id={metadata.get('provider_resource_id')}, "
+                f"model_type={metadata.get('model_type')}"
+            )
 
         # Fetch shields and create a set of shield resource IDs for efficient lookup
         shield_resource_ids = set()
         try:
+            logger.debug("Calling client.shields.list()")
             shields = await client.shields.list()
+            logger.debug(f"client.shields.list() returned {len(shields)} shields")
             shield_resource_ids = {
                 str(shield.provider_resource_id) for shield in shields
             }
@@ -79,8 +92,9 @@ async def list_models(request: Request):
 
         models_list = []
         for model in models:
-            provider_resource_id = str(model.provider_resource_id)
-            model_id = str(model.identifier)
+            metadata = model.custom_metadata or {}
+            provider_resource_id = str(metadata.get("provider_resource_id", ""))
+            model_id = str(model.id)
 
             # Check if this model is used as a shield
             is_shield = (
@@ -90,10 +104,10 @@ async def list_models(request: Request):
 
             model_data = ModelRead(
                 model_id=model_id,
-                provider_id=model.provider_id,
+                provider_id=metadata.get("provider_id", ""),
                 provider_model_id=provider_resource_id,
-                model_type=model.model_type,
-                metadata=model.metadata if hasattr(model, "metadata") else {},
+                model_type=metadata.get("model_type", ""),
+                metadata=metadata,
                 is_shield=is_shield,
             )
             models_list.append(model_data)
@@ -117,13 +131,14 @@ async def get_model(model_id: str, request: Request):
     client = get_client_from_request(request)
     try:
         model = await client.models.retrieve(model_id=model_id)
+        metadata = model.custom_metadata or {}
 
         return ModelRead(
-            model_id=str(model.identifier),
-            provider_id=model.provider_id,
-            provider_model_id=model.provider_resource_id,
-            model_type=model.model_type,
-            metadata=model.metadata if hasattr(model, "metadata") else {},
+            model_id=str(model.id),
+            provider_id=metadata.get("provider_id", ""),
+            provider_model_id=metadata.get("provider_resource_id", ""),
+            model_type=metadata.get("model_type", ""),
+            metadata=metadata,
         )
 
     except Exception as e:
@@ -145,6 +160,7 @@ async def update_model(model_id: str, model_data: ModelUpdate, request: Request)
 
         # Get the existing model first
         existing_model = await client.models.retrieve(model_id=model_id)
+        existing_metadata = existing_model.custom_metadata or {}
 
         # Unregister the existing model
         await client.models.unregister(model_id=model_id)
@@ -153,22 +169,24 @@ async def update_model(model_id: str, model_data: ModelUpdate, request: Request)
         updated_model = await client.models.register(
             model_id=model_id,
             provider_model_id=model_data.provider_model_id
-            or existing_model.provider_resource_id,
-            provider_id=model_data.provider_id or existing_model.provider_id,
+            or existing_metadata.get("provider_resource_id", ""),
+            provider_id=model_data.provider_id
+            or existing_metadata.get("provider_id", ""),
             metadata=(
                 model_data.metadata
                 if model_data.metadata is not None
-                else existing_model.metadata
+                else existing_metadata
             ),
-            model_type=existing_model.model_type,
+            model_type=existing_metadata.get("model_type", "llm"),
         )
 
+        updated_metadata = updated_model.custom_metadata or {}
         return ModelRead(
-            model_id=str(updated_model.identifier),
-            provider_id=updated_model.provider_id,
-            provider_model_id=updated_model.provider_resource_id,
-            model_type=updated_model.model_type,
-            metadata=updated_model.metadata,
+            model_id=str(updated_model.id),
+            provider_id=updated_metadata.get("provider_id", ""),
+            provider_model_id=updated_metadata.get("provider_resource_id", ""),
+            model_type=updated_metadata.get("model_type", ""),
+            metadata=updated_metadata,
         )
 
     except Exception as e:

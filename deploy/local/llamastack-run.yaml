@@ -2,6 +2,7 @@ version: 2
 image_name: ollama
 apis:
 - agents
+- files
 - inference
 - safety
 - tool_runtime
@@ -11,7 +12,7 @@ providers:
   - provider_id: ollama
     provider_type: remote::ollama
     config:
-      url: http://ollama:11434
+      base_url: http://ollama:11434/v1
   safety:
   - provider_id: llama-guard
     provider_type: inline::llama-guard
@@ -30,6 +31,14 @@ providers:
           backend: sql_default
           max_write_queue_size: 10000
           num_writers: 4
+  files:
+  - provider_id: meta-reference-files
+    provider_type: inline::localfs
+    config:
+      storage_dir: /.llama/distributions/ollama/files
+      metadata_store:
+        table_name: files_metadata
+        backend: sql_default
   tool_runtime:
   - provider_id: model-context-protocol
     provider_type: remote::model-context-protocol

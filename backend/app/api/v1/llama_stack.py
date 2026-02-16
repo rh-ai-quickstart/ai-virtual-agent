@@ -51,10 +51,12 @@ async def get_llms(request: Request):
         llms = []
         for model in models:
             try:
-                if model.api_model_type == "llm":
+                metadata = model.custom_metadata or {}
+                model_type = metadata.get("model_type")
+                if model_type == "llm":
                     # Skip models that are used as shields
-                    provider_resource_id = str(model.provider_resource_id)
-                    model_id = str(model.identifier)
+                    provider_resource_id = str(metadata.get("provider_resource_id", ""))
+                    model_id = str(model.id)
 
                     if (
                         provider_resource_id in shield_resource_ids
@@ -63,12 +65,12 @@ async def get_llms(request: Request):
                         continue
 
                     llm_config = {
-                        "model_name": str(model.identifier),
-                        "provider_resource_id": model.provider_resource_id,
-                        "model_type": model.api_model_type,
+                        "model_name": model_id,
+                        "provider_resource_id": provider_resource_id,
+                        "model_type": model_type,
                     }
                     llms.append(llm_config)
-            except AttributeError as ae:
+            except (AttributeError, KeyError) as ae:
                 logger.error(
                     f"Error processing model data: {str(ae)}. Model data: {model}"
                 )
@@ -96,7 +98,7 @@ async def get_tools(request: Request):
         return [
             {
                 "id": str(server.identifier),
-                "name": server.provider_resource_id,
+                "name": server.provider_resource_id or str(server.identifier),
                 "title": server.provider_id,
                 "toolgroup_id": str(server.identifier),
             }
@@ -116,11 +118,12 @@ async def get_safety_models(request: Request):
         models = await client.models.list()
         safety_models = []
         for model in models:
-            if model.model_type == "safety":
+            metadata = model.custom_metadata or {}
+            if metadata.get("model_type") == "safety":
                 safety_model = {
-                    "id": str(model.identifier),
-                    "name": model.provider_resource_id,
-                    "model_type": model.type,
+                    "id": str(model.id),
+                    "name": metadata.get("provider_resource_id", ""),
+                    "model_type": "safety",
                 }
                 safety_models.append(safety_model)
         return safety_models
@@ -138,11 +141,12 @@ async def get_embedding_models(request: Request):
         models = await client.models.list()
         embedding_models = []
         for model in models:
-            if model.model_type == "embedding":
+            metadata = model.custom_metadata or {}
+            if metadata.get("model_type") == "embedding":
                 embedding_model = {
-                    "name": str(model.identifier),
-                    "provider_resource_id": model.provider_resource_id,
-                    "model_type": model.type,
+                    "name": str(model.id),
+                    "provider_resource_id": metadata.get("provider_resource_id", ""),
+                    "model_type": "embedding",
                 }
                 embedding_models.append(embedding_model)
         return embedding_models

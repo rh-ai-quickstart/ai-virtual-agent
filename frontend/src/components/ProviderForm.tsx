@@ -24,7 +24,7 @@ export function ProviderForm({ isSubmitting, onSubmit, onCancel, error }: Provid
     provider_id: '',
     provider_type: 'remote::vllm',
     config: {
-      url: '',
+      base_url: '',
       api_token: 'fake',
       max_tokens: 4096,
       tls_verify: false,
@@ -38,14 +38,14 @@ export function ProviderForm({ isSubmitting, onSubmit, onCancel, error }: Provid
       let config = {};
       if (value.provider_type === 'remote::vllm') {
         config = {
-          url: (value.config as { url?: string }).url,
+          base_url: (value.config as { base_url?: string }).base_url,
           api_token: (value.config as { api_token?: string }).api_token || 'fake',
           max_tokens: (value.config as { max_tokens?: number }).max_tokens || 4096,
           tls_verify: (value.config as { tls_verify?: boolean }).tls_verify ?? false,
         };
       } else if (value.provider_type === 'remote::ollama') {
         config = {
-          url: (value.config as { url?: string }).url,
+          base_url: (value.config as { base_url?: string }).base_url,
         };
       }
 
@@ -114,10 +114,10 @@ export function ProviderForm({ isSubmitting, onSubmit, onCancel, error }: Provid
                 field.handleChange(v as 'remote::vllm' | 'remote::ollama');
                 // Reset config when type changes
                 if (v === 'remote::ollama') {
-                  form.setFieldValue('config', { url: '' });
+                  form.setFieldValue('config', { base_url: '' });
                 } else {
                   form.setFieldValue('config', {
-                    url: '',
+                    base_url: '',
                     api_token: 'fake',
                     max_tokens: 4096,
                     tls_verify: false,
@@ -151,11 +151,11 @@ export function ProviderForm({ isSubmitting, onSubmit, onCancel, error }: Provid
             <TextInput
               isRequired
               id="provider-form-url"
-              value={(field.state.value as { url?: string }).url || ''}
+              value={(field.state.value as { base_url?: string }).base_url || ''}
               onChange={(_e, v) =>
                 field.handleChange({
                   ...field.state.value,
-                  url: v,
+                  base_url: v,
                 })
               }
               placeholder={

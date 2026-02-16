@@ -758,6 +758,7 @@ class ChatService:
                 "model": agent.model_name,
                 "input": openai_input,
                 "stream": True,  # Enable streaming!
+                "store": True,  # Persist messages in the conversation
             }
 
             # Add optional parameters

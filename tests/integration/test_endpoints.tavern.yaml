@@ -3,7 +3,7 @@ test_name: Test Models API Endpoint
 stages:
   - name: Test GET /api/v1/llama_stack/llms
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/llama_stack/llms"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
       method: GET
       headers:
         Accept: application/json
@@ -98,7 +98,7 @@ stages:
         - provider_id: "ollama"
           provider_type: "remote::ollama"
           config:
-            url: "http://ollama:11434"
+            base_url: "http://ollama:11434/v1"
           api: "inference"
         - provider_id: "llama-guard"
           provider_type: "inline::llama-guard"
@@ -118,6 +118,14 @@ stages:
                 max_write_queue_size: 10000
                 num_writers: 4
           api: "agents"
+        - provider_id: "meta-reference-files"
+          provider_type: "inline::localfs"
+          config:
+            storage_dir: "/.llama/distributions/ollama/files"
+            metadata_store:
+              table_name: "files_metadata"
+              backend: "sql_default"
+          api: "files"
         - provider_id: "model-context-protocol"
           provider_type: "remote::model-context-protocol"
           config: {}

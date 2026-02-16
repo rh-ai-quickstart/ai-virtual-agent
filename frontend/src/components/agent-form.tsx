@@ -204,7 +204,10 @@ export function AgentForm({
         },
       ];
     }
-    if (!knowledgeBases || knowledgeBases.length === 0) {
+    const readyKnowledgeBases = knowledgeBases?.filter(
+      (kb: KnowledgeBaseWithStatus) => kb.status === 'succeeded'
+    );
+    if (!readyKnowledgeBases || readyKnowledgeBases.length === 0) {
       return [
         {
           value: 'no_kb_options',
@@ -214,7 +217,7 @@ export function AgentForm({
         },
       ];
     }
-    return knowledgeBases.map((kb: KnowledgeBaseWithStatus) => ({
+    return readyKnowledgeBases.map((kb: KnowledgeBaseWithStatus) => ({
       value: kb.vector_store_name, // Use vector_store_name as the primary key
       children: `${kb.name} (${kb.vector_store_name})`, // Display name with vector_store_name
       id: `kb-option-${kb.vector_store_name}`, // Unique ID for React key and ARIA

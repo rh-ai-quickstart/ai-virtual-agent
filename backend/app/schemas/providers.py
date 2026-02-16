@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class ProviderConfigVLLM(BaseModel):
     """Configuration for vLLM provider."""
 
-    url: str = Field(
+    base_url: str = Field(
         ...,
         description="vLLM server URL (e.g., http://my-vllm.namespace.svc.cluster.local/v1)",
     )
@@ -20,7 +20,9 @@ class ProviderConfigVLLM(BaseModel):
 class ProviderConfigOllama(BaseModel):
     """Configuration for Ollama provider."""
 
-    url: str = Field(..., description="Ollama server URL (e.g., http://ollama:11434)")
+    base_url: str = Field(
+        ..., description="Ollama server URL (e.g., http://ollama:11434)"
+    )
 
 
 class ProviderCreate(BaseModel):

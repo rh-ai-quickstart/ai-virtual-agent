@@ -286,8 +286,6 @@ async def get_conversation_messages(
             # "file_search_call.results", "reasoning.encrypted_content", etc.
             items_response = await client.conversations.items.list(
                 conversation_id=session.conversation_id,
-                after=None,
-                include=[],
                 limit=100,
                 order="asc",
             )

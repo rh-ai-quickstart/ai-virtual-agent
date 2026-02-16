@@ -64,7 +64,7 @@ services:
 
   # LlamaStack service
   llamastack:
-    image: llamastack/distribution-starter:0.3.2
+    image: llamastack/distribution-starter:0.5.0
     container_name: llamastack-dev
     platform: linux/amd64
     restart: unless-stopped
