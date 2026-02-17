@@ -62,10 +62,11 @@ class ChatService:
         """
         if runner_type == "llamastack" or not runner_type:
             return LlamaStackRunner(self.request, self.db, self.user_id)
+        elif runner_type == "langgraph":
+            from .runners.langgraph_runner import LangGraphRunner
+
+            return LangGraphRunner(self.request, self.db, self.user_id)
         # Future runners will be added here:
-        # elif runner_type == "langgraph":
-        #     from .runners.langgraph_runner import LangGraphRunner
-        #     return LangGraphRunner(self.request, self.db, self.user_id)
         # elif runner_type == "crewai":
         #     from .runners.crewai_runner import CrewAIRunner
         #     return CrewAIRunner(self.request, self.db, self.user_id)
