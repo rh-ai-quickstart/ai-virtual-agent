@@ -73,6 +73,7 @@ def mock_agent():
     agent.output_shields = []
     agent.temperature = None
     agent.max_infer_iters = 10
+    agent.graph_config = None
     return agent
 
 
@@ -499,14 +500,17 @@ class TestLLMCreation:
                 call_kwargs = MockChatOpenAI.call_args[1]
                 assert call_kwargs["base_url"] == "http://llamastack:8321/v1"
 
-    def test_create_llm_uses_override_model(self, langgraph_runner, mock_agent):
-        """LANGGRAPH_DEFAULT_MODEL overrides agent.model_name."""
+    def test_create_llm_uses_default_when_agent_has_no_model(
+        self, langgraph_runner, mock_agent
+    ):
+        """LANGGRAPH_DEFAULT_MODEL is used when agent.model_name is empty."""
+        mock_agent.model_name = ""
         with patch(
             "backend.app.services.runners.langgraph_runner.settings"
         ) as mock_settings:
             mock_settings.LANGGRAPH_LLM_API_BASE = "http://localhost/v1"
             mock_settings.LANGGRAPH_LLM_API_KEY = "key"
-            mock_settings.LANGGRAPH_DEFAULT_MODEL = "override-model"
+            mock_settings.LANGGRAPH_DEFAULT_MODEL = "fallback-model"
             mock_settings.LLAMA_STACK_URL = None
 
             with patch(
@@ -514,7 +518,7 @@ class TestLLMCreation:
             ) as MockChatOpenAI:
                 langgraph_runner._create_llm(mock_agent)
                 call_kwargs = MockChatOpenAI.call_args[1]
-                assert call_kwargs["model"] == "override-model"
+                assert call_kwargs["model"] == "fallback-model"
 
 
 # ---------------------------------------------------------------------------

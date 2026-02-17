@@ -30,6 +30,7 @@ class VirtualAgentBase(BaseModel):
     max_tokens: Optional[int] = None
     repetition_penalty: Optional[float] = None
     max_infer_iters: Optional[int] = 100
+    graph_config: Optional[Dict[str, Any]] = None
 
 
 class VirtualAgentCreate(VirtualAgentBase):
@@ -58,6 +59,7 @@ class VirtualAgentUpdate(BaseModel):
     max_tokens: Optional[int] = None
     repetition_penalty: Optional[float] = None
     max_infer_iters: Optional[int] = None
+    graph_config: Optional[Dict[str, Any]] = None
 
 
 class VirtualAgentInDB(VirtualAgentBase, TimestampMixin, BaseSchema):

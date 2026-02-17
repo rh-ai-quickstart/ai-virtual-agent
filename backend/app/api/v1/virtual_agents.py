@@ -73,6 +73,7 @@ async def create_virtual_agent_internal(
         "max_tokens": getattr(va, "max_tokens", None),
         "repetition_penalty": getattr(va, "repetition_penalty", None),
         "max_infer_iters": getattr(va, "max_infer_iters", None),
+        "graph_config": getattr(va, "graph_config", None),
     }
 
     # Create the agent
@@ -168,6 +169,7 @@ def config_to_response(config) -> VirtualAgentResponse:
         model_name=config.model_name,
         knowledge_base_ids=config.knowledge_base_ids or [],
         tools=tools,
+        graph_config=getattr(config, "graph_config", None),
         template_id=template_id,
         template_name=template_name,
         suite_id=suite_id,
