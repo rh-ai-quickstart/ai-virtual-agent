@@ -1,0 +1,80 @@
+name: "Travel Vacation Planner (LangGraph)"
+description: "Graph-based vacation planning agent using LangGraph declarative pipeline with MCP tool integration for research, hotels, and flights."
+category: "travel"
+templates:
+  vacation_planner:
+    name: "Vacation Planner"
+    persona: "vacation_planner"
+    runner_type: "langgraph"
+    prompt: "You are a vacation planning assistant that researches destinations, finds hotels, and searches flights to create comprehensive travel plans."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools: []
+    knowledge_base_ids: []
+    demo_questions:
+      - "Plan a 5-day trip to Tokyo with a focus on culture and food"
+      - "Find me a beach vacation in Mexico for two adults next month"
+      - "Research a weekend getaway to Paris with hotel and flight options"
+    graph_config:
+      name: vacation_planner_langgraph
+      mcp:
+        transport: streamable-http
+        servers:
+          travel_research:
+            url: "${TRAVEL_RESEARCH_MCP_URL:http://localhost:7001/mcp}"
+          hotel:
+            url: "${HOTEL_MCP_URL:http://localhost:7002/mcp}"
+          flight:
+            url: "${FLIGHT_MCP_URL:http://localhost:7003/mcp}"
+      nodes:
+        - id: places_list_task
+          type: llm
+          prompt: |
+            List 5 specific places, neighborhoods, or attractions in {inputs.destination}
+            that match {inputs.interests}. Return a JSON array of strings only.
+
+        - id: destination_research_task
+          type: mcp_tool_map
+          server: travel_research
+          tool: tavily_travel_search
+          items_path: outputs.places_list_task
+          max_items: 5
+          query_template: "Research {item} in {inputs.destination} with highlights and must-see spots."
+          max_results: 5
+
+        - id: itinerary_options_task
+          type: llm
+          prompt: |
+            Create 2-3 itinerary options for the trip.
+            Include day-by-day highlights and note must-see places.
+
+        - id: hotel_research_task
+          type: mcp_tool
+          server: hotel
+          tool: google_hotels_search
+          args:
+            destination: "{inputs.destination}"
+            start_date: "{inputs.start_date}"
+            end_date: "{inputs.end_date}"
+            adults: 2
+            preferences: "{inputs.preferences}"
+
+        - id: flight_research_task
+          type: mcp_tool
+          server: flight
+          tool: google_flights_search
+          args:
+            origin: "{inputs.origin}"
+            destination: "{outputs.places_list_task}"
+            depart_date: "{inputs.start_date}"
+            return_date: "{inputs.end_date}"
+            passengers: 1
+            cabin: "{inputs.cabin}"
+
+      input_fields:
+        destination: "Tokyo"
+        interests: "culture and food"
+        origin: "New York"
+        start_date: "2026-04-01"
+        end_date: "2026-04-07"
+        preferences: "mid-range"
+        cabin: "economy"

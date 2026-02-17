@@ -332,10 +332,12 @@ async def initialize_agent_from_template(
 
         agent_config = VirtualAgentCreate(
             name=agent_name,
+            runner_type=template.runner_type or "llamastack",
             prompt=agent_prompt,
             model_name=model_to_use,
             tools=tools,
             knowledge_base_ids=kb_ids,
+            graph_config=template.graph_config,
             temperature=0.1,
             top_p=0.95,
             max_tokens=4096,

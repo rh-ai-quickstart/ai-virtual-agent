@@ -48,6 +48,7 @@ class VirtualAgent(Base):
     max_tokens = Column(JSON, nullable=True)
     repetition_penalty = Column(JSON, nullable=True)
     max_infer_iters = Column(JSON, nullable=True)
+    graph_config = Column(JSON, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True),

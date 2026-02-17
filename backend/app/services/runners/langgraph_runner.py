@@ -381,6 +381,49 @@ class LangGraphRunner(BaseRunner):
                 session_id,
             )
 
+    # ----- Declarative graph execution ---------------------------------------
+
+    async def _run_declarative_graph(
+        self,
+        agent: Any,
+        session_id: str,
+        prompt: Any,
+    ) -> AsyncIterator[str]:
+        """
+        Execute a declarative graph agent using the GraphEngine.
+
+        The graph config from the agent defines the node pipeline;
+        the user prompt is passed as ``inputs.message``.
+        """
+        from .graph_engine import GraphEngine
+
+        llm = self._create_llm(agent)
+        engine = GraphEngine(config=agent.graph_config, llm=llm)
+
+        # Build inputs from the user prompt
+        text_parts: list[str] = []
+        if isinstance(prompt, list):
+            for item in prompt:
+                if hasattr(item, "text") and item.text:
+                    text_parts.append(item.text)
+                elif isinstance(item, dict) and item.get("text"):
+                    text_parts.append(item["text"])
+        elif isinstance(prompt, str):
+            text_parts.append(prompt)
+        elif hasattr(prompt, "text"):
+            text_parts.append(prompt.text)
+
+        user_text = "\n".join(text_parts) if text_parts else str(prompt)
+
+        # Merge user text with any input_fields defined in graph_config
+        graph_inputs: Dict[str, Any] = {"message": user_text}
+        input_fields = agent.graph_config.get("input_fields") or {}
+        if isinstance(input_fields, dict):
+            graph_inputs.update(input_fields)
+
+        async for event in engine.run_streaming(graph_inputs, str(session_id)):
+            yield event
+
     # ----- Public interface (BaseRunner) ------------------------------------
 
     async def stream(
@@ -390,7 +433,11 @@ class LangGraphRunner(BaseRunner):
         prompt: Any,
     ) -> AsyncIterator[str]:
         """
-        Stream a response using LangGraph's ReAct agent.
+        Stream a response using LangGraph.
+
+        Dispatches between two modes:
+        - **Declarative graph**: when ``agent.graph_config`` is set
+        - **ReAct agent**: otherwise (default, using create_react_agent)
 
         Yields SSE-formatted strings with normalised event types.
         """
@@ -408,43 +455,57 @@ class LangGraphRunner(BaseRunner):
             return
 
         try:
-            # Resolve MCP tools from agent config
-            mcp_configs = await self._resolve_mcp_servers(agent.tools)
-            tools: list = []
+            # Dispatch: declarative graph vs ReAct agent
+            graph_config = getattr(agent, "graph_config", None)
 
-            if mcp_configs:
-                try:
-                    from langchain_mcp_adapters.client import (
-                        MultiServerMCPClient,
-                    )
+            if graph_config:
+                logger.info(f"Running declarative graph for agent {agent.id}")
+                async for event in self._run_declarative_graph(
+                    agent, session_id, prompt
+                ):
+                    yield event
+            else:
+                # ReAct agent mode (existing behaviour)
+                mcp_configs = await self._resolve_mcp_servers(agent.tools)
+                tools: list = []
 
-                    async with MultiServerMCPClient(mcp_configs) as mcp_client:
-                        tools = mcp_client.get_tools()
-                        logger.info(
-                            f"Loaded {len(tools)} MCP tools "
-                            f"for LangGraph agent {agent.id}"
+                if mcp_configs:
+                    try:
+                        from langchain_mcp_adapters.client import (
+                            MultiServerMCPClient,
+                        )
+
+                        async with MultiServerMCPClient(mcp_configs) as mcp_client:
+                            tools = mcp_client.get_tools()
+                            logger.info(
+                                f"Loaded {len(tools)} MCP tools "
+                                f"for LangGraph agent {agent.id}"
+                            )
+                            async for event in self._run_graph(
+                                agent, tools, session_id, prompt
+                            ):
+                                yield event
+                    except ImportError:
+                        logger.warning(
+                            "langchain-mcp-adapters not installed; "
+                            "running LangGraph agent without MCP tools"
                         )
                         async for event in self._run_graph(
-                            agent, tools, session_id, prompt
+                            agent, [], session_id, prompt
                         ):
                             yield event
-                except ImportError:
-                    logger.warning(
-                        "langchain-mcp-adapters not installed; "
-                        "running LangGraph agent without MCP tools"
-                    )
+                    except Exception as mcp_err:
+                        logger.warning(
+                            f"MCP tool loading failed ({mcp_err}); "
+                            f"running agent without tools"
+                        )
+                        async for event in self._run_graph(
+                            agent, [], session_id, prompt
+                        ):
+                            yield event
+                else:
                     async for event in self._run_graph(agent, [], session_id, prompt):
                         yield event
-                except Exception as mcp_err:
-                    logger.warning(
-                        f"MCP tool loading failed ({mcp_err}); "
-                        f"running agent without tools"
-                    )
-                    async for event in self._run_graph(agent, [], session_id, prompt):
-                        yield event
-            else:
-                async for event in self._run_graph(agent, [], session_id, prompt):
-                    yield event
 
             yield "data: [DONE]\n\n"
 

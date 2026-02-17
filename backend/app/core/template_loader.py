@@ -61,9 +61,11 @@ def convert_yaml_template_to_agent_template(
         persona=yaml_template["persona"],
         prompt=yaml_template["prompt"],
         model_name=yaml_template["model_name"],
-        tools=yaml_template["tools"],
-        knowledge_base_ids=yaml_template["knowledge_base_ids"],
+        runner_type=yaml_template.get("runner_type", "llamastack"),
+        tools=yaml_template.get("tools") or [],
+        knowledge_base_ids=yaml_template.get("knowledge_base_ids") or [],
         knowledge_base_config=yaml_template.get("knowledge_base_config"),
+        graph_config=yaml_template.get("graph_config"),
         demo_questions=yaml_template.get("demo_questions"),
     )
 
