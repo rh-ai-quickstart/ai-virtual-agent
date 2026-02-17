@@ -102,6 +102,10 @@ services:
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
       - ENABLE_COVERAGE=${ENABLE_COVERAGE:-false}
+      # LangGraph runner: use LlamaStack's OpenAI-compat endpoint
+      - LANGGRAPH_LLM_API_BASE=http://llamastack:8321/v1
+      - LANGGRAPH_LLM_API_KEY=no-key
+      - LANGGRAPH_DEFAULT_MODEL=${LANGGRAPH_DEFAULT_MODEL:-ollama/llama3.2:1b-instruct-fp16}
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:

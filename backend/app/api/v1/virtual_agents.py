@@ -50,6 +50,7 @@ async def create_virtual_agent_internal(
     agent_data = {
         "id": agent_uuid,
         "name": va.name,
+        "runner_type": va.runner_type or "llamastack",
         "model_name": va.model_name,
         "template_id": va.template_id,
         "prompt": va.prompt,
@@ -160,6 +161,7 @@ def config_to_response(config) -> VirtualAgentResponse:
     return VirtualAgentResponse(
         id=config.id,
         name=config.name,
+        runner_type=config.runner_type or "llamastack",
         input_shields=config.input_shields or [],
         output_shields=config.output_shields or [],
         prompt=config.prompt,
