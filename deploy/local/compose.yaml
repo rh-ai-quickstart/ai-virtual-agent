@@ -106,6 +106,10 @@ services:
       - LANGGRAPH_LLM_API_BASE=http://llamastack:8321/v1
       - LANGGRAPH_LLM_API_KEY=no-key
       - LANGGRAPH_DEFAULT_MODEL=${LANGGRAPH_DEFAULT_MODEL:-ollama/llama3.2:1b-instruct-fp16}
+      # MCP server URLs for vacation planner graph
+      - TRAVEL_RESEARCH_MCP_URL=http://travel-research-mcp:7001/mcp
+      - HOTEL_MCP_URL=http://hotel-mcp:7002/mcp
+      - FLIGHT_MCP_URL=http://flight-mcp:7003/mcp
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:
@@ -152,6 +156,70 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+
+  # MCP servers for vacation planner graph agent
+  travel-research-mcp:
+    build:
+      context: ../../mcp_servers/travel_research_mcp
+      dockerfile: Containerfile
+    container_name: travel-research-mcp-dev
+    restart: unless-stopped
+    environment:
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - HOST=0.0.0.0
+      - PORT=7001
+    ports:
+      - '7001:7001'
+    networks:
+      - ai-va-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7001/mcp || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  hotel-mcp:
+    build:
+      context: ../../mcp_servers/hotel_mcp
+      dockerfile: Containerfile
+    container_name: hotel-mcp-dev
+    restart: unless-stopped
+    environment:
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY:-}
+      - HOST=0.0.0.0
+      - PORT=7002
+    ports:
+      - '7002:7002'
+    networks:
+      - ai-va-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7002/mcp || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  flight-mcp:
+    build:
+      context: ../../mcp_servers/flight_mcp
+      dockerfile: Containerfile
+    container_name: flight-mcp-dev
+    restart: unless-stopped
+    environment:
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY:-}
+      - HOST=0.0.0.0
+      - PORT=7003
+    ports:
+      - '7003:7003'
+    networks:
+      - ai-va-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7003/mcp || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # MinIO service for attachments (optional - use profile 'attachments')
   minio:
