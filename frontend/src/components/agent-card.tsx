@@ -168,6 +168,13 @@ export function AgentCard({ agent, isAssigned }: AgentCardProps) {
                   {agent.model_name}
                 </Title>
               </FlexItem>
+              {agent.runner_type && agent.runner_type !== 'llamastack' && (
+                <FlexItem>
+                  <Label color="blue" isCompact>
+                    {agent.runner_type}
+                  </Label>
+                </FlexItem>
+              )}
             </Flex>
           </CardTitle>
         </CardHeader>

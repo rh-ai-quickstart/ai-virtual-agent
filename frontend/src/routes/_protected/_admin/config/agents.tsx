@@ -127,6 +127,7 @@ function AgentTemplates() {
         template_model?: string;
         template_tool_ids?: string[];
         template_knowledge_base_ids?: string[];
+        runner_type?: string;
       }
     >
   >({});
@@ -305,6 +306,7 @@ function AgentTemplates() {
               template_model: templateModel,
               template_tool_ids: defaultToolIds,
               template_knowledge_base_ids: defaultKbIds,
+              runner_type: t.runner_type,
             };
           }
           return next;
@@ -711,7 +713,21 @@ function AgentTemplates() {
                       >
                         <Checkbox
                           id={`template-${pair.id}`}
-                          label={pair.name}
+                          label={
+                            <span>
+                              {pair.name}
+                              {templateOverrides[pair.id]?.runner_type &&
+                                templateOverrides[pair.id]?.runner_type !== 'llamastack' && (
+                                  <Label
+                                    color="blue"
+                                    isCompact
+                                    style={{ marginLeft: 8 }}
+                                  >
+                                    {templateOverrides[pair.id]?.runner_type}
+                                  </Label>
+                                )}
+                            </span>
+                          }
                           isChecked={selectedTemplateIds.includes(pair.id)}
                           onChange={(_event, checked: boolean) => {
                             setSelectedTemplateIds((prev: string[]) => {

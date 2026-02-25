@@ -49,7 +49,12 @@ import userAvatar from '../assets/img/user-avatar.svg';
 import { ATTACHMENTS_API_ENDPOINT } from '@/config/api';
 import { SimpleContentItem } from '@/types/chat';
 import { getTemplateDetails } from '@/services/agent-templates';
-import { ReasoningSection, ToolCallSection } from './ExpandableContent';
+import {
+  ReasoningSection,
+  ToolCallSection,
+  GraphProgressTracker,
+  GraphNodeOutputSection,
+} from './ExpandableContent';
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',
@@ -145,10 +150,56 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
     const textParts: string[] = [];
     const expandableComponents: React.ReactNode[] = [];
 
+    // Collect graph node items to detect graph agent responses
+    const graphNodes = content.filter(
+      (item): item is import('@/types/chat').GraphNodeContentItem => item.type === 'graph_node'
+    );
+    const graphNodeIds = new Set(graphNodes.map((n) => n.node_id));
+
+    // Build a map of node_id -> accumulated output text for graph responses
+    const nodeOutputMap = new Map<string, string>();
+    if (graphNodes.length > 0) {
+      content.forEach((item) => {
+        if (item.type === 'output_text' && item.id && graphNodeIds.has(item.id)) {
+          const existing = nodeOutputMap.get(item.id) || '';
+          nodeOutputMap.set(item.id, existing + item.text);
+        }
+      });
+    }
+
+    // If graph nodes are present, render progress tracker + per-node output sections
+    if (graphNodes.length > 0) {
+      expandableComponents.push(
+        <GraphProgressTracker
+          key="graph-progress"
+          nodes={graphNodes.map((n) => ({
+            node_id: n.node_id,
+            label: n.label,
+            status: n.status,
+          }))}
+        />
+      );
+
+      graphNodes.forEach((node) => {
+        const outputText = nodeOutputMap.get(node.node_id) || '';
+        expandableComponents.push(
+          <GraphNodeOutputSection
+            key={`graph-node-${node.node_id}`}
+            nodeId={node.node_id}
+            label={node.label}
+            status={node.status}
+            outputText={outputText}
+          />
+        );
+      });
+    }
+
     content.forEach((item, index) => {
       if (item.type === 'input_text') {
         textParts.push(item.text);
       } else if (item.type === 'output_text') {
+        // Skip output_text items that belong to graph nodes (rendered in sections above)
+        if (item.id && graphNodeIds.has(item.id)) return;
         textParts.push(item.text);
       } else if (item.type === 'input_image') {
         const imageUrl = item.image_url.startsWith('/')
@@ -176,6 +227,7 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
           />
         );
       }
+      // graph_node items are handled above
     });
 
     return {

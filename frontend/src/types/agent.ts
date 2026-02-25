@@ -19,6 +19,8 @@ export interface SamplingParameters {
   repetition_penalty?: number;
 }
 
+export type RunnerType = 'llamastack' | 'langgraph';
+
 export interface AgentBase {
   name: string;
   model_name: string;
@@ -26,6 +28,8 @@ export interface AgentBase {
   knowledge_base_ids: string[];
   input_shields: string[];
   output_shields: string[];
+  runner_type?: RunnerType;
+  graph_config?: Record<string, unknown> | null;
 }
 
 export interface Agent extends AgentBase, SamplingParameters {
@@ -64,6 +68,8 @@ export interface AgentTemplate {
     source_configuration: string[];
   };
   demo_questions?: string[];
+  runner_type?: RunnerType;
+  graph_config?: Record<string, unknown> | null;
 }
 
 export interface TemplateInitializationRequest {
@@ -75,6 +81,8 @@ export interface TemplateInitializationRequest {
   model_name?: string;
   tools?: { toolgroup_id: string }[];
   knowledge_base_ids?: string[];
+  runner_type?: RunnerType;
+  graph_config?: Record<string, unknown> | null;
 }
 
 export interface TemplateInitializationResponse {

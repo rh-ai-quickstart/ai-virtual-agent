@@ -2,7 +2,14 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { CHAT_API_ENDPOINT } from '../config/api';
 import { fetchChatSession, createChatSession } from '@/services/chat-sessions';
 import { ChatMessage, UseLlamaChatOptions, SimpleContentItem, StreamEvent } from '@/types/chat';
-import { handleReasoning, handleToolCall, handleResponse, handleError } from './useChat.helpers';
+import {
+  handleReasoning,
+  handleToolCall,
+  handleResponse,
+  handleError,
+  handleNodeStarted,
+  handleNodeCompleted,
+} from './useChat.helpers';
 
 // Re-export types for backward compatibility
 export type { ChatMessage, UseLlamaChatOptions } from '@/types/chat';
@@ -245,6 +252,10 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
                       return prev;
                     });
                   }
+                } else if (chunk.type === 'node_started') {
+                  scheduleUpdate((prev) => handleNodeStarted(prev, chunk));
+                } else if (chunk.type === 'node_completed') {
+                  scheduleUpdate((prev) => handleNodeCompleted(prev, chunk));
                 } else if (chunk.type === 'error') {
                   console.error('Stream error:', chunk.message);
                   setIsLoading(false);

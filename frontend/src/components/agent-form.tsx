@@ -1,4 +1,4 @@
-import { Agent, NewAgent } from '@/types/agent';
+import { Agent, NewAgent, RunnerType } from '@/types/agent';
 import { ToolGroup, ToolAssociationInfo, SamplingStrategy, KnowledgeBaseWithStatus } from '@/types';
 import {
   ActionGroup,
@@ -49,6 +49,8 @@ interface AgentFormData {
   repetition_penalty: number;
   samplingAccordionExpanded: boolean; // Added for accordion state
   guardrails: string[]; // Shield IDs for guardrails
+  runner_type: RunnerType;
+  graph_config_json: string; // JSON string for graph config editing
 }
 
 // Helper functions to convert between formats
@@ -68,6 +70,8 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
       repetition_penalty: 1.0, // XXX: this is specific to vllm, and doesn't work with openai's API in llamastack
       samplingAccordionExpanded: false, // Initialize accordion state
       guardrails: [],
+      runner_type: 'llamastack',
+      graph_config_json: '',
     };
   }
 
@@ -88,6 +92,8 @@ const convertAgentToFormData = (agent: Agent | undefined): AgentFormData => {
     repetition_penalty: agent.repetition_penalty ?? 1.0,
     samplingAccordionExpanded: false, // Initialize accordion state
     guardrails: agent.input_shields || [], // Use input_shields as guardrails
+    runner_type: agent.runner_type ?? 'llamastack',
+    graph_config_json: agent.graph_config ? JSON.stringify(agent.graph_config, null, 2) : '',
   };
 };
 
@@ -107,6 +113,11 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
   const hasRAGTool = formData.tool_ids.includes('builtin::rag');
   const knowledge_base_ids = hasRAGTool ? formData.knowledge_base_ids : [];
 
+  let graphConfig: Record<string, unknown> | null = null;
+  if (formData.runner_type === 'langgraph' && formData.graph_config_json.trim()) {
+    graphConfig = JSON.parse(formData.graph_config_json) as Record<string, unknown>;
+  }
+
   return {
     name: formData.name,
     model_name: formData.model_name,
@@ -119,8 +130,10 @@ const convertFormDataToAgent = (formData: AgentFormData, tools: ToolGroup[]): Ne
     top_k: formData.top_k,
     max_tokens: formData.max_tokens,
     repetition_penalty: formData.repetition_penalty,
-    input_shields: formData.guardrails, // Store guardrails in input_shields for now
-    output_shields: [], // Keep empty for backward compatibility
+    input_shields: formData.guardrails,
+    output_shields: [],
+    runner_type: formData.runner_type,
+    graph_config: graphConfig,
   };
 };
 
@@ -342,6 +355,78 @@ export function AgentForm({
           </FormGroup>
         )}
       </form.Field>
+      <form.Field name="runner_type">
+        {(field) => (
+          <FormGroup label="Runner Type" fieldId="runner-type">
+            <FormSelect
+              id="runner-type"
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(_event, value) => field.handleChange(value as RunnerType)}
+              aria-label="Select Runner Type"
+            >
+              <FormSelectOption value="llamastack" label="LlamaStack (default)" />
+              <FormSelectOption value="langgraph" label="LangGraph" />
+            </FormSelect>
+            <FormHelperText>
+              Execution engine for this agent. LangGraph supports declarative graph workflows.
+            </FormHelperText>
+          </FormGroup>
+        )}
+      </form.Field>
+      <form.Subscribe selector={(state) => state.values.runner_type}>
+        {(runnerType) =>
+          runnerType === 'langgraph' ? (
+            <form.Field
+              name="graph_config_json"
+              validators={{
+                onChange: ({ value }) => {
+                  if (!value || !value.trim()) return undefined;
+                  try {
+                    JSON.parse(value);
+                    return undefined;
+                  } catch {
+                    return 'Invalid JSON';
+                  }
+                },
+              }}
+            >
+              {(field) => (
+                <FormGroup label="Graph Configuration (JSON)" fieldId="graph-config">
+                  <TextArea
+                    id="graph-config"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(_event, value) => field.handleChange(value)}
+                    placeholder='{"nodes": [...], "mcp": {...}}'
+                    rows={8}
+                    resizeOrientation="vertical"
+                    validated={
+                      !field.state.meta.isTouched
+                        ? 'default'
+                        : !field.state.meta.isValid
+                          ? 'error'
+                          : 'success'
+                    }
+                    style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                  />
+                  {!field.state.meta.isValid && (
+                    <FormHelperText className="pf-v6-u-text-color-status-danger">
+                      {field.state.meta.errors.join(', ')}
+                    </FormHelperText>
+                  )}
+                  <FormHelperText>
+                    Optional declarative graph definition with nodes, edges, and MCP server
+                    connections.
+                  </FormHelperText>
+                </FormGroup>
+              )}
+            </form.Field>
+          ) : null
+        }
+      </form.Subscribe>
       <form.Field
         name="model_name"
         validators={{
