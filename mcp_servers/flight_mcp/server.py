@@ -85,6 +85,40 @@ def _extract_first_location(value: str) -> str:
     return raw
 
 
+_CITY_AIRPORT_MAP: Dict[str, str] = {
+    "paris": "CDG",
+    "london": "LHR",
+    "new york": "JFK",
+    "los angeles": "LAX",
+    "chicago": "ORD",
+    "san francisco": "SFO",
+    "tokyo": "NRT",
+    "rome": "FCO",
+    "berlin": "BER",
+    "madrid": "MAD",
+    "amsterdam": "AMS",
+    "dubai": "DXB",
+    "singapore": "SIN",
+    "hong kong": "HKG",
+    "sydney": "SYD",
+    "toronto": "YYZ",
+    "mumbai": "BOM",
+    "bangkok": "BKK",
+    "istanbul": "IST",
+    "seoul": "ICN",
+    "miami": "MIA",
+    "washington": "IAD",
+    "boston": "BOS",
+    "atlanta": "ATL",
+    "dallas": "DFW",
+    "denver": "DEN",
+    "seattle": "SEA",
+    "lisbon": "LIS",
+    "barcelona": "BCN",
+    "mexico city": "MEX",
+}
+
+
 def _find_iata_in_candidates(candidates: Iterable[dict]) -> str:
     for item in candidates:
         if not isinstance(item, dict):
@@ -93,16 +127,16 @@ def _find_iata_in_candidates(candidates: Iterable[dict]) -> str:
             code = item.get(key)
             if isinstance(code, str) and _extract_iata(code):
                 return _extract_iata(code)
-        for val in item.values():
-            if isinstance(val, str):
-                code = _extract_iata(val)
-                if code:
-                    return code
     return ""
 
 
 def _resolve_airport_code(value: str, api_key: str) -> str:
     value = _extract_first_location(value)
+
+    known = _CITY_AIRPORT_MAP.get(value.lower().strip())
+    if known:
+        return known
+
     code = _extract_iata(value)
     if code:
         return code
