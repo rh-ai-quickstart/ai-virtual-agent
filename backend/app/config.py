@@ -37,5 +37,14 @@ class Settings:
         os.getenv("AUTO_ASSIGN_AGENTS_TO_USERS", "true").lower() == "true"
     )
 
+    # LangGraph Runner Configuration
+    # Base URL for the OpenAI-compatible LLM API used by LangGraph agents.
+    # Falls back to LLAMA_STACK_URL/v1 if not set.
+    LANGGRAPH_LLM_API_BASE: Optional[str] = os.getenv("LANGGRAPH_LLM_API_BASE")
+    # API key for the LLM API. Use "no-key" for local servers that don't require auth.
+    LANGGRAPH_LLM_API_KEY: str = os.getenv("LANGGRAPH_LLM_API_KEY", "no-key")
+    # Override model name for LangGraph agents. If not set, uses the agent's model_name.
+    LANGGRAPH_DEFAULT_MODEL: Optional[str] = os.getenv("LANGGRAPH_DEFAULT_MODEL")
+
 
 settings = Settings()

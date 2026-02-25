@@ -49,22 +49,38 @@ class TestEnsureTemplatesPopulated:
 
     @pytest.mark.asyncio
     @patch("backend.app.core.template_startup.AsyncSessionLocal")
-    async def test_skip_when_templates_exist(self, mock_session_local):
+    @patch("backend.app.core.template_startup.load_all_templates_from_directory")
+    async def test_skip_when_templates_exist(
+        self, mock_load_templates, mock_session_local
+    ):
         """Test skipping population when templates exist."""
-        # Mock existing templates
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
+        # Mock loader returning one suite with one template
+        mock_template = MagicMock()
+        mock_template.name = "Test Template"
+        mock_load_templates.return_value = (
+            {"suite1": {"name": "Test Suite", "templates": {"t1": {}}}},
+            {"t1": mock_template},
+        )
+
+        # Mock DB returning matching existing suite and template
         existing_suite = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [existing_suite]
-        mock_session.execute.return_value = mock_result
+        existing_suite.name = "Test Suite"
+        existing_template = MagicMock()
+        existing_template.name = "Test Template"
+
+        mock_session = AsyncMock()
+        suites_result = MagicMock()
+        suites_result.scalars.return_value.all.return_value = [existing_suite]
+        templates_result = MagicMock()
+        templates_result.scalars.return_value.all.return_value = [existing_template]
+        mock_session.execute.side_effect = [suites_result, templates_result]
         mock_session.__aenter__.return_value = mock_session
         mock_session.__aexit__.return_value = AsyncMock()
 
-        # session.add() is synchronous, not async
         mock_session.add = MagicMock()
         mock_session_local.return_value = mock_session
 
         await ensure_templates_populated()
 
-        # Should not add anything
+        # Should not add anything since all suites and templates already exist
         mock_session.add.assert_not_called()
