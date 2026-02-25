@@ -123,3 +123,8 @@ stages:
           provider_type: "remote::model-context-protocol"
           config: {}
           api: "tool_runtime"
+        - provider_id: "tavily-search"
+          provider_type: "remote::tavily-search"
+          config:
+            api_key: !anystr
+          api: "tool_runtime"

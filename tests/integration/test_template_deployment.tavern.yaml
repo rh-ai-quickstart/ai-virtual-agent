@@ -28,6 +28,8 @@ stages:
       status_code: 200
       headers:
         content-type: application/json
+      strict:
+        - json:off
       json:
         name: !anystr
         persona: !anystr
