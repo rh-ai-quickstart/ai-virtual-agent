@@ -176,7 +176,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7001/mcp')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7001),2); s.close()\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -197,7 +197,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7002/mcp')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7002),2); s.close()\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -218,7 +218,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7003/mcp')\" || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7003),2); s.close()\""]
       interval: 10s
       timeout: 5s
       retries: 5
