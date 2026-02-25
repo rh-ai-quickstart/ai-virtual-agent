@@ -98,20 +98,37 @@ def _get_path(data: Dict[str, Any], path: str) -> Any:
     return cursor
 
 
+_MD_FENCE_RE = re.compile(r"```(?:\w*)\s*\n?(.*?)```", re.DOTALL)
+
+
 def _coerce_list(value: Any) -> List[str]:
-    """Coerce a value (JSON array string, CSV, newline-separated) to a list."""
+    """Coerce a value (JSON array string, CSV, newline-separated) to a list.
+
+    Handles markdown-fenced JSON that LLMs commonly produce, e.g.::
+
+        Here are 5 places...
+        ```json
+        ["Shibuya", "Asakusa", ...]
+        ```
+    """
     if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip()]
     if isinstance(value, str):
         raw = value.strip()
         if not raw:
             return []
-        try:
-            parsed = json.loads(raw)
-            if isinstance(parsed, list):
-                return [str(v).strip() for v in parsed if str(v).strip()]
-        except (json.JSONDecodeError, ValueError):
-            pass
+        # Try parsing the whole string as JSON first
+        parsed_list = _try_parse_json_list(raw)
+        if parsed_list is not None:
+            return parsed_list
+        # Strip markdown code fences and try the inner content
+        fence_match = _MD_FENCE_RE.search(raw)
+        if fence_match:
+            inner = fence_match.group(1).strip()
+            parsed_list = _try_parse_json_list(inner)
+            if parsed_list is not None:
+                return parsed_list
+        # Fallback: newline-separated items
         if "\n" in raw:
             return [
                 line.strip("- ").strip() for line in raw.splitlines() if line.strip()
@@ -120,6 +137,25 @@ def _coerce_list(value: Any) -> List[str]:
     if value is None:
         return []
     return [str(value).strip()]
+
+
+def _try_parse_json_list(text: str) -> Optional[List[str]]:
+    """Try to parse text as a JSON array and return a list of strings."""
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            items = []
+            for v in parsed:
+                if isinstance(v, dict):
+                    items.append(v.get("name", str(v)))
+                elif v is not None:
+                    s = str(v).strip()
+                    if s:
+                        items.append(s)
+            return items if items else None
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return None
 
 
 def _normalize_arg(value: Any) -> Any:
@@ -350,7 +386,8 @@ async def _call_mcp_tool(
     try:
         resp = await client.post(url, json=payload, headers=headers, timeout=60)
 
-        if resp.status_code == 400 and "session id" in resp.text.lower():
+        _resp_lower = resp.text.lower()
+        if resp.status_code in (400, 404) and ("session" in _resp_lower):
             logger.warning("MCP session invalid, refreshing: %s", url)
             session_id = await _refresh_mcp_session(client, url)
             if session_id:
@@ -543,10 +580,9 @@ class GraphEngine:
         session_id: str,
     ) -> AsyncIterator[str]:
         """
-        Execute the graph and yield SSE events for each node.
-
-        Yields ``node_started``, ``node_completed``, and a final
-        ``response`` event with the concatenated output.
+        Execute the compiled graph via ``astream`` and yield SSE events
+        incrementally as each node starts and completes, preserving the
+        full graph topology (conditional edges, routing, etc.).
         """
         graph = self._build_graph()
         state: GraphState = {
@@ -555,28 +591,44 @@ class GraphEngine:
             "tasks_output": [],
         }
 
-        result_state = await graph.ainvoke(state)
+        seen_tasks = 0
+        current_node: str | None = None
 
-        tasks_output = result_state.get("tasks_output", [])
+        async for chunk in graph.astream(state, stream_mode="updates"):
+            for node_name, node_state in chunk.items():
+                if node_name == "__start__" or node_name == "__end__":
+                    continue
 
-        for task in tasks_output:
-            node_name = task.get("name", "unknown")
-            yield _sse("node_started", {"node": node_name}, session_id)
-            raw = task.get("raw", "")
-            if raw:
-                yield _sse(
-                    "response",
-                    {"delta": raw, "status": "in_progress", "id": node_name},
-                    session_id,
-                )
-            yield _sse("node_completed", {"node": node_name}, session_id)
+                tasks_output = node_state.get("tasks_output", [])
+                new_tasks = tasks_output[seen_tasks:]
 
-        final_output = ""
-        if tasks_output:
-            last_task = tasks_output[-1]
-            final_output = last_task.get("raw", "")
+                for task in new_tasks:
+                    task_name = task.get("name", node_name)
 
-        if final_output:
+                    if current_node and current_node != task_name:
+                        yield _sse("node_completed", {"node": current_node}, session_id)
+                    if current_node != task_name:
+                        yield _sse("node_started", {"node": task_name}, session_id)
+                        current_node = task_name
+
+                    raw = task.get("raw", "")
+                    if raw:
+                        yield _sse(
+                            "response",
+                            {
+                                "delta": raw,
+                                "status": "in_progress",
+                                "id": task_name,
+                            },
+                            session_id,
+                        )
+
+                seen_tasks += len(new_tasks)
+
+        if current_node:
+            yield _sse("node_completed", {"node": current_node}, session_id)
+
+        if seen_tasks > 0:
             yield _sse(
                 "response",
                 {"delta": "", "status": "completed", "id": "graph_final"},
