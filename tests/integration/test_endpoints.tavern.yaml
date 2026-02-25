@@ -72,6 +72,7 @@ stages:
         vector_store_ids: []
         tools: []
         max_infer_iters: 100
+        graph_config: null
         id: "{agent_id}"
         created_at: !anything
         updated_at: !anything
