@@ -64,7 +64,7 @@ templates:
           tool: google_flights_search
           args:
             origin: "{inputs.origin}"
-            destination: "{outputs.places_list_task}"
+            destination: "{inputs.destination}"
             depart_date: "{inputs.start_date}"
             return_date: "{inputs.end_date}"
             passengers: 1
