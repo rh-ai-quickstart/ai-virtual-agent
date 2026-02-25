@@ -8,6 +8,7 @@ with Conversations for message history management.
 import json
 import logging
 import os
+import re
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from fastapi.encoders import jsonable_encoder
@@ -98,6 +99,13 @@ class StreamAggregator:
 
     async def process_chunk(self, chunk: Dict[str, Any]):
         chunk_type = chunk.get("type", "")
+
+        error_obj = chunk.get("error")
+        if error_obj and isinstance(error_obj, dict):
+            error_message = error_obj.get("message", "Unknown error")
+            logger.error(f"LlamaStack stream error: {error_message}")
+            yield self._create_event("error", {"message": error_message})
+            return
 
         if chunk_type == "response.content_part.added":
             for event in self._handle_content_part_added(chunk):
@@ -587,23 +595,64 @@ class LlamaStackRunner(BaseRunner):
                 )
                 response_params["conversation"] = conversation_id
 
-                logger.info(
-                    f"Starting stream for session {session_id}, "
-                    f"model={response_params['model']}, "
-                    f"conversation={conversation_id}"
-                )
-                logger.debug(
-                    f"Request params: "
-                    f"{json.dumps(jsonable_encoder(response_params), indent=2)}"
-                )
+                excluded_tools: set = set()
+                max_retries = len(tools) if tools else 0
 
-                async for chunk in await client.responses.create(**response_params):
-                    chunk_dict = jsonable_encoder(chunk)
-                    logger.debug(f"Raw chunk: {chunk_dict}")
+                for attempt in range(max_retries + 1):
+                    current_tools = [
+                        t for t in (tools or []) if t.get("type") not in excluded_tools
+                    ]
+                    if current_tools:
+                        response_params["tools"] = current_tools
+                    else:
+                        response_params.pop("tools", None)
 
-                    async for simplified_event in aggregator.process_chunk(chunk_dict):
-                        logger.debug(f"Event: {simplified_event}")
-                        yield f"data: {json.dumps(simplified_event)}\n\n"
+                    aggregator = StreamAggregator(str(session_id))
+                    retry = False
+
+                    logger.info(
+                        f"Starting stream for session {session_id}, "
+                        f"model={response_params['model']}, "
+                        f"conversation={conversation_id}"
+                        f"{f', excluded_tools={excluded_tools}' if excluded_tools else ''}"
+                    )
+                    logger.debug(
+                        f"Request params: "
+                        f"{json.dumps(jsonable_encoder(response_params), indent=2)}"
+                    )
+
+                    async for chunk in await client.responses.create(**response_params):
+                        chunk_dict = jsonable_encoder(chunk)
+                        logger.debug(f"Raw chunk: {chunk_dict}")
+
+                        error_obj = chunk_dict.get("error")
+                        if (
+                            error_obj
+                            and isinstance(error_obj, dict)
+                            and not aggregator.has_output_text
+                        ):
+                            match = re.search(
+                                r"Tool '(\w+)' not found",
+                                error_obj.get("message", ""),
+                            )
+                            if match and attempt < max_retries:
+                                failed_tool = match.group(1)
+                                excluded_tools.add(failed_tool)
+                                logger.warning(
+                                    f"Tool '{failed_tool}' not available on server, "
+                                    f"retrying without it (attempt {attempt + 1})"
+                                )
+                                retry = True
+                                break
+
+                        async for simplified_event in aggregator.process_chunk(
+                            chunk_dict
+                        ):
+                            logger.debug(f"Event: {simplified_event}")
+                            yield f"data: {json.dumps(simplified_event)}\n\n"
+
+                    if not retry:
+                        break
 
             logger.info(f"Stream loop completed for session {session_id}")
 

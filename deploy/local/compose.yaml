@@ -69,6 +69,9 @@ services:
     platform: linux/amd64
     restart: unless-stopped
     user: "0:0"
+    env_file:
+      - path: ../../.env
+        required: false
     environment:
       - RUN_CONFIG_PATH=/app-config/config.yaml
     ports:
