@@ -214,7 +214,7 @@ stages:
       json:
         name: "Test Agent {tavern.env_vars.TAVERN_UNIQUE}"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
         input_shields: []
         output_shields: []
         knowledge_base_ids: []
@@ -236,7 +236,7 @@ stages:
       json:
         # Missing name field
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
     response:
       status_code: 422
       json:

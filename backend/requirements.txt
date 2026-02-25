@@ -12,13 +12,14 @@ llama-stack==0.3.5
 llama_stack_client==0.3.5
 fire
 httpx
-vulture
+kubernetes
+
+# Lint / format (pre-commit: black, isort, flake8, vulture)
 black
 isort
-pre-commit
 flake8
-httpx
-kubernetes
+vulture
+pre-commit
 boto3
 python-multipart
 python-magic

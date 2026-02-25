@@ -55,9 +55,9 @@ services:
     entrypoint:
       - bash
       - -c
-      - "OLLAMA_DEBUG=1 ollama serve & sleep 10; ollama run llama3.2:1b-instruct-fp16 --keepalive 60m hi; wait"
+      - "OLLAMA_DEBUG=1 ollama serve & sleep 10; ollama run llama3.2:1b --keepalive 60m hi; wait"
     healthcheck:
-      test: ["CMD-SHELL", "ollama list | grep -q llama3.2:1b-instruct-fp16"]
+      test: ["CMD-SHELL", "ollama list | grep -q llama3.2:1b"]
       interval: 30s
       timeout: 10s
       retries: 30
@@ -103,6 +103,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-ai_virtual_agent}
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
+      - DEFAULT_INFERENCE_MODEL=${DEFAULT_INFERENCE_MODEL:-ollama/llama3.2:1b}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
       - ENABLE_COVERAGE=${ENABLE_COVERAGE:-false}
       # LangGraph runner: use LlamaStack's OpenAI-compat endpoint

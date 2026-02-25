@@ -21,6 +21,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...config import settings
+from ...core.auth import is_local_dev_mode
 from ...core.template_loader import (
     get_suites_by_category as get_suites_by_category_util,
 )
@@ -327,8 +329,19 @@ async def initialize_agent_from_template(
         if kb_ids and not any(tool.toolgroup_id == "builtin::rag" for tool in tools):
             tools.append(ToolAssociationInfo(toolgroup_id="builtin::rag"))
 
-        # Determine model: prefer override if provided and non-empty
-        model_to_use = request.model_name or template.model_name
+        # Determine model: in local dev use DEFAULT_INFERENCE_MODEL so template
+        # agents work with Ollama/LlamaStack dev stack; otherwise use request or
+        # template model.
+        if request.model_name:
+            model_to_use = request.model_name
+        elif is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
+            model_to_use = settings.DEFAULT_INFERENCE_MODEL
+            logger.info(
+                f"Local dev: using DEFAULT_INFERENCE_MODEL={model_to_use} "
+                f"instead of template model '{template.model_name}'"
+            )
+        else:
+            model_to_use = template.model_name
 
         agent_config = VirtualAgentCreate(
             name=agent_name,

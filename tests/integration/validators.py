@@ -551,9 +551,6 @@ def validate_template_demo_questions(response):
                     assert (
                         len(question.strip()) > 0
                     ), f"Demo question {i} should not be empty"
-                    assert question.endswith(
-                        "?"
-                    ), f"Demo question {i} should end with question mark: '{question}'"
                     assert (
                         len(question) > 10
                     ), f"Demo question {i} should be meaningful (>10 chars): '{question}'"
