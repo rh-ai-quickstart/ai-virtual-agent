@@ -43,6 +43,10 @@ templates:
 
         - id: itinerary_options_task
           type: llm
+          depends_on:
+            - destination_research_task
+            - hotel_research_task
+            - flight_research_task
           prompt: |
             Create 2-3 itinerary options for the trip.
             Include day-by-day highlights and note must-see places.

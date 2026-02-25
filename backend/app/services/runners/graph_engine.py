@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import json
 import logging
+import operator
 import os
 import re
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, TypedDict
+from typing import Annotated, Any, AsyncIterator, Dict, List, Optional, Tuple, TypedDict
 
 import httpx
 
@@ -417,17 +418,50 @@ async def _call_mcp_tool(
 # ---------------------------------------------------------------------------
 
 
+def _merge_dicts(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    """Reducer: merge two dicts (used for parallel node output merging)."""
+    merged = dict(a)
+    merged.update(b)
+    return merged
+
+
 class GraphState(TypedDict, total=False):
     """State passed between nodes in the declarative graph."""
 
     inputs: Dict[str, Any]
-    outputs: Dict[str, str]
-    tasks_output: List[Dict[str, Any]]
+    outputs: Annotated[Dict[str, str], _merge_dicts]
+    tasks_output: Annotated[List[Dict[str, Any]], operator.add]
 
 
 # ---------------------------------------------------------------------------
 # Graph engine
 # ---------------------------------------------------------------------------
+
+
+_OUTPUT_REF_RE = re.compile(r"outputs\.(\w+)")
+
+
+def _extract_output_deps(step: dict) -> set:
+    """Return the set of node IDs this step depends on via template references.
+
+    Scans ``prompt``, ``query_template``, ``items_path``, and ``args`` values
+    for ``{outputs.node_id}`` / ``outputs.node_id`` patterns.  Also honours
+    an explicit ``depends_on`` list in the step config.
+    """
+    refs: set = set()
+    for key in ("prompt", "query_template", "items_path"):
+        val = step.get(key, "")
+        if isinstance(val, str):
+            refs.update(m.group(1) for m in _OUTPUT_REF_RE.finditer(val))
+    args = step.get("args") or {}
+    if isinstance(args, dict):
+        for val in args.values():
+            if isinstance(val, str):
+                refs.update(m.group(1) for m in _OUTPUT_REF_RE.finditer(val))
+    depends_on = step.get("depends_on") or []
+    if isinstance(depends_on, list):
+        refs.update(str(d) for d in depends_on)
+    return refs
 
 
 class GraphEngine:
@@ -455,10 +489,9 @@ class GraphEngine:
 
     def _build_graph(self):
         """Build a compiled LangGraph StateGraph from the config."""
-        from langgraph.graph import END, StateGraph
+        from langgraph.graph import END, START, StateGraph
 
         graph = StateGraph(GraphState)
-        previous = None
         node_defs: Dict[str, dict] = {}
 
         for step in self.nodes:
@@ -467,18 +500,12 @@ class GraphEngine:
             step_id = str(step["id"])
             node_defs[step_id] = step
             graph.add_node(step_id, self._make_step_fn(step))
-            if not self.entry_id and step.get("entry"):
-                self.entry_id = step_id
-            if not self.edges:
-                if previous:
-                    graph.add_edge(previous, step_id)
-                else:
-                    graph.set_entry_point(step_id)
-                previous = step_id
 
         if self.edges:
+            # --- Explicit edges from config ---
             if not isinstance(self.edges, list):
                 raise ValueError("'edges' must be a list")
+            has_start = False
             for edge in self.edges:
                 if not isinstance(edge, dict):
                     raise ValueError("Each edge must be a mapping")
@@ -490,20 +517,49 @@ class GraphEngine:
                 if str(src_def.get("type", "")).strip().lower() == "router":
                     continue
                 graph.add_edge(src, dst)
-        elif previous:
-            graph.add_edge(previous, END)
+                if src == "__start__":
+                    has_start = True
+            if not has_start:
+                entry_id = self.entry_id or str(self.nodes[0]["id"])
+                graph.add_edge(START, entry_id)
 
-        if self.edges:
             for step_id, step in node_defs.items():
                 if str(step.get("type", "")).strip().lower() != "router":
                     continue
                 router = self._build_router(step)
-                routes = router["routes"]
-                graph.add_conditional_edges(step_id, router["fn"], routes)
+                graph.add_conditional_edges(step_id, router["fn"], router["routes"])
+        else:
+            # --- Auto-analyse data dependencies for parallel fan-out ---
+            node_ids = [str(s["id"]) for s in self.nodes]
+            deps: Dict[str, set] = {
+                nid: _extract_output_deps(step)
+                for nid, step in zip(node_ids, self.nodes)
+            }
+            # Only keep deps that reference nodes in this graph
+            valid_ids = set(node_ids)
+            deps = {nid: d & valid_ids for nid, d in deps.items()}
 
-        entry_id = self.entry_id or (self.nodes[0]["id"] if self.nodes else None)
-        if entry_id:
-            graph.set_entry_point(str(entry_id))
+            for nid in node_ids:
+                if deps[nid]:
+                    for dep in deps[nid]:
+                        graph.add_edge(dep, nid)
+                else:
+                    graph.add_edge(START, nid)
+
+            depended_on: set = set()
+            for d in deps.values():
+                depended_on.update(d)
+            for nid in node_ids:
+                if nid not in depended_on:
+                    graph.add_edge(nid, END)
+
+            _topo_info = {
+                "deps": {k: sorted(v) for k, v in deps.items() if v},
+                "entry_nodes": [n for n in node_ids if not deps[n]],
+                "terminal_nodes": [n for n in node_ids if n not in depended_on],
+            }
+            logger.info("Auto-built graph topology: %s", _topo_info)
+
         return graph.compile()
 
     @staticmethod
@@ -526,17 +582,20 @@ class GraphEngine:
         return {"fn": _route, "routes": routes}
 
     def _make_step_fn(self, step: dict):
-        """Create a node function for the given step config."""
+        """Create a node function for the given step config.
+
+        Returns a partial state update (not the full state) so that
+        LangGraph's reducers can merge outputs from parallel nodes.
+        """
         step_id = str(step["id"])
         step_type = str(step.get("type", "")).strip().lower()
         mcp_servers = self.mcp_cfg.get("servers") or {}
         mcp_transport = str(self.mcp_cfg.get("transport") or "streamable-http").lower()
         llm = self.llm
 
-        async def _run(state: GraphState) -> GraphState:
+        async def _run(state: GraphState) -> dict:
             inputs = state.get("inputs") or {}
-            outputs = state.setdefault("outputs", {})
-            tasks_output = state.setdefault("tasks_output", [])
+            outputs = state.get("outputs") or {}
 
             logger.info("Graph node started: %s (%s)", step_id, step_type)
 
@@ -561,16 +620,17 @@ class GraphEngine:
             else:
                 result = f"Unsupported node type: {step_type}"
 
-            outputs[step_id] = result
-            tasks_output.append(
-                {
-                    "name": step_id,
-                    "summary": _summarize_output(result),
-                    "raw": result,
-                }
-            )
             logger.info("Graph node completed: %s", step_id)
-            return state
+            return {
+                "outputs": {step_id: result},
+                "tasks_output": [
+                    {
+                        "name": step_id,
+                        "summary": _summarize_output(result),
+                        "raw": result,
+                    }
+                ],
+            }
 
         return _run
 
@@ -581,8 +641,8 @@ class GraphEngine:
     ) -> AsyncIterator[str]:
         """
         Execute the compiled graph via ``astream`` and yield SSE events
-        incrementally as each node starts and completes, preserving the
-        full graph topology (conditional edges, routing, etc.).
+        as each node completes.  Parallel nodes execute concurrently;
+        their results appear as soon as each finishes.
         """
         graph = self._build_graph()
         state: GraphState = {
@@ -591,25 +651,17 @@ class GraphEngine:
             "tasks_output": [],
         }
 
-        seen_tasks = 0
-        current_node: str | None = None
+        total_tasks = 0
 
         async for chunk in graph.astream(state, stream_mode="updates"):
             for node_name, node_state in chunk.items():
-                if node_name == "__start__" or node_name == "__end__":
+                if node_name in ("__start__", "__end__"):
                     continue
 
-                tasks_output = node_state.get("tasks_output", [])
-                new_tasks = tasks_output[seen_tasks:]
-
-                for task in new_tasks:
+                tasks = node_state.get("tasks_output", [])
+                for task in tasks:
                     task_name = task.get("name", node_name)
-
-                    if current_node and current_node != task_name:
-                        yield _sse("node_completed", {"node": current_node}, session_id)
-                    if current_node != task_name:
-                        yield _sse("node_started", {"node": task_name}, session_id)
-                        current_node = task_name
+                    yield _sse("node_started", {"node": task_name}, session_id)
 
                     raw = task.get("raw", "")
                     if raw:
@@ -623,12 +675,10 @@ class GraphEngine:
                             session_id,
                         )
 
-                seen_tasks += len(new_tasks)
+                    yield _sse("node_completed", {"node": task_name}, session_id)
+                    total_tasks += 1
 
-        if current_node:
-            yield _sse("node_completed", {"node": current_node}, session_id)
-
-        if seen_tasks > 0:
+        if total_tasks > 0:
             yield _sse(
                 "response",
                 {"delta": "", "status": "completed", "id": "graph_final"},
