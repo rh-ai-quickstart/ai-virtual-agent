@@ -52,7 +52,6 @@ import { getTemplateDetails } from '@/services/agent-templates';
 import {
   ReasoningSection,
   ToolCallSection,
-  GraphProgressTracker,
   GraphNodeOutputSection,
 } from './ExpandableContent';
 
@@ -167,19 +166,7 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
       });
     }
 
-    // If graph nodes are present, render progress tracker + per-node output sections
     if (graphNodes.length > 0) {
-      expandableComponents.push(
-        <GraphProgressTracker
-          key="graph-progress"
-          nodes={graphNodes.map((n) => ({
-            node_id: n.node_id,
-            label: n.label,
-            status: n.status,
-          }))}
-        />
-      );
-
       graphNodes.forEach((node) => {
         const outputText = nodeOutputMap.get(node.node_id) || '';
         expandableComponents.push(
