@@ -173,7 +173,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7001/mcp || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7001/mcp')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -194,7 +194,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7002/mcp || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7002/mcp')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -215,7 +215,7 @@ services:
     networks:
       - ai-va-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7003/mcp || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7003/mcp')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
