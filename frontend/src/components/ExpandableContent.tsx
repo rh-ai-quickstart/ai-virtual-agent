@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExpandableSection, ProgressStep, ProgressStepper, Spinner } from '@patternfly/react-core';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { GraphNodeStatus } from '@/types/chat';
 
 interface ReasoningSectionProps {
@@ -117,8 +118,8 @@ interface TextContentProps {
 export const TextContent: React.FC<TextContentProps> = ({ text, isMarkdown = false }) => {
   if (isMarkdown) {
     return (
-      <div className="markdown-content">
-        <ReactMarkdown>{text}</ReactMarkdown>
+      <div className="pf-v6-c-content">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
       </div>
     );
   }
@@ -228,8 +229,13 @@ export const GraphNodeOutputSection: React.FC<GraphNodeOutputSectionProps> = ({
         }}
       >
         {outputText ? (
-          <div className="markdown-content">
-            <ReactMarkdown>{isExpanded ? outputText : preview}</ReactMarkdown>
+          <div
+            className="pf-v6-c-content"
+            style={{ overflowX: 'auto', fontSize: '0.875rem' }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {isExpanded ? outputText : preview}
+            </ReactMarkdown>
           </div>
         ) : (
           <div style={{ color: '#6a6e73', fontStyle: 'italic' }}>
