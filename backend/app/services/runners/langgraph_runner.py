@@ -393,7 +393,10 @@ class LangGraphRunner(BaseRunner):
         Execute a declarative graph agent using the GraphEngine.
 
         The graph config from the agent defines the node pipeline;
-        the user prompt is passed as ``inputs.message``.
+        the user prompt is passed as ``inputs.message``.  When
+        ``input_fields`` are defined in the graph config, the LLM
+        extracts matching values from the user's message so that
+        natural-language requests override the hardcoded defaults.
         """
         from .graph_engine import GraphEngine
 
@@ -415,14 +418,62 @@ class LangGraphRunner(BaseRunner):
 
         user_text = "\n".join(text_parts) if text_parts else str(prompt)
 
-        # Merge user text with any input_fields defined in graph_config
-        graph_inputs: Dict[str, Any] = {"message": user_text}
+        # Start with hardcoded defaults from graph_config
         input_fields = agent.graph_config.get("input_fields") or {}
+        graph_inputs: Dict[str, Any] = {"message": user_text}
         if isinstance(input_fields, dict):
             graph_inputs.update(input_fields)
 
+        # Use the LLM to extract structured fields from the user's message
+        # so that "weekend getaway to Paris" overrides destination: "Tokyo".
+        if isinstance(input_fields, dict) and input_fields:
+            extracted = await self._extract_input_fields(llm, user_text, input_fields)
+            if extracted:
+                graph_inputs.update(extracted)
+                logger.info("Extracted input fields from user message: %s", extracted)
+
         async for event in engine.run_streaming(graph_inputs, str(session_id)):
             yield event
+
+    @staticmethod
+    async def _extract_input_fields(
+        llm: Any,
+        user_text: str,
+        defaults: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Use the LLM to pull structured fields out of a natural-language message."""
+        field_descriptions = json.dumps(
+            {k: f"default: {v}" for k, v in defaults.items()}, indent=2
+        )
+        extraction_prompt = (
+            "Extract values for the following fields from the user message.\n"
+            "Return ONLY a JSON object with the fields you can confidently extract.\n"
+            "Omit any field that the user did not mention or imply.\n\n"
+            f"Fields (with their defaults):\n{field_descriptions}\n\n"
+            f"User message: {user_text}\n\n"
+            "JSON:"
+        )
+
+        try:
+            response = await llm.ainvoke(
+                [{"role": "user", "content": extraction_prompt}]
+            )
+            raw = response.content if hasattr(response, "content") else str(response)
+            raw = raw.strip()
+
+            # Strip markdown fences if present
+            if raw.startswith("```"):
+                lines = raw.splitlines()
+                lines = [ln for ln in lines if not ln.strip().startswith("```")]
+                raw = "\n".join(lines).strip()
+
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return {k: v for k, v in parsed.items() if k in defaults and v}
+        except Exception as e:
+            logger.warning("Input field extraction failed (using defaults): %s", e)
+
+        return {}
 
     # ----- Public interface (BaseRunner) ------------------------------------
 
