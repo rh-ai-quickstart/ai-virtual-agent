@@ -191,21 +191,31 @@ interface GraphNodeOutputSectionProps {
 }
 
 const statusIcon = (s: GraphNodeStatus) => {
-  if (s === 'completed') return <span style={{ color: 'var(--pf-v6-global--success-color--100, #3e8635)', marginRight: 6, fontSize: '0.9em' }}>✓</span>;
+  if (s === 'completed')
+    return (
+      <span
+        style={{
+          color: 'var(--pf-v6-global--success-color--100, #3e8635)',
+          marginRight: 6,
+          fontSize: '0.9em',
+        }}
+      >
+        ✓
+      </span>
+    );
   if (s === 'running') return <Spinner size="sm" style={{ marginRight: 6 }} aria-label="running" />;
   return <span style={{ color: '#d2d2d2', marginRight: 6, fontSize: '0.9em' }}>○</span>;
 };
 
 export const GraphNodeOutputSection: React.FC<GraphNodeOutputSectionProps> = ({
-  nodeId,
+  nodeId: _nodeId,
   label,
   status,
   outputText,
 }) => {
   const [isExpanded, setIsExpanded] = useState(status === 'running');
 
-  const preview =
-    outputText.length > 120 ? outputText.slice(0, 120).trimEnd() + '...' : outputText;
+  const preview = outputText.length > 120 ? outputText.slice(0, 120).trimEnd() + '...' : outputText;
 
   const toggle = (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -229,10 +239,7 @@ export const GraphNodeOutputSection: React.FC<GraphNodeOutputSectionProps> = ({
         }}
       >
         {outputText ? (
-          <div
-            className="pf-v6-c-content"
-            style={{ overflowX: 'auto', fontSize: '0.875rem' }}
-          >
+          <div className="pf-v6-c-content" style={{ overflowX: 'auto', fontSize: '0.875rem' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {isExpanded ? outputText : preview}
             </ReactMarkdown>

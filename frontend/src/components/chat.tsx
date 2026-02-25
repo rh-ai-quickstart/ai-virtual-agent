@@ -49,11 +49,7 @@ import userAvatar from '../assets/img/user-avatar.svg';
 import { ATTACHMENTS_API_ENDPOINT } from '@/config/api';
 import { SimpleContentItem } from '@/types/chat';
 import { getTemplateDetails } from '@/services/agent-templates';
-import {
-  ReasoningSection,
-  ToolCallSection,
-  GraphNodeOutputSection,
-} from './ExpandableContent';
+import { ReasoningSection, ToolCallSection, GraphNodeOutputSection } from './ExpandableContent';
 
 const footnoteProps = {
   label: 'ChatBot uses AI. Check for mistakes.',

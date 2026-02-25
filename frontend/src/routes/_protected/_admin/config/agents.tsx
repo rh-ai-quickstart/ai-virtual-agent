@@ -718,11 +718,7 @@ function AgentTemplates() {
                               {pair.name}
                               {templateOverrides[pair.id]?.runner_type &&
                                 templateOverrides[pair.id]?.runner_type !== 'llamastack' && (
-                                  <Label
-                                    color="blue"
-                                    isCompact
-                                    style={{ marginLeft: 8 }}
-                                  >
+                                  <Label color="blue" isCompact style={{ marginLeft: 8 }}>
                                     {templateOverrides[pair.id]?.runner_type}
                                   </Label>
                                 )}
