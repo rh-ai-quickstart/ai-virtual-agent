@@ -368,6 +368,7 @@ export function AgentForm({
             >
               <FormSelectOption value="llamastack" label="LlamaStack (default)" />
               <FormSelectOption value="langgraph" label="LangGraph" />
+              <FormSelectOption value="crewai" label="CrewAI" />
             </FormSelect>
             <FormHelperText>
               Execution engine for this agent. LangGraph supports declarative graph workflows.

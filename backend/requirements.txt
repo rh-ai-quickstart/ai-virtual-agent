@@ -28,3 +28,8 @@ pyyaml
 langgraph
 langchain-openai
 langchain-mcp-adapters
+# CrewAI runner
+crewai
+crewai[tools]
+tavily-python
+litellm

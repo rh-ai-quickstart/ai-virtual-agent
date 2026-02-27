@@ -16,7 +16,7 @@ stages:
         - function: tests.integration.validators:validate_list_not_empty
       save:
         json:
-          first_template: "[0]"
+          first_template: "[1]"
 
   - name: Get template details
     request:
@@ -71,14 +71,8 @@ stages:
       status_code: 200
       headers:
         content-type: application/json
-      json:
-        status: "success"  # Template deployment successful
-        agent_id: !anystr  # UUID of newly created agent
-        agent_name: !anystr
-        persona: !anystr
-        knowledge_base_created: false
-        knowledge_base_name: !anything
-        message: !anything
+      verify_response_with:
+        - function: tests.integration.validators:validate_template_initialize_response
       save:
         json:
           deployed_agent_id: "agent_id"

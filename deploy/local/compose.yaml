@@ -114,6 +114,13 @@ services:
       - TRAVEL_RESEARCH_MCP_URL=http://travel-research-mcp:7001/mcp
       - HOTEL_MCP_URL=http://hotel-mcp:7002/mcp
       - FLIGHT_MCP_URL=http://flight-mcp:7003/mcp
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      # CrewAI / LiteLLM: Ollama base URL (no path suffix — LiteLLM appends its own)
+      - OLLAMA_API_BASE=http://ollama:11434
+      # Disable CrewAI tracing to prevent interactive prompts in server mode
+      - CREWAI_TRACING_ENABLED=false
+      - CREWAI_DEFAULT_MODEL=ollama/llama3.2:1b-instruct-fp16
+      - SERPAPI_API_KEY=${SERPAPI_API_KEY}
     ports:
       - '${BACKEND_PORT:-8000}:8000'
     volumes:
