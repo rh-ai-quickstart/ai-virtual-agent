@@ -332,6 +332,174 @@ class CrewAIRunner(BaseRunner):
             logger.error("Error updating session title: %s", e)
             await self.db.rollback()
 
+    @staticmethod
+    def _done_event() -> str:
+        """Return the SSE terminator used by the frontend stream handler."""
+        return "data: [DONE]\n\n"
+
+    def _crewai_unavailable_message(self) -> str | None:
+        """Return an import error message when CrewAI is unavailable."""
+        if CREWAI_AVAILABLE:
+            return None
+        logger.warning("CrewAI unavailable: %s", CREWAI_IMPORT_ERROR)
+        return (
+            "CrewAI is not available in this environment. "
+            f"Import error: {CREWAI_IMPORT_ERROR}"
+        )
+
+    def _validate_prompt_text(self, prompt: Any, sid: str, agent: Any) -> str | None:
+        """Extract and validate prompt text, returning None when empty."""
+        text = self._extract_prompt_text(prompt)
+        if text:
+            return text
+
+        logger.warning(
+            "Empty prompt for session %s, agent=%s",
+            sid,
+            getattr(agent, "id", None),
+        )
+        return None
+
+    @classmethod
+    def _should_emit_text_chunk(cls, content: str) -> bool:
+        """Filter out non-user-facing CrewAI ReAct artifacts in stream chunks."""
+        stripped = content.strip()
+        if not stripped:
+            return False
+        if cls._is_placeholder_output(content):
+            return False
+        if cls._GENERIC_BOILERPLATE_RE.match(stripped):
+            return False
+        if cls._REACT_NOISE_RE.match(stripped):
+            return False
+        return True
+
+    def _build_response_event(
+        self,
+        sid: str,
+        final_response_id: str,
+        *,
+        delta: str,
+        status: str = "in_progress",
+    ) -> str:
+        """Build a response SSE event for streaming and completion updates."""
+        return self._sse(
+            "response",
+            {"delta": delta, "status": status, "id": final_response_id},
+            sid,
+        )
+
+    def _build_tool_call_event(self, chunk: Any, sid: str, task_node_id: str) -> str | None:
+        """Map a CrewAI tool call chunk into the shared SSE schema."""
+        tool_call = getattr(chunk, "tool_call", None)
+        if not tool_call:
+            return None
+
+        name = getattr(tool_call, "tool_name", None) or getattr(tool_call, "name", "tool")
+        args = getattr(tool_call, "arguments", None) or {}
+        return self._sse(
+            "tool_call",
+            {
+                "id": f"tool-{task_node_id}",
+                "name": name,
+                "server_label": "crewai",
+                "arguments": json.dumps(args) if isinstance(args, dict) else str(args),
+                "output": None,
+                "error": None,
+                "status": "in_progress",
+            },
+            sid,
+        )
+
+    async def _stream_result_chunks(
+        self,
+        result: Any,
+        sid: str,
+        task_node_id: str,
+        final_response_id: str,
+    ) -> AsyncIterator[tuple[str, bool]]:
+        """Yield (event, has_text_delta) tuples generated from CrewAI chunks."""
+        has_output = False
+        if not hasattr(result, "__aiter__"):
+            return
+
+        async for chunk in result:
+            chunk_type = getattr(chunk, "chunk_type", None)
+            content = getattr(chunk, "content", "") or ""
+            logger.debug(
+                "CrewAI chunk type=%s content_len=%d",
+                chunk_type,
+                len(content),
+            )
+
+            if chunk_type == StreamChunkType.TEXT and content:
+                # Preserve raw spacing in streamed chunks. Cleaning each chunk
+                # introduces whitespace regressions at chunk boundaries.
+                if not self._should_emit_text_chunk(content):
+                    continue
+                has_output = True
+                yield (
+                    self._build_response_event(
+                        sid,
+                        final_response_id,
+                        delta=content,
+                    ),
+                    True,
+                )
+            elif chunk_type == StreamChunkType.TOOL_CALL:
+                tool_event = self._build_tool_call_event(chunk, sid, task_node_id)
+                if tool_event:
+                    yield (tool_event, False)
+
+        if has_output:
+            yield (
+                self._build_response_event(
+                    sid,
+                    final_response_id,
+                    delta="",
+                    status="completed",
+                ),
+                False,
+            )
+
+    async def _emit_fallback_result(
+        self,
+        result: Any,
+        sid: str,
+        final_response_id: str,
+    ) -> AsyncIterator[str]:
+        """Emit a final response extracted from CrewOutput when no text chunks exist."""
+        cleaned = self._extract_final_output_text(result)
+        if cleaned:
+            logger.info(
+                "Using CrewOutput fallback text (%d chars) for session %s",
+                len(cleaned),
+                sid,
+            )
+            yield self._build_response_event(
+                sid,
+                final_response_id,
+                delta=cleaned,
+            )
+            yield self._build_response_event(
+                sid,
+                final_response_id,
+                delta="",
+                status="completed",
+            )
+            return
+
+        yield self._sse(
+            "error",
+            {
+                "message": (
+                    "The assistant couldn't generate a final text response. "
+                    "Please try again."
+                )
+            },
+            sid,
+        )
+
     async def stream(
         self,
         agent: Any,
@@ -345,28 +513,17 @@ class CrewAIRunner(BaseRunner):
         components (same as the LangGraph vacation planner).
         """
         sid = str(session_id)
-        if not CREWAI_AVAILABLE:
-            logger.warning("CrewAI unavailable: %s", CREWAI_IMPORT_ERROR)
-            yield self._sse(
-                "error",
-                {
-                    "message": (
-                        "CrewAI is not available in this environment. "
-                        f"Import error: {CREWAI_IMPORT_ERROR}"
-                    )
-                },
-                sid,
-            )
-            yield "data: [DONE]\n\n"
+        unavailable_msg = self._crewai_unavailable_message()
+        if unavailable_msg:
+            yield self._sse("error", {"message": unavailable_msg}, sid)
+            yield self._done_event()
             return
 
         try:
-            text = self._extract_prompt_text(prompt)
-            if not text:
-                logger.warning("Empty prompt for session %s, agent=%s",
-                               sid, getattr(agent, "id", None))
+            text = self._validate_prompt_text(prompt, sid, agent)
+            if text is None:
                 yield self._sse("error", {"message": "No user message provided."}, sid)
-                yield "data: [DONE]\n\n"
+                yield self._done_event()
                 return
 
             logger.info("Building CrewAI crew for session %s", sid)
@@ -383,105 +540,31 @@ class CrewAIRunner(BaseRunner):
             logger.info("CrewAI kickoff returned type=%s for session %s",
                         type(result).__name__, sid)
 
-            has_output = False
-
-            # CrewAI stream=True pushes chunks via an async iterable.
-            # If kickoff returns a non-iterable CrewOutput, fall back to
-            # extracting the final text from the result object.
-            if hasattr(result, "__aiter__"):
-                async for chunk in result:
-                    chunk_type = getattr(chunk, "chunk_type", None)
-                    content = getattr(chunk, "content", "") or ""
-                    logger.debug("CrewAI chunk type=%s content_len=%d",
-                                 chunk_type, len(content))
-
-                    if chunk_type == StreamChunkType.TEXT and content:
-                        # Preserve raw spacing in streamed chunks; cleaning each
-                        # chunk strips boundary spaces and glues words together.
-                        if self._is_placeholder_output(content):
-                            continue
-                        if self._GENERIC_BOILERPLATE_RE.match(content.strip()):
-                            continue
-                        if self._REACT_NOISE_RE.match(content.strip()):
-                            continue
-                        has_output = True
-                        yield self._sse(
-                            "response",
-                            {
-                                "delta": content,
-                                "status": "in_progress",
-                                "id": final_response_id,
-                            },
-                            sid,
-                        )
-                    elif chunk_type == StreamChunkType.TOOL_CALL:
-                        tool_call = getattr(chunk, "tool_call", None)
-                        if tool_call:
-                            name = getattr(tool_call, "tool_name", None) or getattr(
-                                tool_call, "name", "tool"
-                            )
-                            args = getattr(tool_call, "arguments", None) or {}
-                            yield self._sse(
-                                "tool_call",
-                                {
-                                    "id": f"tool-{task_node_id}",
-                                    "name": name,
-                                    "server_label": "crewai",
-                                    "arguments": json.dumps(args) if isinstance(args, dict) else str(args),
-                                    "output": None,
-                                    "error": None,
-                                    "status": "in_progress",
-                                },
-                                sid,
-                            )
-
-            # Fallback: if no streaming chunks were produced, extract the
-            # final output from the CrewOutput object and strip any ReAct
-            # formatting artifacts left by small models.
-            if not has_output:
-                cleaned = self._extract_final_output_text(result)
-                if cleaned:
-                    logger.info(
-                        "Using CrewOutput fallback text (%d chars) for session %s",
-                        len(cleaned), sid,
-                    )
-                    has_output = True
-                    yield self._sse(
-                        "response",
-                        {
-                            "delta": cleaned,
-                            "status": "in_progress",
-                            "id": final_response_id,
-                        },
-                        sid,
-                    )
-                else:
-                    yield self._sse(
-                        "error",
-                        {
-                            "message": (
-                                "The assistant couldn't generate a final text response. "
-                                "Please try again."
-                            )
-                        },
-                        sid,
-                    )
+            has_streamed_output = False
+            # Prefer chunk-level streaming for responsiveness; fallback only when
+            # CrewAI returns a non-streaming output object.
+            async for event, has_text_delta in self._stream_result_chunks(
+                result,
+                sid,
+                task_node_id,
+                final_response_id,
+            ):
+                if has_text_delta:
+                    has_streamed_output = True
+                yield event
 
             yield self._sse("node_completed", {"node": task_node_id}, sid)
 
-            if has_output:
-                yield self._sse(
-                    "response",
-                    {"delta": "", "status": "completed", "id": final_response_id},
-                    sid,
-                )
+            if not has_streamed_output:
+                async for event in self._emit_fallback_result(result, sid, final_response_id):
+                    yield event
 
-            yield "data: [DONE]\n\n"
+            yield self._done_event()
 
             await self._update_session_title(session_id, prompt)
 
         except Exception as e:
             logger.exception("Error in CrewAI stream for session %s: %s", sid, e)
             yield self._sse("error", {"message": f"Error: {str(e)}"}, sid)
-            yield "data: [DONE]\n\n"
+            yield self._done_event()
 

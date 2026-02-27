@@ -13,7 +13,7 @@ from ...core.feature_flags import is_attachments_feature_enabled
 
 logger = logging.getLogger(__name__)
 
-ATTACHMENTS_BUCKET_ENDPOINT = os.getenv("ATTACHMENTS_BUCKET_ENDPOINT", "localhost:9000")
+ATTACHMENTS_BUCKET_ENDPOINT = os.getenv("ATTACHMENTS_BUCKET_ENDPOINT", "minio:9000")
 ATTACHMENTS_BUCKET_ACCESS_KEY = os.getenv(
     "ATTACHMENTS_BUCKET_ACCESS_KEY", "minio_rag_user"
 )
