@@ -39,6 +39,7 @@ class TemplateInitializationRequest(BaseModel):
     model_name: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = None
     knowledge_base_ids: Optional[List[str]] = None
+    runner_type: Optional[str] = None
 
 
 class TemplateInitializationResponse(BaseModel):

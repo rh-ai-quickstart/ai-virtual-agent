@@ -2,7 +2,18 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 USER root
 
-# No extra packages needed: start-backend-dev.sh uses Python for DB wait
+# UBI9 ships SQLite 3.34.1 but ChromaDB (via CrewAI) requires >= 3.35.0.
+# Compile a newer SQLite so Python's built-in sqlite3 module picks it up.
+RUN dnf install -y gcc make wget sqlite-devel && \
+    wget -q https://www.sqlite.org/2024/sqlite-autoconf-3450000.tar.gz && \
+    tar xzf sqlite-autoconf-3450000.tar.gz && \
+    cd sqlite-autoconf-3450000 && \
+    ./configure --prefix=/usr/local && \
+    make -j"$(nproc)" && make install && \
+    cd / && rm -rf sqlite-autoconf-* && \
+    dnf remove -y gcc make wget && dnf clean all
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
 
 # Set working directory
 WORKDIR /app
@@ -29,8 +40,9 @@ COPY .coveragerc /app/.coveragerc
 # Set Python path
 ENV PYTHONPATH=/app
 
-# Copy startup script and make executable in one layer
+# Copy startup script and make executable
 COPY deploy/local/scripts/start-backend-dev.sh /app/start-backend-dev.sh
+RUN chmod +x /app/start-backend-dev.sh
 
 # Expose the port
 EXPOSE 8000

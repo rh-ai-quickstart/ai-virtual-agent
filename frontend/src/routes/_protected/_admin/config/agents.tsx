@@ -1,6 +1,6 @@
 import { AgentList } from '@/components/agent-list';
 import { NewAgentCard } from '@/components/new-agent-card';
-import { SuiteDetails } from '@/types/agent';
+import { RunnerType, SuiteDetails } from '@/types/agent';
 
 import {
   Flex,
@@ -127,11 +127,17 @@ function AgentTemplates() {
         template_model?: string;
         template_tool_ids?: string[];
         template_knowledge_base_ids?: string[];
-        runner_type?: string;
+        runner_type?: RunnerType;
+        template_runner_type?: RunnerType;
       }
     >
   >({});
   const [templatesPrefetching, setTemplatesPrefetching] = useState<boolean>(false);
+  const runnerTypeOptions: Array<{ value: RunnerType; label: string }> = [
+    { value: 'llamastack', label: 'LlamaStack' },
+    { value: 'langgraph', label: 'LangGraph' },
+    { value: 'crewai', label: 'CrewAI' },
+  ];
 
   // Data for models, tools, and knowledge bases
   const { models, isLoadingModels, modelsError } = useModels();
@@ -264,6 +270,7 @@ function AgentTemplates() {
             template_model: '',
             template_tool_ids: [],
             template_knowledge_base_ids: [],
+            runner_type: 'llamastack',
           };
         }
       }
@@ -306,7 +313,7 @@ function AgentTemplates() {
               template_model: templateModel,
               template_tool_ids: defaultToolIds,
               template_knowledge_base_ids: defaultKbIds,
-              runner_type: t.runner_type,
+              runner_type: next[id]?.runner_type || (t.runner_type ?? 'llamastack'),
             };
           }
           return next;
@@ -829,6 +836,50 @@ function AgentTemplates() {
                               placeholder="Type or select knowledge bases..."
                             />
                           </FormGroup>
+                          <FormGroup label="Runner Type" fieldId={`runner-type-${pair.id}`}>
+                            <FormSelect
+                              id={`runner-type-${pair.id}-select`}
+                              value={templateOverrides[pair.id]?.runner_type || 'llamastack'}
+                              onChange={(
+                                _event: React.FormEvent<HTMLSelectElement>,
+                                value: string
+                              ) =>
+                                setTemplateOverrides(
+                                  (
+                                    prev: Record<
+                                      string,
+                                      {
+                                        model_name: string;
+                                        tool_ids: string[];
+                                        knowledge_base_ids: string[];
+                                        runner_type?: RunnerType;
+                                      }
+                                    >
+                                  ) => ({
+                                    ...prev,
+                                    [pair.id]: {
+                                      ...(prev[pair.id] || {
+                                        model_name: '',
+                                        tool_ids: [],
+                                        knowledge_base_ids: [],
+                                      }),
+                                      runner_type: value as RunnerType,
+                                    },
+                                  })
+                                )
+                              }
+                              aria-label={`Select runner type for ${pair.name}`}
+                              isDisabled={false}
+                            >
+                              {runnerTypeOptions.map((option) => (
+                                <FormSelectOption
+                                  key={option.value}
+                                  value={option.value}
+                                  label={option.label}
+                                />
+                              ))}
+                            </FormSelect>
+                          </FormGroup>
                         </div>
                       </div>
                     ))}
@@ -934,6 +985,12 @@ function AgentTemplates() {
                         }
                         if (kbPayload !== undefined) {
                           payload.knowledge_base_ids = kbPayload;
+                        }
+                        const selectedRunnerType =
+                          overrides.runner_type || overrides.template_runner_type || 'llamastack';
+                        const templateRunnerType = overrides.template_runner_type || 'llamastack';
+                        if (selectedRunnerType !== templateRunnerType) {
+                          payload.runner_type = selectedRunnerType;
                         }
 
                         const result = await initializeAgentFromTemplate(payload);

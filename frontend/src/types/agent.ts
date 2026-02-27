@@ -19,7 +19,7 @@ export interface SamplingParameters {
   repetition_penalty?: number;
 }
 
-export type RunnerType = 'llamastack' | 'langgraph';
+export type RunnerType = 'llamastack' | 'langgraph' | 'crewai';
 
 export interface AgentBase {
   name: string;

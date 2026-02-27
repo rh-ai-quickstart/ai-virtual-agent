@@ -852,3 +852,56 @@ def validate_skipped_deployment(response):
         print(f"✗ Skipped deployment validation failed: {str(e)}")
         print(f"Response text: {response.text[:500]}...")
         raise
+
+def validate_llms_response(response, required_models: list[str] | None = None):
+    """
+    Validate /llms response is a non-empty list and contains required model names.
+    """
+    import json
+
+    if hasattr(response, "json"):
+        models = response.json()
+    else:
+        models = json.loads(response.text)
+
+    assert isinstance(models, list), f"Expected list, got {type(models)}"
+    assert len(models) > 0, "Expected at least one model"
+
+    for i, item in enumerate(models):
+        assert isinstance(item, dict), f"Model item {i} is not an object"
+        assert "model_name" in item, f"Model item {i} missing model_name"
+        assert "provider_resource_id" in item, f"Model item {i} missing provider_resource_id"
+        assert item.get("model_type") == "llm", f"Model item {i} has unexpected model_type"
+
+    if required_models:
+        returned = {m.get("model_name") for m in models if isinstance(m, dict)}
+        for name in required_models:
+            assert name in returned, f"Required model '{name}' not found in {sorted(returned)}"
+
+    print(f"✓ LLMs response validation passed: {len(models)} models")
+    return True
+
+def validate_template_initialize_response(response):
+    """
+    Accept both first-time deployment (success) and idempotent re-deploy (skipped).
+    """
+    import json
+
+    if hasattr(response, "json"):
+        result = response.json()
+    else:
+        result = json.loads(response.text)
+
+    assert isinstance(result, dict), f"Expected dict, got {type(result)}"
+    assert "status" in result, "Missing status"
+    assert result["status"] in {"success", "skipped"}, (
+        f"Expected status success/skipped, got {result['status']}"
+    )
+
+    # Required in both flows
+    assert isinstance(result.get("agent_id"), str) and result["agent_id"], "Missing agent_id"
+    assert isinstance(result.get("agent_name"), str) and result["agent_name"], "Missing agent_name"
+    assert "message" in result, "Missing message"
+
+    print(f"✓ Template initialize validation passed: status={result['status']}")
+    return True
