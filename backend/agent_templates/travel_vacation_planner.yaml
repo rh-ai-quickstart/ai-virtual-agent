@@ -68,7 +68,7 @@ templates:
         - id: flight_research_task
           type: mcp_tool
           depends_on:
-            - hotel_research_task
+            - itinerary_options_task
           server: flight
           tool: google_flights_search
           args:
