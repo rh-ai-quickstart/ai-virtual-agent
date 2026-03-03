@@ -360,6 +360,127 @@ class TestGraphEngine:
         nodes_started = [p["node"] for p in parsed if p["type"] == "node_started"]
         assert nodes_started == ["step1", "step2"]
 
+    @pytest.mark.asyncio
+    async def test_internal_node_suppressed(self):
+        """Nodes with internal: true produce no SSE events and their output
+        is excluded from the LLM context of downstream nodes."""
+        from backend.app.services.runners.graph_engine import GraphEngine
+
+        config = {
+            "nodes": [
+                {
+                    "id": "hidden",
+                    "type": "llm",
+                    "internal": True,
+                    "prompt": "List items",
+                },
+                {
+                    "id": "visible",
+                    "type": "llm",
+                    "depends_on": ["hidden"],
+                    "prompt": "Use {outputs.hidden}",
+                },
+            ]
+        }
+
+        mock_llm = AsyncMock()
+        call_count = 0
+        captured_prompts: list = []
+
+        async def mock_ainvoke(messages):
+            nonlocal call_count
+            call_count += 1
+            for msg in messages:
+                if isinstance(msg, dict):
+                    captured_prompts.append(msg.get("content", ""))
+            resp = MagicMock()
+            resp.content = f"Result {call_count}"
+            return resp
+
+        mock_llm.ainvoke = mock_ainvoke
+
+        engine = GraphEngine(config=config, llm=mock_llm)
+        events = []
+        async for event in engine.run_streaming({}, "sess"):
+            events.append(event)
+
+        parsed = [
+            json.loads(e[len("data: ") : -2]) for e in events if e.startswith("data: ")
+        ]
+
+        node_names = [p["node"] for p in parsed if p["type"] == "node_started"]
+        assert "hidden" not in node_names
+        assert "visible" in node_names
+
+        responses = [
+            p for p in parsed if p["type"] == "response" and p.get("id") == "hidden"
+        ]
+        assert len(responses) == 0
+
+        visible_responses = [
+            p for p in parsed if p["type"] == "response" and p.get("id") == "visible"
+        ]
+        assert len(visible_responses) == 1
+
+        assert call_count == 2, "Both nodes should execute even if one is internal"
+
+        visible_prompt = captured_prompts[1]
+        assert (
+            "hidden" not in visible_prompt
+        ), "Internal node output should not appear in downstream LLM context"
+
+    @pytest.mark.asyncio
+    async def test_items_path_source_auto_internal(self):
+        """Nodes referenced only via items_path are auto-detected as internal,
+        even without an explicit internal: true flag."""
+        from backend.app.services.runners.graph_engine import GraphEngine
+
+        config = {
+            "nodes": [
+                {
+                    "id": "places",
+                    "type": "llm",
+                    "prompt": "List places",
+                },
+                {
+                    "id": "research",
+                    "type": "mcp_tool_map",
+                    "depends_on": ["places"],
+                    "server": "travel",
+                    "tool": "search",
+                    "items_path": "outputs.places",
+                    "query_template": "Research {item}",
+                },
+            ],
+            "mcp": {
+                "transport": "streamable-http",
+                "servers": {
+                    "travel": {"url": "http://localhost:7001/mcp"},
+                },
+            },
+        }
+
+        mock_llm = AsyncMock()
+        mock_resp = MagicMock()
+        mock_resp.content = '["Tokyo", "Kyoto"]'
+        mock_llm.ainvoke.return_value = mock_resp
+
+        engine = GraphEngine(config=config, llm=mock_llm)
+        assert "places" in engine._internal_ids
+
+        events = []
+        async for event in engine.run_streaming({}, "sess"):
+            events.append(event)
+
+        parsed = [
+            json.loads(e[len("data: ") : -2]) for e in events if e.startswith("data: ")
+        ]
+
+        node_names = [p["node"] for p in parsed if p["type"] == "node_started"]
+        assert (
+            "places" not in node_names
+        ), "items_path source node should be auto-suppressed"
+
     def test_empty_nodes_raises(self):
         """GraphEngine raises on empty node list."""
         from backend.app.services.runners.graph_engine import GraphEngine

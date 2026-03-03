@@ -49,15 +49,24 @@ def google_hotels_search(
         params["adults"] = adults
 
     def _fetch(search_params: Dict[str, Any]) -> Dict[str, Any]:
-        response = requests.get(
-            "https://serpapi.com/search.json",
-            params=search_params,
-            timeout=30,
-        )
-        if response.status_code >= 400:
-            raise RuntimeError(f"SerpApi error {response.status_code}: {response.text}")
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = requests.get(
+                "https://serpapi.com/search.json",
+                params=search_params,
+                timeout=(10, 30),  # (connect_timeout, read_timeout)
+            )
+            if response.status_code >= 400:
+                raise RuntimeError(
+                    f"SerpApi error {response.status_code}: {response.text}"
+                )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.Timeout:
+            logger.error("SerpApi timeout for params: %s", search_params)
+            raise RuntimeError(f"SerpApi timeout for query: {search_params.get('q')}")
+        except requests.exceptions.RequestException as e:
+            logger.error("SerpApi error: %s", e)
+            raise RuntimeError(f"SerpApi error: {str(e)}")
 
     try:
         data = _fetch(params)
