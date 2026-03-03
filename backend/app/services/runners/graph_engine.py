@@ -489,6 +489,16 @@ class GraphEngine:
         self._internal_ids: set = {
             str(n["id"]) for n in self.nodes if n.get("internal")
         }
+        # Auto-detect: nodes referenced only via items_path in mcp_tool_map
+        # nodes are intermediate data producers, not user-facing output.
+        items_source_ids = set()
+        for n in self.nodes:
+            if str(n.get("type", "")).strip().lower() in ("mcp_tool_map", "mcp_map"):
+                ip = str(n.get("items_path", ""))
+                m = _OUTPUT_REF_RE.search(ip)
+                if m:
+                    items_source_ids.add(m.group(1))
+        self._internal_ids |= items_source_ids
 
     def _build_graph(self):
         """Build a compiled LangGraph StateGraph from the config."""
@@ -635,7 +645,7 @@ class GraphEngine:
                         "name": step_id,
                         "summary": _summarize_output(result),
                         "raw": result,
-                        "internal": bool(step.get("internal", False)),
+                        "internal": step_id in internal_ids,
                     }
                 ],
             }

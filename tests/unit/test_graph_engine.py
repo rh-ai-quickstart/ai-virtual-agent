@@ -429,6 +429,58 @@ class TestGraphEngine:
             "hidden" not in visible_prompt
         ), "Internal node output should not appear in downstream LLM context"
 
+    @pytest.mark.asyncio
+    async def test_items_path_source_auto_internal(self):
+        """Nodes referenced only via items_path are auto-detected as internal,
+        even without an explicit internal: true flag."""
+        from backend.app.services.runners.graph_engine import GraphEngine
+
+        config = {
+            "nodes": [
+                {
+                    "id": "places",
+                    "type": "llm",
+                    "prompt": "List places",
+                },
+                {
+                    "id": "research",
+                    "type": "mcp_tool_map",
+                    "depends_on": ["places"],
+                    "server": "travel",
+                    "tool": "search",
+                    "items_path": "outputs.places",
+                    "query_template": "Research {item}",
+                },
+            ],
+            "mcp": {
+                "transport": "streamable-http",
+                "servers": {
+                    "travel": {"url": "http://localhost:7001/mcp"},
+                },
+            },
+        }
+
+        mock_llm = AsyncMock()
+        mock_resp = MagicMock()
+        mock_resp.content = '["Tokyo", "Kyoto"]'
+        mock_llm.ainvoke.return_value = mock_resp
+
+        engine = GraphEngine(config=config, llm=mock_llm)
+        assert "places" in engine._internal_ids
+
+        events = []
+        async for event in engine.run_streaming({}, "sess"):
+            events.append(event)
+
+        parsed = [
+            json.loads(e[len("data: ") : -2]) for e in events if e.startswith("data: ")
+        ]
+
+        node_names = [p["node"] for p in parsed if p["type"] == "node_started"]
+        assert (
+            "places" not in node_names
+        ), "items_path source node should be auto-suppressed"
+
     def test_empty_nodes_raises(self):
         """GraphEngine raises on empty node list."""
         from backend.app.services.runners.graph_engine import GraphEngine
