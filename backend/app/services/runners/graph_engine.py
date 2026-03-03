@@ -486,6 +486,9 @@ class GraphEngine:
         self.nodes = nodes
         self.edges = cfg.get("edges") or []
         self.entry_id: Optional[str] = cfg.get("entry")
+        self._internal_ids: set = {
+            str(n["id"]) for n in self.nodes if n.get("internal")
+        }
 
     def _build_graph(self):
         """Build a compiled LangGraph StateGraph from the config."""
@@ -592,6 +595,7 @@ class GraphEngine:
         mcp_servers = self.mcp_cfg.get("servers") or {}
         mcp_transport = str(self.mcp_cfg.get("transport") or "streamable-http").lower()
         llm = self.llm
+        internal_ids = self._internal_ids
 
         async def _run(state: GraphState) -> dict:
             inputs = state.get("inputs") or {}
@@ -602,7 +606,10 @@ class GraphEngine:
             result = ""
 
             if step_type in ("llm", "prompt"):
-                result = await _run_llm_node(llm, step, inputs, outputs)
+                visible_outputs = {
+                    k: v for k, v in outputs.items() if k not in internal_ids
+                }
+                result = await _run_llm_node(llm, step, inputs, visible_outputs)
 
             elif step_type in ("mcp_tool", "mcp"):
                 result = await _run_mcp_tool_node(

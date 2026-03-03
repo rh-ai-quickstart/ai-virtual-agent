@@ -362,7 +362,8 @@ class TestGraphEngine:
 
     @pytest.mark.asyncio
     async def test_internal_node_suppressed(self):
-        """Nodes with internal: true produce no SSE events but still run."""
+        """Nodes with internal: true produce no SSE events and their output
+        is excluded from the LLM context of downstream nodes."""
         from backend.app.services.runners.graph_engine import GraphEngine
 
         config = {
@@ -384,10 +385,14 @@ class TestGraphEngine:
 
         mock_llm = AsyncMock()
         call_count = 0
+        captured_prompts: list = []
 
         async def mock_ainvoke(messages):
             nonlocal call_count
             call_count += 1
+            for msg in messages:
+                if isinstance(msg, dict):
+                    captured_prompts.append(msg.get("content", ""))
             resp = MagicMock()
             resp.content = f"Result {call_count}"
             return resp
@@ -418,6 +423,11 @@ class TestGraphEngine:
         assert len(visible_responses) == 1
 
         assert call_count == 2, "Both nodes should execute even if one is internal"
+
+        visible_prompt = captured_prompts[1]
+        assert (
+            "hidden" not in visible_prompt
+        ), "Internal node output should not appear in downstream LLM context"
 
     def test_empty_nodes_raises(self):
         """GraphEngine raises on empty node list."""
