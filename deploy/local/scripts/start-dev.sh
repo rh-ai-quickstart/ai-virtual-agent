@@ -36,6 +36,7 @@ fi
 # Change to deploy/local directory for compose commands
 cd "$DEPLOY_LOCAL_DIR"
 COMPOSE_FILE="compose.yaml"
+ENV_FILE="$PROJECT_ROOT/.env"
 
 # Check if attachments should be enabled
 ENABLE_ATTACHMENTS=${ENABLE_ATTACHMENTS:-true}
@@ -50,11 +51,23 @@ fi
 
 # Stop any existing containers
 echo "🛑 Stopping existing containers..."
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES down --remove-orphans
+podman compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" $COMPOSE_PROFILES down --remove-orphans
+
+# Force-remove any leftover containers that compose failed to clean up.
+# This handles cases where podman loses track of compose-managed containers.
+DEV_CONTAINERS=(
+    postgresql-dev ollama-dev llamastack-dev
+    ai-va-backend-dev ai-va-frontend-dev
+    travel-research-mcp-dev hotel-mcp-dev flight-mcp-dev
+    minio-dev
+)
+for ctr in "${DEV_CONTAINERS[@]}"; do
+    podman rm -f "$ctr" 2>/dev/null || true
+done
 
 # Start all services
 echo "🏗️  Building and starting all services..."
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES up --build -d
+podman compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" $COMPOSE_PROFILES up --build -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to be ready..."
@@ -62,7 +75,7 @@ sleep 10
 
 # Check service status
 echo "📊 Service Status:"
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES ps
+podman compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" $COMPOSE_PROFILES ps
 
 # Show helpful information
 echo ""
