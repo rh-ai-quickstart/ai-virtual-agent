@@ -28,6 +28,7 @@ templates:
       nodes:
         - id: places_list_task
           type: llm
+          internal: true
           prompt: |
             List 5 specific places, neighborhoods, or attractions in {inputs.destination}
             that match {inputs.interests}. Return a JSON array of strings only.

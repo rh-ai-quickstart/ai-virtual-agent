@@ -628,6 +628,7 @@ class GraphEngine:
                         "name": step_id,
                         "summary": _summarize_output(result),
                         "raw": result,
+                        "internal": bool(step.get("internal", False)),
                     }
                 ],
             }
@@ -661,6 +662,12 @@ class GraphEngine:
                 tasks = node_state.get("tasks_output", [])
                 for task in tasks:
                     task_name = task.get("name", node_name)
+                    total_tasks += 1
+
+                    if task.get("internal"):
+                        logger.debug("Suppressing SSE for internal node: %s", task_name)
+                        continue
+
                     yield _sse("node_started", {"node": task_name}, session_id)
 
                     raw = task.get("raw", "")
@@ -676,7 +683,6 @@ class GraphEngine:
                         )
 
                     yield _sse("node_completed", {"node": task_name}, session_id)
-                    total_tasks += 1
 
         if total_tasks > 0:
             yield _sse(

@@ -360,6 +360,65 @@ class TestGraphEngine:
         nodes_started = [p["node"] for p in parsed if p["type"] == "node_started"]
         assert nodes_started == ["step1", "step2"]
 
+    @pytest.mark.asyncio
+    async def test_internal_node_suppressed(self):
+        """Nodes with internal: true produce no SSE events but still run."""
+        from backend.app.services.runners.graph_engine import GraphEngine
+
+        config = {
+            "nodes": [
+                {
+                    "id": "hidden",
+                    "type": "llm",
+                    "internal": True,
+                    "prompt": "List items",
+                },
+                {
+                    "id": "visible",
+                    "type": "llm",
+                    "depends_on": ["hidden"],
+                    "prompt": "Use {outputs.hidden}",
+                },
+            ]
+        }
+
+        mock_llm = AsyncMock()
+        call_count = 0
+
+        async def mock_ainvoke(messages):
+            nonlocal call_count
+            call_count += 1
+            resp = MagicMock()
+            resp.content = f"Result {call_count}"
+            return resp
+
+        mock_llm.ainvoke = mock_ainvoke
+
+        engine = GraphEngine(config=config, llm=mock_llm)
+        events = []
+        async for event in engine.run_streaming({}, "sess"):
+            events.append(event)
+
+        parsed = [
+            json.loads(e[len("data: ") : -2]) for e in events if e.startswith("data: ")
+        ]
+
+        node_names = [p["node"] for p in parsed if p["type"] == "node_started"]
+        assert "hidden" not in node_names
+        assert "visible" in node_names
+
+        responses = [
+            p for p in parsed if p["type"] == "response" and p.get("id") == "hidden"
+        ]
+        assert len(responses) == 0
+
+        visible_responses = [
+            p for p in parsed if p["type"] == "response" and p.get("id") == "visible"
+        ]
+        assert len(visible_responses) == 1
+
+        assert call_count == 2, "Both nodes should execute even if one is internal"
+
     def test_empty_nodes_raises(self):
         """GraphEngine raises on empty node list."""
         from backend.app.services.runners.graph_engine import GraphEngine
