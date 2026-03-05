@@ -18,6 +18,7 @@ from sqlalchemy import select
 from .base import BaseRunner
 from ...models.agent import VirtualAgent
 from ...models import ChatSession
+from ...lib.agent_tools import GoogleFlightsTool, GoogleHotelsTool, TavilySearchTool
 
 try:
     from crewai import Agent, Crew, Task, LLM
@@ -80,6 +81,17 @@ class CrewAIRunner(BaseRunner):
     _GENERIC_BOILERPLATE_RE = re.compile(
         r"^\s*i now can give (?:a )?great answer\.?\s*$",
         re.IGNORECASE,
+    )
+    _TOOL_CLASS_BY_NAME = {
+        "tavily_travel_search": TavilySearchTool,
+        "google_hotels_search": GoogleHotelsTool,
+        "google_flights_search": GoogleFlightsTool,
+    }
+    _SERVER_TOOL_NAME_HINTS = (
+        ("research", "tavily_travel_search"),
+        ("tavily", "tavily_travel_search"),
+        ("hotel", "google_hotels_search"),
+        ("flight", "google_flights_search"),
     )
 
     @classmethod
@@ -218,36 +230,99 @@ class CrewAIRunner(BaseRunner):
                 **extra_kwargs,
             )
 
-    def _build_tools(self, agent: Any) -> List[Any]:
-        """Build a list of tools from the virtual agent config."""
-        requested_tools = agent.tools
+    @classmethod
+    def _infer_tool_name_for_server(cls, server_name: str) -> str | None:
+        """Best-effort tool-name inference from an MCP server label."""
+        normalized = (server_name or "").lower()
+        for hint, tool_name in cls._SERVER_TOOL_NAME_HINTS:
+            if hint in normalized:
+                return tool_name
+        return None
 
-        if not requested_tools:
+    @classmethod
+    def _build_tools_from_servers(cls, graph_config: Any) -> List[Any]:
+        """Resolve CrewAI tools from graph_config.mcp.servers entries."""
+        if not isinstance(graph_config, dict):
             return []
 
-        tools = []
-        tavily_tool_cls = None
-        try:
-            from ...lib.agent_tools.travel_tools import TavilySearchTool
+        mcp_cfg = graph_config.get("mcp")
+        if not isinstance(mcp_cfg, dict):
+            return []
 
-            tavily_tool_cls = TavilySearchTool
-        except Exception as exc:  # pragma: no cover - optional dependency path
-            logger.warning("TavilySearchTool unavailable: %s", exc)
+        servers = mcp_cfg.get("servers")
+        if not isinstance(servers, dict) or not servers:
+            return []
 
+        server_tool_names: Dict[str, str] = {}
+        nodes = graph_config.get("nodes")
+        if isinstance(nodes, list):
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                server_name = node.get("server")
+                tool_name = node.get("tool")
+                if (
+                    isinstance(server_name, str)
+                    and isinstance(tool_name, str)
+                    and server_name in servers
+                ):
+                    server_tool_names[server_name] = tool_name
+
+        resolved: List[Any] = []
+        seen_tool_names: set[str] = set()
+        for server_name in servers.keys():
+            tool_name = server_tool_names.get(server_name) or cls._infer_tool_name_for_server(
+                server_name
+            )
+            if not tool_name or tool_name in seen_tool_names:
+                continue
+
+            tool_cls = cls._TOOL_CLASS_BY_NAME.get(tool_name)
+            if not tool_cls:
+                logger.info(
+                    "No local CrewAI tool mapped for server '%s' tool '%s'",
+                    server_name,
+                    tool_name,
+                )
+                continue
+
+            resolved.append(tool_cls())
+            seen_tool_names.add(tool_name)
+
+        return resolved
+
+    def _build_tools(self, agent: Any) -> List[Any]:
+        """Build CrewAI tools from servers config and legacy tool associations."""
+        tools: List[Any] = []
+        seen_names: set[str] = set()
+
+        for tool in self._build_tools_from_servers(getattr(agent, "graph_config", None)):
+            name = getattr(tool, "name", tool.__class__.__name__)
+            if name not in seen_names:
+                tools.append(tool)
+                seen_names.add(name)
+
+        requested_tools = getattr(agent, "tools", None) or []
         for tool in requested_tools:
-            if (
-                tool["toolgroup_id"] == "builtin::websearch"
-                and os.getenv("TAVILY_API_KEY")
-                and tavily_tool_cls
-            ):
-                tools.append(tavily_tool_cls())
+            if not isinstance(tool, dict):
+                continue
+            if tool.get("toolgroup_id") != "builtin::websearch":
+                continue
+            tool_cls = self._TOOL_CLASS_BY_NAME.get("tavily_travel_search")
+            if not tool_cls:
+                continue
+            instance = tool_cls()
+            name = getattr(instance, "name", instance.__class__.__name__)
+            if name not in seen_names:
+                tools.append(instance)
+                seen_names.add(name)
 
         return tools
 
     async def _build_crew(self, agent: VirtualAgent) -> Crew:
         """Build a CrewAI Agent, Task, and Crew from the virtual agent config."""
         role = getattr(agent, "persona", None) or getattr(agent, "name", None) or "CrewAI Agent"
-        backstory = getattr(agent, "prompt", None) or "You are a helpful assistant."
+        backstory = getattr(agent, "description", None) or "You are a helpful assistant."
         goal = getattr(agent, "goal", None) or "Answer the user's message. User message: {user_input}"
 
         logger.debug("Building crew for agent id=%s name=%s model=%s",
@@ -285,7 +360,7 @@ class CrewAIRunner(BaseRunner):
         )
 
         task = Task(
-            description="Answer the user's message. User message: {user_input}",
+            description=getattr(agent, "prompt", None) or "Answer the user's message. User message: {user_input}",
             expected_output="A clear, helpful response to the user.",
             agent=crew_agent,
         )
