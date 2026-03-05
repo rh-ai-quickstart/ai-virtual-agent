@@ -93,6 +93,20 @@ class CrewAIRunner(BaseRunner):
         ("hotel", "google_hotels_search"),
         ("flight", "google_flights_search"),
     )
+    _LITELLM_PROVIDER_PREFIXES = (
+        "openai/",
+        "azure/",
+        "anthropic/",
+        "ollama/",
+        "huggingface/",
+        "bedrock/",
+        "vertex_ai/",
+        "gemini/",
+        "groq/",
+        "mistral/",
+        "cohere/",
+        "together_ai/",
+    )
 
     @classmethod
     def _clean_react_output(cls, raw: str) -> str:
@@ -171,9 +185,20 @@ class CrewAIRunner(BaseRunner):
     def _extract_prompt_text(prompt: Any) -> str:
         return str(prompt).strip() or ""
 
+    @classmethod
+    def _to_litellm_model(cls, model_name: str) -> str:
+        """Ensure model is provider-qualified for LiteLLM routing."""
+        normalized = (model_name or "").strip()
+        if not normalized:
+            return "openai/meta/llama-3.1-70b-instruct"
+        if normalized.startswith(cls._LITELLM_PROVIDER_PREFIXES):
+            return normalized
+        return f"openai/{normalized}"
+
     def __get_llm(self, agent: VirtualAgent) -> LLM:
         """Get the LLM configured for LiteLLM (used by CrewAI internally)."""
         openai_url = os.getenv("OPENAI_API_URL")
+        openai_api_key = os.getenv("OPENAI_API_KEY", "no-key")
 
         extra_kwargs: Dict[str, Any] = {}
         if agent.temperature is not None:
@@ -183,16 +208,30 @@ class CrewAIRunner(BaseRunner):
         if agent.top_p is not None:
             extra_kwargs["top_p"] = float(agent.top_p)
 
+        requested_model = (
+            agent.model_name.strip()
+            if isinstance(agent.model_name, str) and agent.model_name.strip()
+            else "meta/llama-3.1-70b-instruct"
+        )
+        litellm_model = self._to_litellm_model(requested_model)
+
         if agent.model_name == "ollama/llama3.2:1b-instruct-fp16":
             return LLM(
                 model="openai/gpt-4o",
                 base_url=openai_url,
-                api_key=os.getenv("OPENAI_API_KEY"),
+                api_key=openai_api_key,
+                **extra_kwargs,
+            )
+        elif litellm_model.startswith("openai/"):
+            return LLM(
+                model=litellm_model,
+                base_url=openai_url,
+                api_key=openai_api_key,
                 **extra_kwargs,
             )
         else:
             return LLM(
-                model="ollama/llama3.2:1b-instruct-fp16",
+                model=litellm_model,
                 **extra_kwargs,
             )
 
