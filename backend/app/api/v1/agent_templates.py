@@ -246,9 +246,11 @@ async def initialize_agent_from_template(
         # Compute target agent name early for messages and duplicate checks
         agent_name = request.custom_name or template.name
 
-        # Duplicate check: simple, early return by template_id
-        existing_agent = await virtual_agents.get_by_template_id(
-            db, template_id=db_template.id
+        # Duplicate check: prevent redeploying the same template/name pair.
+        # This still allows multiple agents from one template when users
+        # intentionally choose different names (e.g. different runner types).
+        existing_agent = await virtual_agents.get_by_template_id_and_name(
+            db, template_id=db_template.id, name=agent_name
         )
         if existing_agent:
             logger.info(
@@ -345,7 +347,7 @@ async def initialize_agent_from_template(
 
         agent_config = VirtualAgentCreate(
             name=agent_name,
-            runner_type=template.runner_type or "llamastack",
+            runner_type=request.runner_type or template.runner_type or "llamastack",
             prompt=agent_prompt,
             model_name=model_to_use,
             tools=tools,

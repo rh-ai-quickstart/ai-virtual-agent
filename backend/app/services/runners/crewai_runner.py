@@ -169,37 +169,12 @@ class CrewAIRunner(BaseRunner):
 
     @staticmethod
     def _extract_prompt_text(prompt: Any) -> str:
-        """
-        Extract plain text from prompt (str or list of content items).
-        Matches the shape used by the chat API (e.g. InterleavedContent items
-        with .text or .type / .content).
-        """
-        if isinstance(prompt, str):
-            return prompt.strip() or ""
-        if isinstance(prompt, list):
-            parts: List[str] = []
-            for item in prompt:
-                if hasattr(item, "text") and item.text:
-                    parts.append(str(item.text))
-                elif isinstance(item, dict):
-                    if item.get("type") == "input_text" and item.get("text"):
-                        parts.append(str(item["text"]))
-                    elif item.get("content") and isinstance(item["content"], str):
-                        parts.append(item["content"])
-            return " ".join(parts).strip() or ""
         return str(prompt).strip() or ""
 
+
+
     def __get_llm(self, agent: VirtualAgent) -> LLM:
-        """Get the LLM configured for LiteLLM (used by CrewAI internally).
-
-        LiteLLM requires the provider prefix in the model string itself,
-        e.g. "ollama/model-name" or "openai/model-name".
-
-        For the ollama/ provider, LiteLLM reads OLLAMA_API_BASE from the
-        environment automatically and constructs the correct API paths.
-        Passing base_url explicitly causes double-path bugs
-        (e.g. /api/generate/api/show).
-        """
+        """Get the LLM configured for LiteLLM (used by CrewAI internally)."""
         openai_url = os.getenv("OPENAI_API_URL")
 
         extra_kwargs: Dict[str, Any] = {}
@@ -210,23 +185,16 @@ class CrewAIRunner(BaseRunner):
         if agent.top_p is not None:
             extra_kwargs["top_p"] = float(agent.top_p)
 
-        if agent.model_name == "gpt-4o":
+        if agent.model_name == "ollama/llama3.2:1b-instruct-fp16":
             return LLM(
                 model="openai/gpt-4o",
                 base_url=openai_url,
                 api_key=os.getenv("OPENAI_API_KEY"),
-                **extra_kwargs,
-            )
-        elif agent.model_name == "meta-llama/Llama-3.1-8B-Instruct":
-            return LLM(
-                model="ollama/llama3.2:1b-instruct-fp16",
                 **extra_kwargs,
             )
         else:
             return LLM(
-                model="openai/gpt-4o",
-                base_url=openai_url,
-                api_key=os.getenv("OPENAI_API_KEY"),
+                model="ollama/llama3.2:1b-instruct-fp16",
                 **extra_kwargs,
             )
 
