@@ -171,8 +171,6 @@ class CrewAIRunner(BaseRunner):
     def _extract_prompt_text(prompt: Any) -> str:
         return str(prompt).strip() or ""
 
-
-
     def __get_llm(self, agent: VirtualAgent) -> LLM:
         """Get the LLM configured for LiteLLM (used by CrewAI internally)."""
         openai_url = os.getenv("OPENAI_API_URL")
