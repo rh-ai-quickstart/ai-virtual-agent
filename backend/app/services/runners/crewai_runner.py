@@ -15,13 +15,14 @@ import re
 from typing import Any, AsyncIterator, Dict, List
 
 from sqlalchemy import select
-from .base import BaseRunner
-from ...models.agent import VirtualAgent
-from ...models import ChatSession
+
 from ...lib.agent_tools import GoogleFlightsTool, GoogleHotelsTool, TavilySearchTool
+from ...models import ChatSession
+from ...models.agent import VirtualAgent
+from .base import BaseRunner
 
 try:
-    from crewai import Agent, Crew, Task, LLM
+    from crewai import LLM, Agent, Crew, Task
     from crewai.types.streaming import StreamChunkType  # type: ignore[attr-defined]
 
     CREWAI_AVAILABLE = True
@@ -58,7 +59,8 @@ class CrewAIRunner(BaseRunner):
         return f"data: {json.dumps(payload)}\n\n"
 
     _SMALL_MODEL_PATTERNS = re.compile(
-        r"(?:^|/)(?:.*\b(?:1b|2b|3b)\b)", re.IGNORECASE,
+        r"(?:^|/)(?:.*\b(?:1b|2b|3b)\b)",
+        re.IGNORECASE,
     )
 
     @classmethod
@@ -129,7 +131,11 @@ class CrewAIRunner(BaseRunner):
             if cls._GENERIC_BOILERPLATE_RE.match(stripped):
                 continue
             stripped = cls._FINAL_ANSWER_PREFIX_RE.sub("", stripped).strip()
-            if stripped and not stripped.startswith("{") and not stripped.startswith("'"):
+            if (
+                stripped
+                and not stripped.startswith("{")
+                and not stripped.startswith("'")
+            ):
                 kept.append(stripped)
         return "\n".join(kept) if kept else raw.strip()
 
@@ -151,7 +157,14 @@ class CrewAIRunner(BaseRunner):
                 return [obj]
 
             if isinstance(obj, dict):
-                for key in ("raw", "output", "result", "final_output", "summary", "text"):
+                for key in (
+                    "raw",
+                    "output",
+                    "result",
+                    "final_output",
+                    "summary",
+                    "text",
+                ):
                     value = obj.get(key)
                     if isinstance(value, str) and value.strip():
                         values.append(value)
@@ -217,7 +230,7 @@ class CrewAIRunner(BaseRunner):
 
         if agent.model_name == "ollama/llama3.2:1b-instruct-fp16":
             return LLM(
-                model="openai/gpt-4o",
+                model="openai/llama3.2:1b",
                 base_url=openai_url,
                 api_key=openai_api_key,
                 **extra_kwargs,
@@ -276,9 +289,9 @@ class CrewAIRunner(BaseRunner):
         resolved: List[Any] = []
         seen_tool_names: set[str] = set()
         for server_name in servers.keys():
-            tool_name = server_tool_names.get(server_name) or cls._infer_tool_name_for_server(
+            tool_name = server_tool_names.get(
                 server_name
-            )
+            ) or cls._infer_tool_name_for_server(server_name)
             if not tool_name or tool_name in seen_tool_names:
                 continue
 
@@ -301,7 +314,9 @@ class CrewAIRunner(BaseRunner):
         tools: List[Any] = []
         seen_names: set[str] = set()
 
-        for tool in self._build_tools_from_servers(getattr(agent, "graph_config", None)):
+        for tool in self._build_tools_from_servers(
+            getattr(agent, "graph_config", None)
+        ):
             name = getattr(tool, "name", tool.__class__.__name__)
             if name not in seen_names:
                 tools.append(tool)
@@ -326,12 +341,25 @@ class CrewAIRunner(BaseRunner):
 
     async def _build_crew(self, agent: VirtualAgent) -> Crew:
         """Build a CrewAI Agent, Task, and Crew from the virtual agent config."""
-        role = getattr(agent, "persona", None) or getattr(agent, "name", None) or "CrewAI Agent"
-        backstory = getattr(agent, "description", None) or "You are a helpful assistant."
-        goal = getattr(agent, "goal", None) or "Answer the user's message. User message: {user_input}"
+        role = (
+            getattr(agent, "persona", None)
+            or getattr(agent, "name", None)
+            or "CrewAI Agent"
+        )
+        backstory = (
+            getattr(agent, "description", None) or "You are a helpful assistant."
+        )
+        goal = (
+            getattr(agent, "goal", None)
+            or "Answer the user's message. User message: {user_input}"
+        )
 
-        logger.debug("Building crew for agent id=%s name=%s model=%s",
-                      agent.id, agent.name, agent.model_name)
+        logger.debug(
+            "Building crew for agent id=%s name=%s model=%s",
+            agent.id,
+            agent.name,
+            agent.model_name,
+        )
         logger.debug(f"Role: {role}, Backstory: {backstory}, Goal: {goal}")
 
         llm = self.__get_llm(agent)
@@ -349,7 +377,8 @@ class CrewAIRunner(BaseRunner):
         if tools and self._is_small_model(model_str):
             logger.warning(
                 "Model %s is too small for reliable ReAct tool use; "
-                "dropping tools so the model responds directly.", model_str,
+                "dropping tools so the model responds directly.",
+                model_str,
             )
             tools = []
 
@@ -365,7 +394,8 @@ class CrewAIRunner(BaseRunner):
         )
 
         task = Task(
-            description=getattr(agent, "prompt", None) or "Answer the user's message. User message: {user_input}",
+            description=getattr(agent, "prompt", None)
+            or "Answer the user's message. User message: {user_input}",
             expected_output="A clear, helpful response to the user.",
             agent=crew_agent,
         )
@@ -403,7 +433,9 @@ class CrewAIRunner(BaseRunner):
             txt = user_input.text
             title = (txt[:50] + "...") if len(txt) > 50 else txt[:50]
         elif isinstance(user_input, str) and user_input:
-            title = (user_input[:50] + "...") if len(user_input) > 50 else user_input[:50]
+            title = (
+                (user_input[:50] + "...") if len(user_input) > 50 else user_input[:50]
+            )
 
         session.title = title
         try:
@@ -469,13 +501,17 @@ class CrewAIRunner(BaseRunner):
             sid,
         )
 
-    def _build_tool_call_event(self, chunk: Any, sid: str, task_node_id: str) -> str | None:
+    def _build_tool_call_event(
+        self, chunk: Any, sid: str, task_node_id: str
+    ) -> str | None:
         """Map a CrewAI tool call chunk into the shared SSE schema."""
         tool_call = getattr(chunk, "tool_call", None)
         if not tool_call:
             return None
 
-        name = getattr(tool_call, "tool_name", None) or getattr(tool_call, "name", "tool")
+        name = getattr(tool_call, "tool_name", None) or getattr(
+            tool_call, "name", "tool"
+        )
         args = getattr(tool_call, "arguments", None) or {}
         return self._sse(
             "tool_call",
@@ -617,8 +653,11 @@ class CrewAIRunner(BaseRunner):
             logger.info("Starting CrewAI kickoff for session %s", sid)
             result = await crew.kickoff_async(inputs={"user_input": text})
 
-            logger.info("CrewAI kickoff returned type=%s for session %s",
-                        type(result).__name__, sid)
+            logger.info(
+                "CrewAI kickoff returned type=%s for session %s",
+                type(result).__name__,
+                sid,
+            )
 
             has_streamed_output = False
             # Prefer chunk-level streaming for responsiveness; fallback only when
@@ -636,7 +675,9 @@ class CrewAIRunner(BaseRunner):
             yield self._sse("node_completed", {"node": task_node_id}, sid)
 
             if not has_streamed_output:
-                async for event in self._emit_fallback_result(result, sid, final_response_id):
+                async for event in self._emit_fallback_result(
+                    result, sid, final_response_id
+                ):
                     yield event
 
             yield self._done_event()
@@ -647,4 +688,3 @@ class CrewAIRunner(BaseRunner):
             logger.exception("Error in CrewAI stream for session %s: %s", sid, e)
             yield self._sse("error", {"message": f"Error: {str(e)}"}, sid)
             yield self._done_event()
-

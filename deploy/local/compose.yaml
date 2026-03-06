@@ -120,6 +120,9 @@ services:
       # Disable CrewAI tracing to prevent interactive prompts in server mode
       - CREWAI_TRACING_ENABLED=false
       - CREWAI_DEFAULT_MODEL=ollama/llama3.2:1b-instruct-fp16
+      # CrewAI requires OPENAI_API_KEY at init; route through LlamaStack's OpenAI-compat endpoint
+      - OPENAI_API_KEY=no-key-needed
+      - OPENAI_API_URL=http://llamastack:8321/v1
       - SERPAPI_API_KEY=${SERPAPI_API_KEY}
     ports:
       - '${BACKEND_PORT:-8000}:8000'
