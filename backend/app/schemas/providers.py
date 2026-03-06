@@ -20,7 +20,9 @@ class ProviderConfigVLLM(BaseModel):
 class ProviderConfigOllama(BaseModel):
     """Configuration for Ollama provider."""
 
-    base_url: str = Field(..., description="Ollama server URL (e.g., http://ollama:11434/v1)")
+    base_url: str = Field(
+        ..., description="Ollama server URL (e.g., http://ollama:11434/v1)"
+    )
 
 
 class ProviderCreate(BaseModel):

@@ -13,8 +13,8 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from backend.main import app
 from backend.app.models import VirtualAgent
+from backend.main import app
 
 
 @pytest.fixture
