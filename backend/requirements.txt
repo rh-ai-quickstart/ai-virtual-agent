@@ -31,5 +31,7 @@ langchain-mcp-adapters
 # CrewAI runner
 crewai
 crewai[tools]
+# UBI9 ships SQLite 3.34 but ChromaDB (via CrewAI) needs >= 3.35
+pysqlite3-binary
 tavily-python
 litellm
