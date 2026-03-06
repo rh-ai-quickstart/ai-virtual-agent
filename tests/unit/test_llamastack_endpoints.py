@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List, Optional
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from backend.app.main import app
+from backend.main import app
 
 # ---------------------------------------------------------------------------
 # Helper mocks – minimal shapes that mimic objects returned by LlamaStack
@@ -14,13 +14,13 @@ from backend.app.main import app
 
 
 class _MockModel(BaseModel):
-    """Minimal shape of a LlamaStack *model* object for multiple endpoints."""
+    """Minimal shape of a LlamaStack *model* object (OpenAI-compatible format
+    used by models.list() in llama-stack-client 0.5.x)."""
 
-    identifier: str
-    provider_resource_id: str
-    api_model_type: str  # used by /llms
-    model_type: str  # used to *filter* safety/embedding endpoints
-    type: str  # echoed back in the response (same as model_type)
+    id: str
+    created: int = 0
+    owned_by: str = ""
+    custom_metadata: Optional[Dict[str, object]] = None
 
 
 class _MockVectorStore(BaseModel):
@@ -96,25 +96,25 @@ def client(monkeypatch):
     # server
     models = [
         _MockModel(
-            identifier="gpt-4",
-            provider_resource_id="openai.gpt-4",
-            api_model_type="llm",
-            model_type="llm",
-            type="llm",
+            id="gpt-4",
+            custom_metadata={
+                "model_type": "llm",
+                "provider_resource_id": "openai.gpt-4",
+            },
         ),
         _MockModel(
-            identifier="toxicity-checker",
-            provider_resource_id="llama.guard",
-            api_model_type="safety",
-            model_type="safety",
-            type="safety",
+            id="toxicity-checker",
+            custom_metadata={
+                "model_type": "safety",
+                "provider_resource_id": "llama.guard",
+            },
         ),
         _MockModel(
-            identifier="text-embedding-ada",
-            provider_resource_id="openai.ada",
-            api_model_type="embedding",
-            model_type="embedding",
-            type="embedding",
+            id="text-embedding-ada",
+            custom_metadata={
+                "model_type": "embedding",
+                "provider_resource_id": "openai.ada",
+            },
         ),
     ]
 
@@ -157,7 +157,7 @@ def client(monkeypatch):
 
 
 def test_get_llms_filters_only_llm_models(client):
-    """Endpoint must return only models with `api_model_type == 'llm'`."""
+    """Endpoint must return only models with model_type == 'llm'."""
 
     response = client.get("/api/v1/llama_stack/llms")
 

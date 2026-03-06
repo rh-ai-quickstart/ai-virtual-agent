@@ -14,6 +14,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _get_model_metadata(model) -> Dict[str, Any]:
+    """Extract metadata fields from a Model object returned by models.list().
+
+    In llama-stack-client 0.5.x the list response uses the OpenAI-compatible
+    Model schema where model_type and provider_resource_id live inside
+    ``custom_metadata``.
+    """
+    meta = model.custom_metadata or {}
+    return {
+        "model_type": meta.get("model_type"),
+        "provider_resource_id": meta.get("provider_resource_id"),
+    }
+
+
 @router.get("/llms", response_model=List[Dict[str, Any]])
 async def get_llms(request: Request):
     """
@@ -51,10 +65,11 @@ async def get_llms(request: Request):
         llms = []
         for model in models:
             try:
-                if model.api_model_type == "llm":
+                meta = _get_model_metadata(model)
+                if meta["model_type"] == "llm":
                     # Skip models that are used as shields
-                    provider_resource_id = str(model.provider_resource_id)
-                    model_id = str(model.identifier)
+                    provider_resource_id = str(meta["provider_resource_id"] or "")
+                    model_id = str(model.id)
 
                     if (
                         provider_resource_id in shield_resource_ids
@@ -63,12 +78,12 @@ async def get_llms(request: Request):
                         continue
 
                     llm_config = {
-                        "model_name": str(model.identifier),
-                        "provider_resource_id": model.provider_resource_id,
-                        "model_type": model.api_model_type,
+                        "model_name": model_id,
+                        "provider_resource_id": meta["provider_resource_id"],
+                        "model_type": meta["model_type"],
                     }
                     llms.append(llm_config)
-            except AttributeError as ae:
+            except (AttributeError, KeyError, TypeError) as ae:
                 logger.error(
                     f"Error processing model data: {str(ae)}. Model data: {model}"
                 )
@@ -116,11 +131,12 @@ async def get_safety_models(request: Request):
         models = await client.models.list()
         safety_models = []
         for model in models:
-            if model.model_type == "safety":
+            meta = _get_model_metadata(model)
+            if meta["model_type"] == "safety":
                 safety_model = {
-                    "id": str(model.identifier),
-                    "name": model.provider_resource_id,
-                    "model_type": model.type,
+                    "id": str(model.id),
+                    "name": meta["provider_resource_id"],
+                    "model_type": meta["model_type"],
                 }
                 safety_models.append(safety_model)
         return safety_models
@@ -138,11 +154,12 @@ async def get_embedding_models(request: Request):
         models = await client.models.list()
         embedding_models = []
         for model in models:
-            if model.model_type == "embedding":
+            meta = _get_model_metadata(model)
+            if meta["model_type"] == "embedding":
                 embedding_model = {
-                    "name": str(model.identifier),
-                    "provider_resource_id": model.provider_resource_id,
-                    "model_type": model.type,
+                    "name": str(model.id),
+                    "provider_resource_id": meta["provider_resource_id"],
+                    "model_type": meta["model_type"],
                 }
                 embedding_models.append(embedding_model)
         return embedding_models

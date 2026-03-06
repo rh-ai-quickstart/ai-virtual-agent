@@ -14,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.main import app
+from backend.main import app
 from backend.app.models import RoleEnum, User
 
 

@@ -12,7 +12,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from backend.app.main import app
+from backend.main import app
 
 
 @pytest.fixture
@@ -39,10 +39,18 @@ def mock_llama_client():
 def sample_model():
     """Create sample model."""
     model = MagicMock()
+    # OpenAI-compatible fields used by models.list()
+    model.id = "test-model"
+    model.custom_metadata = {
+        "provider_id": "test-provider",
+        "provider_resource_id": "test-resource",
+        "model_type": "llm",
+    }
+    # Legacy fields used by models.register() / models.retrieve() responses
     model.identifier = "test-model"
     model.provider_id = "test-provider"
     model.provider_resource_id = "test-resource"
-    model.model_type = "llm"
+    model.api_model_type = "llm"
     model.metadata = {"key": "value"}
     return model
 

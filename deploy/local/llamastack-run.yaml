@@ -12,7 +12,7 @@ providers:
   - provider_id: ollama
     provider_type: remote::ollama
     config:
-      url: http://ollama:11434
+      base_url: http://ollama:11434/v1
   safety:
   - provider_id: llama-guard
     provider_type: inline::llama-guard
@@ -63,11 +63,7 @@ storage:
       table_name: openai_conversations
       backend: sql_default
 registered_resources:
-  models:
-  - metadata: {}
-    model_id: llama3.2:1b-instruct-fp16
-    provider_id: ollama
-    model_type: llm
+  models: []
   shields: []
   vector_dbs: []
   datasets: []

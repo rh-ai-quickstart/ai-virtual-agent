@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from backend.app.main import app
+from backend.main import app
 
 
 class _MockToolGroup(BaseModel):

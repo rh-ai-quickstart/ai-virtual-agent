@@ -3,7 +3,7 @@ test_name: Test Chat API Error Handling
 stages:
   - name: Test invalid agent ID
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json
@@ -24,7 +24,7 @@ stages:
 
   - name: Test non-existent agent ID
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json
@@ -45,7 +45,7 @@ stages:
 
   - name: Test missing required fields
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json
@@ -61,7 +61,7 @@ stages:
 
   - name: Test empty messages array
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json
@@ -311,7 +311,7 @@ test_name: Test Malformed Request Handling
 stages:
   - name: Test invalid JSON in chat request
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json
@@ -390,7 +390,7 @@ stages:
 
   - name: Test extremely long chat message
     request:
-      url: "{tavern.env_vars.TEST_FRONTEND_URL}/api/v1/chat"
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat"
       method: POST
       headers:
         Content-Type: application/json

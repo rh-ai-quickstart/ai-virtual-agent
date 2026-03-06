@@ -281,13 +281,8 @@ async def get_conversation_messages(
         client = get_client_from_request(request)
         try:
             # List items in the conversation
-            # The include parameter is required (empty list to get default fields)
-            # Available include values are for extra fields like:
-            # "file_search_call.results", "reasoning.encrypted_content", etc.
             items_response = await client.conversations.items.list(
                 conversation_id=session.conversation_id,
-                after=None,
-                include=[],
                 limit=100,
                 order="asc",
             )
