@@ -111,10 +111,18 @@ async def get_user_from_headers(headers: dict[str, str], db: AsyncSession):
         logger.info(
             f"User not found, creating: username={username}, email={email}, role={role}"
         )
-        existing_user = await user.create_user(
-            db, username=username, email=email, role=role, agent_ids=[]
-        )
-        logger.info(f"Successfully created user {existing_user.id}")
+        try:
+            existing_user = await user.create_user(
+                db, username=username, email=email, role=role, agent_ids=[]
+            )
+            logger.info(f"Successfully created user {existing_user.id}")
+        except Exception:
+            # Handle race condition: another request may have created the user
+            existing_user = await user.get_by_username_or_email(
+                db, username=username, email=email
+            )
+            if not existing_user:
+                raise
     else:
         logger.info(
             f"Found existing user: {existing_user.id} (username={existing_user.username})"

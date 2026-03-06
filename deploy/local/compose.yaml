@@ -58,13 +58,14 @@ services:
       - "OLLAMA_DEBUG=1 ollama serve & sleep 10; ollama run llama3.2:1b-instruct-fp16 --keepalive 60m hi; wait"
     healthcheck:
       test: ["CMD-SHELL", "ollama list | grep -q llama3.2:1b-instruct-fp16"]
-      interval: 30s
-      timeout: 10s
-      retries: 30
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
 
   # LlamaStack service
   llamastack:
-    image: llamastack/distribution-starter:0.3.2
+    image: llamastack/distribution-starter:0.5.2
     container_name: llamastack-dev
     platform: linux/amd64
     restart: unless-stopped

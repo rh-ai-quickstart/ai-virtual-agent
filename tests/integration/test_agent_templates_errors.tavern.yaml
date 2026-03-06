@@ -135,7 +135,7 @@ stages:
       status_code: 200
       save:
         json:
-          deploy_template: "[0]"
+          deploy_template: "[1]"
 
   - name: setup_get_model
     request:

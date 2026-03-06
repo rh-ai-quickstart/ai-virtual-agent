@@ -43,7 +43,7 @@ async def register_model(model_data: ModelCreate, request: Request):
             model_id=str(registered_model.identifier),
             provider_id=registered_model.provider_id,
             provider_model_id=registered_model.provider_resource_id,
-            model_type=registered_model.model_type,
+            model_type=registered_model.api_model_type,
             metadata=registered_model.metadata,
         )
 
@@ -79,8 +79,11 @@ async def list_models(request: Request):
 
         models_list = []
         for model in models:
-            provider_resource_id = str(model.provider_resource_id)
-            model_id = str(model.identifier)
+            # In llama-stack-client 0.5.x, models.list() returns OpenAI-compatible
+            # Model objects where provider info lives in custom_metadata
+            meta = model.custom_metadata or {}
+            provider_resource_id = str(meta.get("provider_resource_id", ""))
+            model_id = str(model.id)
 
             # Check if this model is used as a shield
             is_shield = (
@@ -90,10 +93,10 @@ async def list_models(request: Request):
 
             model_data = ModelRead(
                 model_id=model_id,
-                provider_id=model.provider_id,
+                provider_id=meta.get("provider_id", ""),
                 provider_model_id=provider_resource_id,
-                model_type=model.model_type,
-                metadata=model.metadata if hasattr(model, "metadata") else {},
+                model_type=meta.get("model_type", ""),
+                metadata=meta,
                 is_shield=is_shield,
             )
             models_list.append(model_data)
@@ -122,7 +125,7 @@ async def get_model(model_id: str, request: Request):
             model_id=str(model.identifier),
             provider_id=model.provider_id,
             provider_model_id=model.provider_resource_id,
-            model_type=model.model_type,
+            model_type=model.api_model_type,
             metadata=model.metadata if hasattr(model, "metadata") else {},
         )
 
@@ -160,14 +163,14 @@ async def update_model(model_id: str, model_data: ModelUpdate, request: Request)
                 if model_data.metadata is not None
                 else existing_model.metadata
             ),
-            model_type=existing_model.model_type,
+            model_type=existing_model.api_model_type,
         )
 
         return ModelRead(
             model_id=str(updated_model.identifier),
             provider_id=updated_model.provider_id,
             provider_model_id=updated_model.provider_resource_id,
-            model_type=updated_model.model_type,
+            model_type=updated_model.api_model_type,
             metadata=updated_model.metadata,
         )
 
