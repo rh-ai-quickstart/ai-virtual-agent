@@ -1,3 +1,10 @@
+# Swap in pysqlite3 so ChromaDB (via CrewAI) sees SQLite >= 3.35 on UBI9.
+# Must run before any module imports sqlite3.
+__import__("pysqlite3")
+import sys
+
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
 """
 FastAPI main application module for AI Virtual Agent Quickstart.
 

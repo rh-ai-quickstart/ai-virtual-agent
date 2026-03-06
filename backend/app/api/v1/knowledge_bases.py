@@ -153,7 +153,7 @@ async def delete_knowledge_base(
 
 async def create_ingestion_pipeline(kb: KnowledgeBaseCreate):
     """Create ingestion pipeline via external API."""
-    add_pipeline = os.environ["INGESTION_PIPELINE_URL"] + "/add"
+    add_pipeline = get_ingestion_pipeline_url() + "/add"
     data = kb.pipeline_model_dict()
     logger.info(f"Creating pipeline at {add_pipeline} {data=}")
     async with httpx.AsyncClient() as client:
@@ -163,7 +163,7 @@ async def create_ingestion_pipeline(kb: KnowledgeBaseCreate):
 
 async def delete_ingestion_pipeline(vector_store_name: str):
     """Delete ingestion pipeline via external API."""
-    del_pipeline = os.environ["INGESTION_PIPELINE_URL"] + "/delete"
+    del_pipeline = get_ingestion_pipeline_url() + "/delete"
     data = {"pipeline_name": vector_store_name}
     logger.info(f"Deleting pipeline with {del_pipeline} {data=}")
     async with httpx.AsyncClient() as client:
@@ -201,7 +201,7 @@ async def update_vector_store_ids(request: Request, db: AsyncSession):
 
 async def get_pipeline_status(pipeline_name: str) -> str:
     """Get ingestion pipeline status via external API."""
-    status_endpoint = os.environ["INGESTION_PIPELINE_URL"] + "/status"
+    status_endpoint = get_ingestion_pipeline_url() + "/status"
     data = {"pipeline_name": pipeline_name}
     logger.info(f"Fetching pipeline status from {status_endpoint} {data=}")
     async with httpx.AsyncClient() as client:
@@ -214,3 +214,9 @@ async def get_pipeline_status(pipeline_name: str) -> str:
                 f"could not fetch pipeline status for {pipeline_name}: {str(e)}"
             )
             return "unknown"
+
+def get_ingestion_pipeline_url():
+    try:
+        return os.environ["INGESTION_PIPELINE_URL"]
+    except KeyError:
+        return "http://llamastack:8321/ingestion_pipeline/" 

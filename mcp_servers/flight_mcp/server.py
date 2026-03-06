@@ -196,6 +196,9 @@ def google_flights_search(
     api_key = os.getenv("SERPAPI_API_KEY")
     if not api_key:
         return "SERPAPI_API_KEY is not set. Provide it to enable flight research."
+    origin = (origin or "").strip()
+    destination = (destination or "").strip()
+
     if not origin or not destination:
         return "Origin and destination are required to search flights."
     if not return_date:
@@ -227,10 +230,12 @@ def google_flights_search(
         selected.append(destinations[-1])
     max_destinations = 2
     results = []
+    unresolved_destinations: list[str] = []
 
     for dest in selected[:max_destinations]:
         destination_code = _resolve_airport_code(dest, api_key)
         if not destination_code:
+            unresolved_destinations.append(dest)
             continue
 
         params: Dict[str, Any] = {
@@ -284,6 +289,19 @@ def google_flights_search(
                 f"- {airline} {flight_num} {dep}->{arr} "
                 f"| {duration} mins | ${price}"
             )
+
+    if not results:
+        if unresolved_destinations:
+            unresolved = ", ".join(unresolved_destinations)
+            return (
+                "No flights found because destination airport code could not be resolved "
+                f"for: {unresolved}. Please provide destination as a city with a clear "
+                "airport or a 3-letter IATA code (e.g., NRT, CDG)."
+            )
+        return (
+            "No flight results were returned by SerpApi for the provided route and dates. "
+            "Try different dates or nearby airports."
+        )
 
     return "\n".join(results)
 

@@ -5,6 +5,9 @@ extend-ignore =
     W503,
     F401,
     F841
+per-file-ignores =
+    main.py:E402,
+    backend/main.py:E402
 exclude =
     migrations/,
     __pycache__/,

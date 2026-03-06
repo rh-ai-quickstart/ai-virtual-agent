@@ -2,7 +2,7 @@
 Agent-related schemas.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ class VirtualAgentBase(BaseModel):
     """Base virtual agent config schema."""
 
     name: str
-    runner_type: str = "llamastack"  # "llamastack" | "langgraph" | "crewai"
+    runner_type: Literal["llamastack", "langgraph", "crewai"] = "llamastack"
     model_name: str
     prompt: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = []
@@ -76,6 +76,7 @@ class VirtualAgentResponse(VirtualAgentInDB):
     suite_id: Optional[UUID] = None
     suite_name: Optional[str] = None
     category: Optional[str] = None
+    runner_type: Optional[str] = None
 
 
 class AgentTemplateBase(BaseModel):

@@ -74,6 +74,7 @@ async def create_virtual_agent_internal(
         "repetition_penalty": getattr(va, "repetition_penalty", None),
         "max_infer_iters": getattr(va, "max_infer_iters", None),
         "graph_config": getattr(va, "graph_config", None),
+        "runner_type": getattr(va, "runner_type", "llamastack"),
     }
 
     # Create the agent

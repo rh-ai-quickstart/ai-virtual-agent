@@ -14,11 +14,12 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 
-from ...api.llamastack import get_client_from_request
-from ...config import settings
-from ...core.auth import is_local_dev_mode
+from ...api.llamastack import get_llamastack_client_from_request
 from ...models import ChatSession
 from .base import BaseRunner
+from ...core.auth import is_local_dev_mode
+from ...config import Settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -422,7 +423,7 @@ async def build_responses_tools(
         elif tool_id.startswith("mcp::"):
             if request:
                 try:
-                    client = get_client_from_request(request)
+                    client = get_llamastack_client_from_request(request)
                     toolgroups = await client.toolgroups.list()
                     for toolgroup in toolgroups:
                         if str(toolgroup.identifier) == tool_id:
@@ -562,6 +563,7 @@ class LlamaStackRunner(BaseRunner):
             openai_input = await self._prepare_conversation_input(prompt)
 
             model_for_request = agent.model_name
+            settings = Settings()
             if is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
                 model_for_request = settings.DEFAULT_INFERENCE_MODEL
                 logger.debug(
@@ -587,7 +589,7 @@ class LlamaStackRunner(BaseRunner):
 
             aggregator = StreamAggregator(str(session_id))
 
-            async with get_client_from_request(self.request) as client:
+            async with get_llamastack_client_from_request(self.request) as client:
                 # Run input shields
                 if agent.input_shields and len(agent.input_shields) > 0:
                     violation = await self._run_input_shields(

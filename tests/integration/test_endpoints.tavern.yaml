@@ -11,10 +11,11 @@ stages:
       status_code: 200
       headers:
         content-type: application/json
-      json:
-        - model_name: "ollama/llama3.2:1b"
-          provider_resource_id: "llama3.2:1b"
-          model_type: "llm"
+      verify_response_with:
+        - function: tests.integration.validators:validate_llms_response
+          extra_kwargs:
+            required_models:
+              - "ollama/llama3.2:1b"
 ---
 test_name: Test Virtual Agents API Endpoint
 stages:

@@ -70,6 +70,18 @@ class CRUDVirtualAgent(CRUDBase[VirtualAgent, VirtualAgentCreate, dict]):
         )
         return result.scalars().first()
 
+    async def get_by_template_id_and_name(
+        self, db: AsyncSession, *, template_id: uuid.UUID, name: str
+    ) -> Optional[VirtualAgent]:
+        """Get a virtual agent by template_id and exact name."""
+        result = await db.execute(
+            select(VirtualAgent)
+            .where(VirtualAgent.template_id == template_id)
+            .where(VirtualAgent.name == name)
+            .limit(1)
+        )
+        return result.scalars().first()
+
     async def get_all_with_templates(self, db: AsyncSession) -> List[VirtualAgent]:
         """Get all virtual agents with loaded template and suite relationships."""
         result = await db.execute(
