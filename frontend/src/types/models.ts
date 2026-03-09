@@ -38,12 +38,12 @@ export interface ProviderCreate {
 }
 
 export interface VLLMConfig {
-  url: string;
+  base_url: string;
   api_token?: string;
   max_tokens?: number;
   tls_verify?: boolean;
 }
 
 export interface OllamaConfig {
-  url: string;
+  base_url: string;
 }

@@ -12,7 +12,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from backend.app.main import app
+from backend.main import app
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ class TestListProviders:
         provider1.provider_id = "vllm1"
         provider1.provider_type = "remote::vllm"
         provider1.api = "inference"
-        provider1.config = {"url": "http://vllm:8000"}
+        provider1.config = {"base_url": "http://vllm:8000"}
 
         mock_llama_client.providers.list.return_value = [provider1]
 
@@ -97,7 +97,7 @@ class TestRegisterProvider:
         provider_data = {
             "provider_id": "new-vllm",
             "provider_type": "remote::vllm",
-            "config": {"url": "http://new-vllm:8000"},
+            "config": {"base_url": "http://new-vllm:8000"},
         }
 
         with patch(
@@ -121,7 +121,7 @@ class TestRegisterProvider:
         provider_data = {
             "provider_id": "new-vllm",
             "provider_type": "remote::vllm",
-            "config": {"url": "http://new-vllm:8000"},
+            "config": {"base_url": "http://new-vllm:8000"},
         }
 
         response = test_client.post("/api/v1/models/providers/", json=provider_data)
