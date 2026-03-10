@@ -23,13 +23,13 @@ from .base import BaseRunner
 os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
 
 try:
-    from crewai import LLM, Agent, Crew, Task
+    from crewai import LLM, Agent, Crew, Process, Task
     from crewai.types.streaming import StreamChunkType  # type: ignore[attr-defined]
 
     CREWAI_AVAILABLE = True
     CREWAI_IMPORT_ERROR: Exception | None = None
 except Exception as exc:  # pragma: no cover - environment dependent
-    Agent = Crew = Task = LLM = Any  # type: ignore[assignment]
+    Agent = Crew = Task = LLM = Process = Any  # type: ignore[assignment]
     StreamChunkType = Any  # type: ignore[assignment]
     CREWAI_AVAILABLE = False
     CREWAI_IMPORT_ERROR = exc
@@ -717,7 +717,7 @@ class CrewAIRunner(BaseRunner):
                 )
                 tools = []
 
-            crew_agents[agent_id] = Agent(
+            agent_obj = Agent(
                 role=acfg.get("role", agent_id).strip(),
                 goal=acfg.get("goal", "Help the user.").strip(),
                 backstory=acfg.get("backstory", "You are a helpful assistant.").strip(),
@@ -725,8 +725,16 @@ class CrewAIRunner(BaseRunner):
                 verbose=True,
                 llm=llm,
                 allow_delegation=False,
-                max_iter=15,
+                max_iter=2 if not tools else 15,
                 max_retry_limit=3,
+            )
+            crew_agents[agent_id] = agent_obj
+            logger.info(
+                "Created agent '%s' role='%s' tools=%d max_iter=%d",
+                agent_id,
+                agent_obj.role,
+                len(tools),
+                agent_obj.max_iter,
             )
 
         crew_tasks: Dict[str, Task] = {}
@@ -734,7 +742,16 @@ class CrewAIRunner(BaseRunner):
         task_ids: List[str] = []
         for tcfg in tasks_cfg:
             task_id = tcfg.get("id", "task")
-            assigned_agent = crew_agents.get(tcfg.get("agent", ""))
+            agent_key = tcfg.get("agent", "")
+            assigned_agent = crew_agents.get(agent_key)
+
+            if assigned_agent is None:
+                logger.error(
+                    "Task '%s' references unknown agent '%s'; " "available agents: %s",
+                    task_id,
+                    agent_key,
+                    list(crew_agents.keys()),
+                )
 
             task_kwargs: Dict[str, Any] = dict(
                 name=task_id,
@@ -760,6 +777,14 @@ class CrewAIRunner(BaseRunner):
             if not tcfg.get("internal"):
                 task_ids.append(task_id)
 
+            logger.info(
+                "Task '%s' -> agent='%s' (role='%s') async=%s",
+                task_id,
+                agent_key,
+                getattr(assigned_agent, "role", "?"),
+                tcfg.get("async_execution", False),
+            )
+
         logger.info(
             "Built multi-agent crew: %d agents, %d tasks, process=%s",
             len(crew_agents),
@@ -767,13 +792,22 @@ class CrewAIRunner(BaseRunner):
             process_type,
         )
 
+        try:
+            crew_process = Process(process_type)
+        except (ValueError, KeyError):
+            logger.warning(
+                "Unknown process type '%s', falling back to sequential",
+                process_type,
+            )
+            crew_process = Process.sequential
+
         crew_kwargs: Dict[str, Any] = dict(
             agents=list(crew_agents.values()),
             tasks=ordered_tasks,
             verbose=True,
             stream=True,
             tracing=True,
-            process=process_type,
+            process=crew_process,
         )
         if task_callback is not None:
             crew_kwargs["task_callback"] = task_callback
@@ -1003,6 +1037,8 @@ class CrewAIRunner(BaseRunner):
             sid,
         )
 
+    _MIN_STREAMED_CHARS = 200
+
     async def _stream_result_chunks(
         self,
         result: Any,
@@ -1011,13 +1047,19 @@ class CrewAIRunner(BaseRunner):
         started_nodes: set,
         completed_nodes: set,
         dedup: _StreamDeduplicator | None = None,
-        streamed_tasks: set | None = None,
+        streamed_tasks: Dict[str, int] | None = None,
     ) -> AsyncIterator[tuple[str, bool]]:
         """Yield (event, has_text_delta) tuples generated from CrewAI chunks.
 
         The response ``id`` is set to the most recently started (but not yet
         completed) task ID, so the frontend groups output text under the
         correct node heading.
+
+        *streamed_tasks* maps task IDs to the cumulative character count of
+        visible response text that was streamed for that task.  Tasks with
+        fewer than ``_MIN_STREAMED_CHARS`` characters are considered
+        insufficiently streamed, and the task-callback fallback will still
+        fire in ``_drain_task_events``.
         """
         has_output = False
         if not hasattr(result, "__aiter__"):
@@ -1057,7 +1099,8 @@ class CrewAIRunner(BaseRunner):
                     content = response_text
                 has_output = True
                 if streamed_tasks is not None:
-                    streamed_tasks.add(_current_response_id())
+                    tid = _current_response_id()
+                    streamed_tasks[tid] = streamed_tasks.get(tid, 0) + len(content)
                 yield (
                     self._build_response_event(
                         sid,
@@ -1152,13 +1195,18 @@ class CrewAIRunner(BaseRunner):
         completed_nodes: set,
         sid: str,
         dedup: _StreamDeduplicator | None = None,
-        streamed_tasks: set | None = None,
+        streamed_tasks: Dict[str, int] | None = None,
     ) -> Tuple[List[str], bool]:
         """Drain task-completion events from the queue and return SSE strings.
 
         Uses the ``name`` attribute on ``TaskOutput`` to identify which task
         completed, supporting both sequential and parallel (async_execution)
         task ordering.
+
+        A task is considered *sufficiently streamed* only when it accumulated
+        at least ``_MIN_STREAMED_CHARS`` of visible response text during
+        streaming.  Tasks below that threshold still receive fallback output
+        from the task callback so the user always sees meaningful content.
 
         Returns ``(events, has_task_content)`` where *has_task_content* is
         True when at least one task emitted meaningful response text.
@@ -1180,9 +1228,12 @@ class CrewAIRunner(BaseRunner):
                     started_nodes.add(task_name)
 
                 task_text = self._extract_task_output_text(output)
-                already_streamed = bool(streamed_tasks and task_name in streamed_tasks)
+                streamed_chars = (
+                    streamed_tasks.get(task_name, 0) if streamed_tasks else 0
+                )
+                sufficiently_streamed = streamed_chars >= self._MIN_STREAMED_CHARS
 
-                if not already_streamed:
+                if not sufficiently_streamed:
                     if task_text:
                         has_task_content = True
                         events.append(
@@ -1195,8 +1246,10 @@ class CrewAIRunner(BaseRunner):
                     else:
                         logger.warning(
                             "Task '%s' completed with no usable output "
-                            "(raw output was ReAct noise or empty)",
+                            "(raw output was ReAct noise or empty; "
+                            "streamed only %d chars)",
                             task_name,
+                            streamed_chars,
                         )
                         fallback_msg = (
                             "*This step did not produce results.* "
@@ -1310,7 +1363,7 @@ class CrewAIRunner(BaseRunner):
 
             has_streamed_output = False
             dedup = _StreamDeduplicator()
-            tasks_with_stream_content: set = set()
+            tasks_with_stream_content: Dict[str, int] = {}
 
             async for event, has_text_delta in self._stream_result_chunks(
                 result,

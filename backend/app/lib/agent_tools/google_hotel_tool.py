@@ -20,8 +20,8 @@ class GoogleHotelsInput(BaseModel):
 class GoogleHotelsTool(BaseTool):
     name: str = "google_hotels_search"
     description: str = (
-        "Search for hotels using SerpApi's Google Hotels API. "
-        "Requires SERPAPI_API_KEY env var."
+        "Search for hotels in a destination city. "
+        "Returns hotel options with name, location, rating, and nightly rate."
     )
     args_schema: Type[BaseModel] = GoogleHotelsInput
 
@@ -36,9 +36,9 @@ class GoogleHotelsTool(BaseTool):
     ) -> str:
         api_key = os.getenv("SERPAPI_API_KEY")
         if not api_key:
-            return "SERPAPI_API_KEY is not set. Provide it to enable hotel research."
+            return "Error: SERPAPI_API_KEY is not set."
         if not destination:
-            return "Destination is required to search hotels."
+            return "Error: destination is required."
 
         query = destination
         if preferences:
@@ -66,14 +66,21 @@ class GoogleHotelsTool(BaseTool):
         data = response.json()
         properties = data.get("properties") or data.get("hotels") or []
         if not properties:
-            return "No hotels returned from SerpApi."
+            return "No hotels found for this destination and dates."
 
         formatted = []
         for prop in properties[:6]:
             name = prop.get("name", "Unknown hotel")
-            rate = prop.get("rate_per_night", {}).get("lowest", "")
-            rating = prop.get("rating", "")
+            rate = prop.get("rate_per_night", {}).get("lowest", "N/A")
+            rating = prop.get("rating", "N/A")
             location = prop.get("location", "")
-            formatted.append(f"- {name} | {location} | rating: {rating} | rate: {rate}")
+            amenities = ", ".join(prop.get("amenities", [])[:3]) or ""
+            line = f"**{name}**"
+            if location:
+                line += f" — {location}"
+            line += f"\n  Rating: {rating} | Rate: {rate}/night"
+            if amenities:
+                line += f" | Amenities: {amenities}"
+            formatted.append(line)
 
-        return "\n".join(formatted)
+        return "\n\n".join(formatted)

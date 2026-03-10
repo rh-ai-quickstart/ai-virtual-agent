@@ -53,16 +53,14 @@ templates:
           role: >
             Flight Research Specialist
           goal: >
-            Use the google_flights_search tool to find flight options from
-            {origin} to {destination} departing {start_date} and returning
-            {end_date}. You MUST call the tool with origin, destination,
-            depart_date, and return_date parameters.
+            Find flight options from {origin} to {destination} for
+            {start_date} to {end_date}. Focus on price, duration, and
+            number of stops.
           backstory: >
-            You are a flight research expert. You ALWAYS use the
-            google_flights_search tool (never tavily_travel_search). The tool
-            requires: origin (airport/city), destination (airport/city),
-            depart_date (YYYY-MM-DD), return_date (YYYY-MM-DD), passengers
-            (int), and cabin (economy/business/first).
+            You are a flight research expert who finds the best flight
+            deals. Use the google_flights_search tool to search for
+            flights. Provide results with airline, price, duration, and
+            stops.
           tools:
             - flight
         itinerary_planner:
@@ -74,9 +72,10 @@ templates:
             to the traveler's interests: {preferences}.
           backstory: >
             You are an expert travel planner who excels at combining research
-            from multiple sources into clear, actionable itineraries. You do
-            NOT search for information yourself — you work exclusively from
-            the research provided to you by other specialists.
+            from multiple sources into clear, actionable itineraries. You have
+            NO tools and CANNOT search for information. You MUST work
+            exclusively from the research already provided to you. Write your
+            final answer directly — never output Thought/Action/JSON blocks.
           tools: []
       tasks:
         # Internal step: generate a focused places list for downstream research
@@ -108,11 +107,10 @@ templates:
             A concise summary of exactly 5 places with highlights and why
             each is relevant to "{preferences}".
 
-        # Step 2a: Hotel research (runs in parallel with flights)
+        # Step 2: Hotel research
         - id: hotel_research_task
           agent: hotel_researcher
           context: []
-          async_execution: true
           description: >
             Find hotel options in {destination} for {start_date} to {end_date}.
             Use the user's budget ({budget}) and preferences ({preferences}) if
@@ -123,21 +121,13 @@ templates:
           expected_output: >
             5-8 hotel options with name, location, price range, and short notes.
 
-        # Step 2b: Flight research (runs in parallel with hotels)
+        # Step 3: Flight research
         - id: flight_research_task
           agent: flight_researcher
           context: []
-          async_execution: true
           description: >
-            Use the google_flights_search tool to research flights.
-            Call it with these EXACT parameters:
-              origin: "{origin}"
-              destination: "{destination}"
-              depart_date: "{start_date}"
-              return_date: "{end_date}"
-              passengers: 1
-              cabin: "{cabin}"
-            Do NOT use tavily_travel_search — only google_flights_search.
+            Search for flights from {origin} to {destination} departing
+            {start_date} and returning {end_date} for {cabin} class.
             Present the results as 3-6 flight options with airline, duration,
             stops, and price. Do NOT include itinerary plans, hotel info, or
             destination research.
@@ -145,7 +135,7 @@ templates:
             3-6 flight options with airline, duration, stops, price, and a
             short recommendation.
 
-        # Step 3: Synthesize everything into itinerary options (waits for all above)
+        # Step 4: Synthesize everything into itinerary options
         - id: itinerary_options_task
           agent: itinerary_planner
           context:
@@ -153,9 +143,9 @@ templates:
             - hotel_research_task
             - flight_research_task
           description: >
-            You have already received all the research you need in the context
-            above. Do NOT use any tools — just read the provided destination
-            research, hotel options, and flight options and synthesize them.
+            All research has already been completed and is provided in your
+            context above. You have NO tools available. Write your answer
+            directly as plain text — do NOT output any Thought/Action/JSON.
 
             Propose 2-3 itinerary options for {destination}.
             IMPORTANT: Each itinerary MUST be exactly {num_days} days
