@@ -216,9 +216,7 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
                 setMessages((prev) => {
                   const lastMsg = prev[prev.length - 1];
                   if (lastMsg && lastMsg.role === 'assistant') {
-                    const filtered = lastMsg.content.filter(
-                      (item) => item.type !== 'reasoning'
-                    );
+                    const filtered = lastMsg.content.filter((item) => item.type !== 'reasoning');
                     if (filtered.length !== lastMsg.content.length) {
                       const updated = [...prev];
                       updated[updated.length - 1] = {
