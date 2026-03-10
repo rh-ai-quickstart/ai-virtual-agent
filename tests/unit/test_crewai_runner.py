@@ -764,7 +764,7 @@ class TestDrainTaskEvents:
         queue = deque([output])
         started = {"research_task"}
         completed = set()
-        streamed = {"research_task"}
+        streamed = {"research_task": 500}
         events, has_content = runner._drain_task_events(
             queue,
             ["research_task"],
