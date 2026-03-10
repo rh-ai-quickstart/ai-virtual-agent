@@ -1,13 +1,17 @@
-import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import Request
 from llama_stack_client import AsyncLlamaStackClient
-from .shared_api import token_to_auth_header, get_user_headers_from_request, get_sa_token
+
+from .shared_api import (
+    get_sa_token,
+    get_user_headers_from_request,
+    token_to_auth_header,
+)
 
 load_dotenv()
 
@@ -16,6 +20,7 @@ LLAMASTACK_TIMEOUT = float(os.getenv("LLAMASTACK_TIMEOUT", "180.0"))
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 def get_llamastack_client(
     api_key: Optional[str], headers: Optional[dict[str, str]] = None
@@ -99,4 +104,3 @@ llamastack_sync_client = get_llamastack_sync_client()
 # Aliases for backward compatibility
 get_client_from_request = get_llamastack_client_from_request
 sync_client = llamastack_sync_client
-

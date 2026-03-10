@@ -24,7 +24,7 @@ from backend.app.schemas.agent import (
 )
 from backend.app.services.chat import VALID_RUNNER_TYPES, ChatService
 from backend.app.services.runners.base import BaseRunner
-from backend.app.services.runners.crewai_runner import CrewAIRunner
+from backend.app.services.runners.crewai_runner import CrewAIRunner, _StreamDeduplicator
 from backend.app.services.runners.llamastack_runner import LlamaStackRunner
 
 # ---------------------------------------------------------------------------
@@ -194,9 +194,7 @@ class TestBaseRunner:
         with pytest.raises(TypeError):
             BaseRunner(mock_request, mock_db_session, user_id)
 
-    def test_crewai_runner_is_base_runner(
-        self, mock_request, mock_db_session, user_id
-    ):
+    def test_crewai_runner_is_base_runner(self, mock_request, mock_db_session, user_id):
         """CrewAIRunner is a subclass of BaseRunner."""
         runner = CrewAIRunner(mock_request, mock_db_session, user_id)
         assert isinstance(runner, BaseRunner)
@@ -212,9 +210,7 @@ class TestCrewAIRunnerStream:
         """When CrewAI is not installed, stream yields an error event then [DONE]."""
         import backend.app.services.runners.crewai_runner as crewai_runner_module
 
-        with patch.object(
-            crewai_runner_module, "CREWAI_AVAILABLE", False
-        ):
+        with patch.object(crewai_runner_module, "CREWAI_AVAILABLE", False):
             runner = CrewAIRunner(mock_request, mock_db_session, user_id)
             events = []
             async for event in runner.stream(mock_agent, "sess-1", "hello"):
@@ -344,3 +340,453 @@ class TestValidRunnerTypes:
     def test_is_frozen_set(self):
         """VALID_RUNNER_TYPES should be a set (immutable at module level)."""
         assert isinstance(VALID_RUNNER_TYPES, set)
+
+
+# ---------------------------------------------------------------------------
+# _StreamDeduplicator thought extraction and noise filtering tests
+# ---------------------------------------------------------------------------
+
+
+class TestStreamDeduplicatorThoughtExtraction:
+    """Test that _extract_thought captures Thought: text for live display."""
+
+    def _make(self) -> _StreamDeduplicator:
+        return _StreamDeduplicator()
+
+    def test_extracts_standard_thought(self):
+        d = self._make()
+        assert d._extract_thought("Thought: I need to search for hotels") == (
+            "I need to search for hotels"
+        )
+
+    def test_extracts_thought_with_heading(self):
+        d = self._make()
+        assert d._extract_thought("## Thought: analyzing the data") == (
+            "analyzing the data"
+        )
+
+    def test_extracts_mid_line_brace_thought(self):
+        d = self._make()
+        result = d._extract_thought(
+            '"beach" }Thought: The search results show options.'
+        )
+        assert result == "The search results show options."
+
+    def test_extracts_mid_line_backtick_thought(self):
+        d = self._make()
+        result = d._extract_thought("```Thought: I will start searching for flights")
+        assert result == "I will start searching for flights"
+
+    def test_returns_empty_for_non_thought(self):
+        d = self._make()
+        assert d._extract_thought("Action: google_hotels_search") == ""
+
+    def test_returns_empty_for_regular_text(self):
+        d = self._make()
+        assert d._extract_thought("Here are the top beach resorts:") == ""
+
+    def test_sets_suppressing_on_extraction(self):
+        d = self._make()
+        d._extract_thought("Thought: I need to search")
+        assert d._suppressing is True
+
+
+class TestStreamDeduplicatorNoise:
+    """Test that _is_noise suppresses non-thought ReAct artifacts."""
+
+    def _make(self) -> _StreamDeduplicator:
+        return _StreamDeduplicator()
+
+    # -- Action/Input/Observation noise --
+
+    def test_filters_action_line(self):
+        d = self._make()
+        assert d._is_noise("Action: google_hotels_search")
+
+    def test_filters_action_input_line(self):
+        d = self._make()
+        assert d._is_noise('Action Input: {"destination": "Mexico"}')
+
+    def test_filters_observation_line(self):
+        d = self._make()
+        assert d._is_noise("Observation: Search returned 5 results")
+
+    # -- Mid-line non-thought markers --
+
+    def test_filters_quote_action(self):
+        d = self._make()
+        assert d._is_noise('"some value"Action: google_flights_search')
+
+    def test_filters_bracket_observation(self):
+        d = self._make()
+        assert d._is_noise("]Observation: got the results")
+
+    # -- Truncated markers --
+
+    def test_filters_truncated_action(self):
+        d = self._make()
+        assert d._is_noise("tion: google_hotels_search")
+
+    def test_filters_truncated_input(self):
+        d = self._make()
+        assert d._is_noise('put: {"destination": "Mexico"}')
+
+    def test_filters_truncated_observation(self):
+        d = self._make()
+        assert d._is_noise("ervation: Search returned results")
+
+    # -- Code fences --
+
+    def test_filters_code_fence_json(self):
+        d = self._make()
+        assert d._is_noise("```json")
+
+    def test_filters_code_fence_plain(self):
+        d = self._make()
+        assert d._is_noise("```")
+
+    # -- JSON structural characters --
+
+    def test_filters_standalone_braces(self):
+        d = self._make()
+        assert d._is_noise("{")
+        assert d._is_noise("}")
+
+    # -- JSON key-value in suppression context --
+
+    def test_filters_json_kv_during_suppression(self):
+        d = self._make()
+        d._extract_thought("Thought: I need to search")  # enters suppression
+        assert d._is_noise('  "destination": "Mexico",')
+
+    def test_filters_json_object_start_during_suppression(self):
+        d = self._make()
+        d._is_noise("Action: search_tool")  # enters suppression
+        assert d._is_noise('{"origin": "JFK",')
+
+    def test_passes_json_kv_outside_suppression(self):
+        d = self._make()
+        assert not d._is_noise('  "destination": "Mexico",')
+
+    # -- Suppression state transitions --
+
+    def test_suppression_cleared_by_content(self):
+        d = self._make()
+        d._extract_thought("Thought: I should search")
+        assert d._suppressing is True
+        d._is_noise("- **Hotel Cancun**, $200/night")
+        assert d._suppressing is False
+
+    def test_suppression_not_cleared_by_blank_line(self):
+        d = self._make()
+        d._extract_thought("Thought: searching")
+        assert d._suppressing is True
+        d._is_noise("")
+        assert d._suppressing is True
+
+    def test_blank_line_is_noise_during_suppression(self):
+        d = self._make()
+        d._extract_thought("Thought: searching")
+        assert d._is_noise("") is True
+        assert d._is_noise("   ") is True
+
+    def test_blank_line_passes_outside_suppression(self):
+        d = self._make()
+        assert d._is_noise("") is False
+        assert d._is_noise("   ") is False
+
+    # -- Legitimate content passes through --
+
+    def test_passes_markdown_heading(self):
+        d = self._make()
+        assert not d._is_noise("### Flight Options from New York to Mexico")
+
+    def test_passes_bullet_point(self):
+        d = self._make()
+        assert not d._is_noise("- **All Ritmo Cancun Resort**, Cancún, Mexico, $336")
+
+    def test_passes_url(self):
+        d = self._make()
+        assert not d._is_noise("https://www.beach.com/best-beaches-mexico/")
+
+    def test_passes_regular_text(self):
+        d = self._make()
+        assert not d._is_noise("April is a great time to visit with warm weather.")
+
+    def test_passes_itinerary(self):
+        d = self._make()
+        assert not d._is_noise("Day 1 (2026-04-01): Arrival in Cancún")
+
+
+class TestStreamDeduplicatorFilterChunk:
+    """Test filter_chunk returns (response, thinking) tuples."""
+
+    def test_separates_thought_from_noise_and_response(self):
+        """Thought text returned as thinking; Action/JSON suppressed; content passes."""
+        d = _StreamDeduplicator()
+        chunk = (
+            "Thought: I need to search for hotels\n"
+            "Action: google_hotels_search\n"
+            '{"destination": "Mexico"}\n'
+            "Observation: found 5 results\n"
+        )
+        response, thinking = d.filter_chunk(chunk)
+        assert "I need to search for hotels" in thinking
+        assert "Action" not in response
+        assert "destination" not in response
+
+    def test_response_text_passes_through(self):
+        d = _StreamDeduplicator()
+        # First a thought block (enters suppression)
+        d.filter_chunk("Thought: searching\nAction: search\n")
+        # Then real content
+        response, thinking = d.filter_chunk("Here are the top beach resorts:\n")
+        assert "top beach resorts" in response
+
+    def test_mid_line_thought_extracted(self):
+        d = _StreamDeduplicator()
+        chunk = (
+            '"beach" }Thought: The results look promising.\n' "### Recommended Hotels\n"
+        )
+        response, thinking = d.filter_chunk(chunk)
+        assert "The results look promising" in thinking
+        assert "Recommended Hotels" in response
+
+    def test_code_fenced_json_suppressed(self):
+        d = _StreamDeduplicator()
+        chunk = (
+            "Thought: I will search for flights\n"
+            "```json\n"
+            '{"origin": "JFK",\n'
+            '  "destination": "MEX"\n'
+            "}\n"
+            "```\n"
+        )
+        response, thinking = d.filter_chunk(chunk)
+        assert "I will search for flights" in thinking
+        assert "origin" not in response
+        assert "JFK" not in response
+
+    def test_flush_returns_tuple(self):
+        d = _StreamDeduplicator()
+        response, thinking = d.flush()
+        assert response == ""
+        assert thinking == ""
+
+    def test_reset_clears_suppression(self):
+        d = _StreamDeduplicator()
+        d._extract_thought("Thought: searching")
+        assert d._suppressing is True
+        d.reset_for_new_task()
+        assert d._suppressing is False
+
+    def test_blank_line_between_thought_and_action_suppressed(self):
+        """A blank line between Thought: and Action: should not leak through."""
+        d = _StreamDeduplicator()
+        chunk = (
+            "Thought: I need to search\n"
+            "\n"
+            "Action:\n"
+            "```json\n"
+            "{\n"
+            '  "query": "top beaches"\n'
+            "}\n"
+            "```\n"
+        )
+        response, thinking = d.filter_chunk(chunk)
+        assert "I need to search" in thinking
+        assert response.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# _clean_react_output tests
+# ---------------------------------------------------------------------------
+
+
+class TestCleanReactOutput:
+    """Test _clean_react_output strips ReAct noise and JSON fragments."""
+
+    def test_returns_empty_for_all_noise(self):
+        raw = (
+            "Thought: I need to search\n\n"
+            "Action:\n"
+            "```json\n"
+            "{\n"
+            '  "query": "top beaches in Mexico",\n'
+            '  "max_results": 10\n'
+            "}\n"
+            "```"
+        )
+        assert CrewAIRunner._clean_react_output(raw) == ""
+
+    def test_preserves_clean_content(self):
+        raw = (
+            "### Beach Destinations in Mexico\n"
+            "1. Cancún - Beautiful beaches\n"
+            "2. Playa del Carmen - Great nightlife\n"
+        )
+        result = CrewAIRunner._clean_react_output(raw)
+        assert "Cancún" in result
+        assert "Playa del Carmen" in result
+
+    def test_strips_react_keeps_answer(self):
+        raw = (
+            "Thought: I have all the info.\n"
+            "Final Answer:\n"
+            "Here are 3 great options for your trip.\n"
+        )
+        result = CrewAIRunner._clean_react_output(raw)
+        assert "3 great options" in result
+        assert "Thought" not in result
+
+    def test_strips_json_after_action(self):
+        raw = (
+            "Action: tavily_search\n"
+            '  "query": "best beaches",\n'
+            '  "max_results": 5\n'
+        )
+        assert CrewAIRunner._clean_react_output(raw) == ""
+
+
+# ---------------------------------------------------------------------------
+# _extract_task_output_text tests
+# ---------------------------------------------------------------------------
+
+
+class TestExtractTaskOutputText:
+    """Test _extract_task_output_text extracts clean text from TaskOutput."""
+
+    def test_extracts_clean_raw(self):
+        output = MagicMock()
+        output.raw = "### Hotels in Cancún\n1. Hotel A - $200/night"
+        result = CrewAIRunner._extract_task_output_text(output)
+        assert "Hotel A" in result
+
+    def test_returns_empty_for_react_noise(self):
+        output = MagicMock()
+        output.raw = (
+            "Thought: I need to search\n" "Action: search\n" '{"query": "hotels"}\n'
+        )
+        output.output = None
+        output.result = None
+        output.summary = None
+        output.text = None
+        result = CrewAIRunner._extract_task_output_text(output)
+        assert result == ""
+
+    def test_falls_back_to_output_attr(self):
+        output = MagicMock()
+        output.raw = ""
+        output.output = "Flight options from JFK to CUN"
+        result = CrewAIRunner._extract_task_output_text(output)
+        assert "Flight options" in result
+
+    def test_returns_empty_for_no_content(self):
+        output = MagicMock()
+        output.raw = ""
+        output.output = ""
+        output.result = ""
+        output.summary = ""
+        output.text = ""
+        result = CrewAIRunner._extract_task_output_text(output)
+        assert result == ""
+
+
+# ---------------------------------------------------------------------------
+# _drain_task_events tests
+# ---------------------------------------------------------------------------
+
+
+class TestDrainTaskEvents:
+    """Test _drain_task_events emits task content and returns has_content flag."""
+
+    def _make_runner(self, mock_request, mock_db_session, user_id):
+        return CrewAIRunner(mock_request, mock_db_session, user_id)
+
+    def _make_task_output(self, name, raw_text):
+        output = MagicMock()
+        output.name = name
+        output.raw = raw_text
+        return output
+
+    def test_returns_tuple(self, mock_request, mock_db_session, user_id):
+        from collections import deque
+
+        runner = self._make_runner(mock_request, mock_db_session, user_id)
+        result = runner._drain_task_events(deque(), ["task1"], set(), set(), "sid")
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        events, has_content = result
+        assert events == []
+        assert has_content is False
+
+    def test_emits_task_content(self, mock_request, mock_db_session, user_id):
+        from collections import deque
+
+        runner = self._make_runner(mock_request, mock_db_session, user_id)
+        output = self._make_task_output(
+            "research_task", "### Hotels\n1. Hotel A - $200/night"
+        )
+        queue = deque([output])
+        started = set()
+        completed = set()
+        events, has_content = runner._drain_task_events(
+            queue, ["research_task"], started, completed, "sid"
+        )
+        assert has_content is True
+        response_events = [e for e in events if '"type": "response"' in e]
+        assert len(response_events) >= 1
+        assert "Hotel A" in response_events[0]
+
+    def test_no_content_for_noise_output(self, mock_request, mock_db_session, user_id):
+        from collections import deque
+
+        runner = self._make_runner(mock_request, mock_db_session, user_id)
+        output = self._make_task_output(
+            "task1",
+            "Thought: searching\nAction: search\n" '{"query": "hotels"}\n',
+        )
+        queue = deque([output])
+        events, has_content = runner._drain_task_events(
+            queue, ["task1"], set(), set(), "sid"
+        )
+        assert has_content is False
+
+    def test_skips_reemit_for_streamed_tasks(
+        self, mock_request, mock_db_session, user_id
+    ):
+        from collections import deque
+
+        runner = self._make_runner(mock_request, mock_db_session, user_id)
+        output = self._make_task_output(
+            "research_task", "### Hotels\n1. Hotel A - $200/night"
+        )
+        queue = deque([output])
+        started = {"research_task"}
+        completed = set()
+        streamed = {"research_task"}
+        events, has_content = runner._drain_task_events(
+            queue,
+            ["research_task"],
+            started,
+            completed,
+            "sid",
+            streamed_tasks=streamed,
+        )
+        assert has_content is False
+        response_events = [e for e in events if '"type": "response"' in e]
+        assert len(response_events) == 1
+        payload = json.loads(response_events[0][5:].strip())
+        assert payload["delta"] == ""
+        assert payload["status"] == "completed"
+
+    def test_skips_internal_tasks(self, mock_request, mock_db_session, user_id):
+        from collections import deque
+
+        runner = self._make_runner(mock_request, mock_db_session, user_id)
+        output = self._make_task_output("internal_task", "Some internal output")
+        queue = deque([output])
+        events, has_content = runner._drain_task_events(
+            queue, ["visible_task"], set(), set(), "sid"
+        )
+        assert has_content is False

@@ -74,8 +74,6 @@ class GoogleHotelsTool(BaseTool):
             rate = prop.get("rate_per_night", {}).get("lowest", "")
             rating = prop.get("rating", "")
             location = prop.get("location", "")
-            formatted.append(
-                f"- {name} | {location} | rating: {rating} | rate: {rate}"
-            )
+            formatted.append(f"- {name} | {location} | rating: {rating} | rate: {rate}")
 
         return "\n".join(formatted)

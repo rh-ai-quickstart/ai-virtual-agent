@@ -15,11 +15,10 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 
 from ...api.llamastack import get_llamastack_client_from_request
+from ...config import Settings
+from ...core.auth import is_local_dev_mode
 from ...models import ChatSession
 from .base import BaseRunner
-from ...core.auth import is_local_dev_mode
-from ...config import Settings
-
 
 logger = logging.getLogger(__name__)
 

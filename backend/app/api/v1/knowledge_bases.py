@@ -215,8 +215,9 @@ async def get_pipeline_status(pipeline_name: str) -> str:
             )
             return "unknown"
 
+
 def get_ingestion_pipeline_url():
     try:
         return os.environ["INGESTION_PIPELINE_URL"]
     except KeyError:
-        return "http://llamastack:8321/ingestion_pipeline/" 
+        return "http://llamastack:8321/ingestion_pipeline/"

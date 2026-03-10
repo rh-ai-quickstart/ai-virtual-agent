@@ -11,9 +11,9 @@ from typing import Any
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.agent import VirtualAgent
 from .runners.base import BaseRunner
 from .runners.llamastack_runner import LlamaStackRunner
-from ..models.agent import VirtualAgent
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +61,12 @@ class ChatService:
         elif runner_type == "langgraph":
             logger.info("Using LangGraph runner")
             from .runners.langgraph_runner import LangGraphRunner
+
             return LangGraphRunner(self.request, self.db, self.user_id)
         elif runner_type == "crewai" or runner_type == "crewai_react":
             logger.info("Using CrewAI runner")
             from .runners.crewai_runner import CrewAIRunner
+
             return CrewAIRunner(self.request, self.db, self.user_id)
         else:
             raise ValueError(

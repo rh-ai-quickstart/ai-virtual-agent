@@ -46,7 +46,7 @@ repos:
         language: system
         types: [python]
         exclude: '^(backend/migrations/|migrations/|deploy/|tests/)'
-        args: [--min-confidence=80]
+        args: [--min-confidence=80, "--ignore-names=session_id,prompt,budget"]
       - id: helm-lint
         name: Helm lint
         entry: helm lint ./deploy/cluster/helm

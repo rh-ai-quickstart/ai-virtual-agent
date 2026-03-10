@@ -40,7 +40,9 @@ class GoogleFlightsTool(BaseTool):
         if not origin or not destination:
             return "Origin and destination are required to search flights."
         if not return_date:
-            return "return_date is required for round-trip searches. Provide YYYY-MM-DD."
+            return (
+                "return_date is required for round-trip searches. Provide YYYY-MM-DD."
+            )
 
         cabin_map = {
             "economy": 1,

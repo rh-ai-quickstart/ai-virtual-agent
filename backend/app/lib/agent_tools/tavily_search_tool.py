@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Type
+from typing import Type
 
 import requests
 from crewai.tools import BaseTool
@@ -52,4 +52,3 @@ class TavilySearchTool(BaseTool):
             formatted.append(f"- {title} ({url}): {snippet}")
 
         return "\n".join(formatted)
-

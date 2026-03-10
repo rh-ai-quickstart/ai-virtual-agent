@@ -1,6 +1,6 @@
-import logging
-from typing import Optional, Any
 import json
+import logging
+from typing import Any, Optional
 
 from fastapi import Request
 
@@ -53,6 +53,7 @@ def get_user_headers_from_request(
 
     return headers
 
+
 def create_tool_call_trace_entry(item: Any) -> dict:
     """Create trace entry for MCP tool call."""
     args = item.arguments
@@ -86,6 +87,7 @@ def get_header_case_insensitive(request: Request, header_name: str) -> Optional[
     """
     return request.headers.get(header_name) or request.headers.get(header_name.lower())
 
+
 def get_sa_token() -> Optional[str]:
     """
     Get the service account token from the Kubernetes service account file.
@@ -106,4 +108,6 @@ def get_sa_token() -> Optional[str]:
         return None
 
 
-ERROR_NO_RESPONSE_MESSAGE = "Unable to generate a response. Please try rephrasing your question or try again."
+ERROR_NO_RESPONSE_MESSAGE = (
+    "Unable to generate a response. Please try rephrasing your question or try again."
+)
