@@ -1,7 +1,7 @@
 # Swap in pysqlite3 so ChromaDB (via CrewAI) sees SQLite >= 3.35 on UBI9.
 # Must run before any module imports sqlite3.
 __import__("pysqlite3")
-import sys
+import sys  # noqa: E402
 
 sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
@@ -17,25 +17,25 @@ knowledge bases, chat sessions, and integration with LlamaStack for AI
 capabilities.
 """
 
-import asyncio
-import logging
-import os
-import sys
-from contextlib import asynccontextmanager
-from pathlib import Path
+import asyncio  # noqa: E402
+import logging  # noqa: E402
+import os  # noqa: E402
+import sys  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
+from pathlib import Path  # noqa: E402
 
-import httpx
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
-from fastapi.staticfiles import StaticFiles
-from starlette.exceptions import HTTPException as StarletteHTTPException
+import httpx  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
+from fastapi import FastAPI, HTTPException  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import FileResponse, Response  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
 
-from .app.api.v1.router import api_router
-from .app.api.v1.validate import router as validate_router
-from .app.core.auth import is_local_dev_mode
-from .app.core.logging_config import setup_logging
+from .app.api.v1.router import api_router  # noqa: E402
+from .app.api.v1.validate import router as validate_router  # noqa: E402
+from .app.core.auth import is_local_dev_mode  # noqa: E402
+from .app.core.logging_config import setup_logging  # noqa: E402
 
 load_dotenv()
 
