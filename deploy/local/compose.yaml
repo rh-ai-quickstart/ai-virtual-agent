@@ -99,6 +99,9 @@ services:
       dockerfile: deploy/local/Containerfile.backend.dev
     container_name: ai-va-backend-dev
     restart: unless-stopped
+    env_file:
+      - path: ../../.env
+        required: false
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-ai_virtual_agent}
       - LOCAL_DEV_ENV_MODE=${LOCAL_DEV_ENV_MODE:-true}
@@ -106,23 +109,21 @@ services:
       - DEFAULT_INFERENCE_MODEL=${DEFAULT_INFERENCE_MODEL:-ollama/llama3.2:1b}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
       - ENABLE_COVERAGE=${ENABLE_COVERAGE:-false}
-      # LangGraph runner: use LlamaStack's OpenAI-compat endpoint
-      - LANGGRAPH_LLM_API_BASE=http://llamastack:8321/v1
-      - LANGGRAPH_LLM_API_KEY=no-key
-      - LANGGRAPH_DEFAULT_MODEL=${LANGGRAPH_DEFAULT_MODEL:-ollama/llama3.2:1b-instruct-fp16}
+      # LangGraph runner: use MaaS endpoint
+      - LANGGRAPH_LLM_API_BASE=${LANGGRAPH_LLM_API_BASE:-https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1}
+      - LANGGRAPH_LLM_API_KEY=${LANGGRAPH_LLM_API_KEY:-no-key}
+      - LANGGRAPH_DEFAULT_MODEL=${LANGGRAPH_DEFAULT_MODEL:-llama-4-scout-17b-16e-w4a16}
       # MCP server URLs for vacation planner graph
       - TRAVEL_RESEARCH_MCP_URL=http://travel-research-mcp:7001/mcp
       - HOTEL_MCP_URL=http://hotel-mcp:7002/mcp
       - FLIGHT_MCP_URL=http://flight-mcp:7003/mcp
       - TAVILY_API_KEY=${TAVILY_API_KEY}
-      # CrewAI / LiteLLM: Ollama base URL (no path suffix — LiteLLM appends its own)
-      - OLLAMA_API_BASE=http://ollama:11434
+      # CrewAI runner: use MaaS endpoint via LiteLLM
+      - CREWAI_LLM_API_BASE=${CREWAI_LLM_API_BASE:-https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1}
+      - CREWAI_LLM_API_KEY=${CREWAI_LLM_API_KEY:-no-key}
+      - CREWAI_DEFAULT_MODEL=${CREWAI_DEFAULT_MODEL:-openai/llama-4-scout-17b-16e-w4a16}
       # Disable CrewAI tracing to prevent interactive prompts in server mode
-      - CREWAI_TRACING_ENABLED=false
-      - CREWAI_DEFAULT_MODEL=ollama/llama3.2:1b-instruct-fp16
-      # CrewAI requires OPENAI_API_KEY at init; route through LlamaStack's OpenAI-compat endpoint
-      - OPENAI_API_KEY=no-key-needed
-      - OPENAI_API_URL=http://llamastack:8321/v1
+      - CREWAI_TRACING_ENABLED=true
       - SERPAPI_API_KEY=${SERPAPI_API_KEY}
     ports:
       - '${BACKEND_PORT:-8000}:8000'

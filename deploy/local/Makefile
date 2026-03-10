@@ -54,13 +54,13 @@ compose-down: ## Stop development services
 	./scripts/stop-dev.sh
 
 compose-restart: ## Restart development services
-	podman compose -f compose.yaml restart
+	podman compose --env-file ../../.env -f compose.yaml restart
 
 compose-logs: ## View logs from development services
-	podman compose -f compose.yaml logs -f
+	podman compose --env-file ../../.env -f compose.yaml logs -f
 
 compose-build: ## Rebuild and start development services
-	podman compose -f compose.yaml up --build -d
+	podman compose --env-file ../../.env -f compose.yaml up --build -d
 
 compose-status: ## Show status of development services
-	podman compose -f compose.yaml ps
+	podman compose --env-file ../../.env -f compose.yaml ps
