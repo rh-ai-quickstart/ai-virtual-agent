@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+ENV_DEFAULT_MODEL_SENTINEL = "__env_default__"
+
+
 class Settings:
     """Application settings and configuration."""
 

@@ -28,7 +28,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 
-from ...config import settings
+from ...config import ENV_DEFAULT_MODEL_SENTINEL, settings
 from ...models import ChatSession
 from .base import BaseRunner
 
@@ -107,7 +107,9 @@ class LangGraphRunner(BaseRunner):
         if not base_url and settings.LLAMA_STACK_URL:
             base_url = f"{settings.LLAMA_STACK_URL}/v1"
 
-        model_name = agent.model_name or settings.LANGGRAPH_DEFAULT_MODEL
+        model_name = agent.model_name
+        if not model_name or model_name == ENV_DEFAULT_MODEL_SENTINEL:
+            model_name = settings.LANGGRAPH_DEFAULT_MODEL
 
         return ChatOpenAI(
             model=model_name,

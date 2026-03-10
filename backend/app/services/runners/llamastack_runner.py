@@ -15,7 +15,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 
 from ...api.llamastack import get_llamastack_client_from_request
-from ...config import Settings
+from ...config import ENV_DEFAULT_MODEL_SENTINEL, Settings
 from ...core.auth import is_local_dev_mode
 from ...models import ChatSession
 from .base import BaseRunner
@@ -563,6 +563,11 @@ class LlamaStackRunner(BaseRunner):
 
             model_for_request = agent.model_name
             settings = Settings()
+            if model_for_request == ENV_DEFAULT_MODEL_SENTINEL:
+                model_for_request = settings.DEFAULT_INFERENCE_MODEL or agent.model_name
+                logger.debug(
+                    f"Env-default sentinel: resolved model to {model_for_request}"
+                )
             if is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
                 model_for_request = settings.DEFAULT_INFERENCE_MODEL
                 logger.debug(

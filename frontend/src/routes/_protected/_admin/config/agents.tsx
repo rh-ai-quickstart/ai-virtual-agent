@@ -443,7 +443,7 @@ function AgentTemplates() {
       <FormSelectOption key="placeholder" value="" label="Select a model" isDisabled />,
     ];
     for (const m of models || []) {
-      opts.push(<FormSelectOption key={m.model_name} value={m.model_name} label={m.model_name} />);
+      opts.push(<FormSelectOption key={m.model_name} value={m.model_name} label={m.display_name || m.model_name} />);
     }
     return opts;
   }, [models, isLoadingModels, modelsError]);

@@ -14,7 +14,7 @@ from typing import Any, AsyncIterator, Dict, List, Tuple
 
 from sqlalchemy import select
 
-from ...config import settings
+from ...config import ENV_DEFAULT_MODEL_SENTINEL, settings
 from ...lib.agent_tools import GoogleFlightsTool, GoogleHotelsTool, TavilySearchTool
 from ...models import ChatSession
 from ...models.agent import VirtualAgent
@@ -549,13 +549,17 @@ class CrewAIRunner(BaseRunner):
         if agent.top_p is not None:
             extra_kwargs["top_p"] = float(agent.top_p)
 
+        agent_model = (
+            agent.model_name.strip()
+            if isinstance(agent.model_name, str) and agent.model_name.strip()
+            else None
+        )
+        if agent_model == ENV_DEFAULT_MODEL_SENTINEL:
+            agent_model = None
+
         requested_model = (
             settings.CREWAI_DEFAULT_MODEL
-            or (
-                agent.model_name.strip()
-                if isinstance(agent.model_name, str) and agent.model_name.strip()
-                else None
-            )
+            or agent_model
             or "meta/llama-3.1-70b-instruct"
         )
         litellm_model = self._to_litellm_model(requested_model)

@@ -463,7 +463,7 @@ export function AgentForm({
                     <FormSelectOption
                       key={model.model_name}
                       value={model.model_name}
-                      label={model.model_name}
+                      label={model.display_name || model.model_name}
                     />
                   ))}
                 </Fragment>
