@@ -126,6 +126,50 @@ spec:
             - name: ADMIN_EMAIL
               value: '{{ .Values.seed.admin_user.email }}'
             {{- end }}
+            {{- with .Values.runners.langgraph.llm_api_base }}
+            - name: LANGGRAPH_LLM_API_BASE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.runners.langgraph.llm_api_key }}
+            - name: LANGGRAPH_LLM_API_KEY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.runners.langgraph.default_model }}
+            - name: LANGGRAPH_DEFAULT_MODEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.runners.crewai.llm_api_base }}
+            - name: CREWAI_LLM_API_BASE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.runners.crewai.llm_api_key }}
+            - name: CREWAI_LLM_API_KEY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.runners.crewai.default_model }}
+            - name: CREWAI_DEFAULT_MODEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.travel_research_url }}
+            - name: TRAVEL_RESEARCH_MCP_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.hotel_url }}
+            - name: HOTEL_MCP_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.mcp.flight_url }}
+            - name: FLIGHT_MCP_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.apiKeys.tavily }}
+            - name: TAVILY_API_KEY
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.apiKeys.serpapi }}
+            - name: SERPAPI_API_KEY
+              value: {{ . | quote }}
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
