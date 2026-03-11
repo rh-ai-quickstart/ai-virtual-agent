@@ -486,6 +486,19 @@ class GraphEngine:
         self.nodes = nodes
         self.edges = cfg.get("edges") or []
         self.entry_id: Optional[str] = cfg.get("entry")
+        self._internal_ids: set = {
+            str(n["id"]) for n in self.nodes if n.get("internal")
+        }
+        # Auto-detect: nodes referenced only via items_path in mcp_tool_map
+        # nodes are intermediate data producers, not user-facing output.
+        items_source_ids = set()
+        for n in self.nodes:
+            if str(n.get("type", "")).strip().lower() in ("mcp_tool_map", "mcp_map"):
+                ip = str(n.get("items_path", ""))
+                m = _OUTPUT_REF_RE.search(ip)
+                if m:
+                    items_source_ids.add(m.group(1))
+        self._internal_ids |= items_source_ids
 
     def _build_graph(self):
         """Build a compiled LangGraph StateGraph from the config."""
@@ -592,6 +605,7 @@ class GraphEngine:
         mcp_servers = self.mcp_cfg.get("servers") or {}
         mcp_transport = str(self.mcp_cfg.get("transport") or "streamable-http").lower()
         llm = self.llm
+        internal_ids = self._internal_ids
 
         async def _run(state: GraphState) -> dict:
             inputs = state.get("inputs") or {}
@@ -602,7 +616,10 @@ class GraphEngine:
             result = ""
 
             if step_type in ("llm", "prompt"):
-                result = await _run_llm_node(llm, step, inputs, outputs)
+                visible_outputs = {
+                    k: v for k, v in outputs.items() if k not in internal_ids
+                }
+                result = await _run_llm_node(llm, step, inputs, visible_outputs)
 
             elif step_type in ("mcp_tool", "mcp"):
                 result = await _run_mcp_tool_node(
@@ -628,6 +645,7 @@ class GraphEngine:
                         "name": step_id,
                         "summary": _summarize_output(result),
                         "raw": result,
+                        "internal": step_id in internal_ids,
                     }
                 ],
             }
@@ -661,6 +679,12 @@ class GraphEngine:
                 tasks = node_state.get("tasks_output", [])
                 for task in tasks:
                     task_name = task.get("name", node_name)
+                    total_tasks += 1
+
+                    if task.get("internal"):
+                        logger.debug("Suppressing SSE for internal node: %s", task_name)
+                        continue
+
                     yield _sse("node_started", {"node": task_name}, session_id)
 
                     raw = task.get("raw", "")
@@ -676,7 +700,6 @@ class GraphEngine:
                         )
 
                     yield _sse("node_completed", {"node": task_name}, session_id)
-                    total_tasks += 1
 
         if total_tasks > 0:
             yield _sse(
