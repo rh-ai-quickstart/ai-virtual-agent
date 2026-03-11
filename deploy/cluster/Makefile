@@ -71,6 +71,7 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "  ADMIN_USERNAME           - Admin user name"
 	@echo "  ADMIN_EMAIL              - Admin user email"
 	@echo "  {SAFETY,LLM}             - Model id as defined in values (eg. llama-3-2-1b-instruct)"
+	@echo "  {SAFETY,LLM}_ID          - Model identifier override (defaults to model key name)"
 	@echo "  {SAFETY,LLM}_URL         - Model URL"
 	@echo "  {SAFETY,LLM}_API_TOKEN   - Model API token for remote models"
 	@echo "  {SAFETY,LLM}_TOLERATION  - Model pod toleration"
