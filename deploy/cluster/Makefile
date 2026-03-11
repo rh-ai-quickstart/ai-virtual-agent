@@ -1,7 +1,8 @@
 # AI Virtual Agent - Helm Deployment Makefile
 # Run `make help` to see available targets.
 
-.PHONY: help install install-help install-status deps uninstall install-namespace list-models list-mcps
+.PHONY: help install install-help install-status deps uninstall install-namespace list-models list-mcps \
+       build-mcp-images push-mcp-images
 
 # -----------------------------------------------------------------------------
 # Helper
@@ -11,7 +12,7 @@ help: ## Show help for helm deployment targets
 	@echo "==========================================="
 	@echo ""
 	@echo "☸️  Deployment Commands:"
-	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps):.*?## ' $(MAKEFILE_LIST) | \
+	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-mcp-images|push-mcp-images):.*?## ' $(MAKEFILE_LIST) | \
 		sed -e 's/^/  /' -e 's/:.*## / - /'
 	@echo ""
 	@echo "For detailed deployment help, run: make install-help"
@@ -68,12 +69,20 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "Optional Configuration (set via environment variables or will be prompted):"
 	@echo "  HF_TOKEN                 - Hugging Face Token"
 	@echo "  TAVILY_API_KEY           - Tavily Search API Key"
+	@echo "  SERPAPI_API_KEY          - SerpApi API Key (hotel/flight search)"
 	@echo "  ADMIN_USERNAME           - Admin user name"
 	@echo "  ADMIN_EMAIL              - Admin user email"
 	@echo "  {SAFETY,LLM}             - Model id as defined in values (eg. llama-3-2-1b-instruct)"
 	@echo "  {SAFETY,LLM}_URL         - Model URL"
 	@echo "  {SAFETY,LLM}_API_TOKEN   - Model API token for remote models"
 	@echo "  {SAFETY,LLM}_TOLERATION  - Model pod toleration"
+	@echo ""
+	@echo "MaaS / Runner LLM Configuration:"
+	@echo "  MAAS_API_BASE            - MaaS endpoint base URL (used by LangGraph & CrewAI)"
+	@echo "  MAAS_API_KEY             - MaaS API key"
+	@echo "  MAAS_MODEL_NAME          - MaaS model name"
+	@echo "  LANGGRAPH_LLM_API_BASE   - Override LangGraph LLM base URL"
+	@echo "  CREWAI_LLM_API_BASE      - Override CrewAI LLM base URL"
 	@echo ""
 	@echo "Example usage:"
 	@echo "  make install NAMESPACE=my-ai-assistant"
@@ -126,6 +135,29 @@ uninstall: ## Uninstall deployment and clean up resources
 	@echo "If you want to completely remove the namespace, run: oc delete project $(NAMESPACE)"
 	@echo "Remaining resources in namespace $(NAMESPACE):"
 	@$(MAKE) install-status NAMESPACE=$(NAMESPACE)
+
+# -----------------------------------------------------------------------------
+# MCP Server Images
+# -----------------------------------------------------------------------------
+CONTAINER_RUNTIME ?= podman
+MCP_IMAGE_REGISTRY ?= quay.io/skattoju
+MCP_IMAGE_TAG ?= latest
+MCP_SERVERS := travel_research_mcp hotel_mcp flight_mcp
+
+build-mcp-images: ## Build container images for vacation-planner MCP servers
+	@for server in $(MCP_SERVERS); do \
+		img_name=$$(echo "mcp-$$server" | sed 's/_mcp$$//; s/_/-/g'); \
+		echo "Building $$img_name from mcp_servers/$$server ..."; \
+		$(CONTAINER_RUNTIME) build -t $(MCP_IMAGE_REGISTRY)/$$img_name:$(MCP_IMAGE_TAG) \
+			-f ../../mcp_servers/$$server/Containerfile ../../mcp_servers/$$server; \
+	done
+
+push-mcp-images: build-mcp-images ## Build and push MCP server images to registry
+	@for server in $(MCP_SERVERS); do \
+		img_name=$$(echo "mcp-$$server" | sed 's/_mcp$$//; s/_/-/g'); \
+		echo "Pushing $(MCP_IMAGE_REGISTRY)/$$img_name:$(MCP_IMAGE_TAG) ..."; \
+		$(CONTAINER_RUNTIME) push $(MCP_IMAGE_REGISTRY)/$$img_name:$(MCP_IMAGE_TAG); \
+	done
 
 install-status: ## Check deployment status
 	@echo "Deployment status for namespace: $(NAMESPACE)"
