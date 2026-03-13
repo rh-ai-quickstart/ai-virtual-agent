@@ -234,14 +234,57 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
 
       const role: 'user' | 'bot' = msg.role === 'user' ? 'user' : 'bot';
 
+      // Build token usage badges for assistant messages
+      const tokenBadges =
+        msg.role === 'assistant' && (msg.input_tokens || msg.output_tokens) ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '4px',
+              fontSize: '0.875rem',
+            }}
+          >
+            <span style={{ color: '#6A6E73', fontWeight: 500 }}>Tokens:</span>
+            {msg.input_tokens !== undefined && (
+              <span
+                style={{
+                  padding: '4px 12px',
+                  backgroundColor: '#e3f2fd',
+                  color: '#1976d2',
+                  borderRadius: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                {msg.input_tokens.toLocaleString()} in
+              </span>
+            )}
+            {msg.output_tokens !== undefined && (
+              <span
+                style={{
+                  padding: '4px 12px',
+                  backgroundColor: '#e8f5e9',
+                  color: '#388e3c',
+                  borderRadius: '12px',
+                  fontWeight: 500,
+                }}
+              >
+                {msg.output_tokens.toLocaleString()} out
+              </span>
+            )}
+          </div>
+        ) : null;
+
       return {
         id: msg.id,
         role,
         content: markdownContent,
         extraContent:
-          expandableComponents.length > 0
+          expandableComponents.length > 0 || tokenBadges
             ? {
                 beforeMainContent: <>{expandableComponents}</>,
+                afterMainContent: tokenBadges,
               }
             : undefined,
         name: msg.role === 'user' ? 'You' : 'Agent',

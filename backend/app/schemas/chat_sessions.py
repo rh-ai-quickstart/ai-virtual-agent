@@ -20,6 +20,8 @@ class ChatSession(BaseModel):
     title: str
     agent_id: UUID
     conversation_id: Optional[str] = None
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
     created_at: str
     updated_at: str
 

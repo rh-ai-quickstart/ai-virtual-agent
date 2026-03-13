@@ -263,6 +263,8 @@ class LangGraphRunner(BaseRunner):
         response_id = str(uuid.uuid4())[:8]
         has_output_text = False
         pending_tool_calls: Dict[str, dict] = {}
+        total_input_tokens = 0
+        total_output_tokens = 0
 
         try:
             async for mode, chunk in graph.astream(
@@ -276,6 +278,13 @@ class LangGraphRunner(BaseRunner):
                     node = metadata.get("langgraph_node", "")
 
                     if isinstance(msg_chunk, AIMessageChunk) and node == "agent":
+                        # Extract token usage if available
+                        if hasattr(msg_chunk, "usage_metadata") and msg_chunk.usage_metadata:
+                            usage = msg_chunk.usage_metadata
+                            if isinstance(usage, dict):
+                                total_input_tokens += usage.get("input_tokens", 0)
+                                total_output_tokens += usage.get("output_tokens", 0)
+
                         content = msg_chunk.content
                         if content and isinstance(content, str):
                             has_output_text = True
@@ -374,6 +383,22 @@ class LangGraphRunner(BaseRunner):
                     },
                     session_id,
                 )
+
+            # Emit token usage if available
+            if total_input_tokens > 0 or total_output_tokens > 0:
+                yield self._sse(
+                    "token_usage",
+                    {
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                    },
+                    session_id,
+                )
+
+            # Update session tokens in database
+            await self._update_session_tokens(
+                str(session_id), total_input_tokens, total_output_tokens
+            )
 
         except Exception as e:
             logger.exception(f"Error during LangGraph execution: {e}")
@@ -608,4 +633,37 @@ class LangGraphRunner(BaseRunner):
             await self.db.commit()
         except Exception as e:
             logger.error(f"Error updating session title: {e}")
+            await self.db.rollback()
+
+    async def _update_session_tokens(
+        self, session_id: str, input_tokens: int, output_tokens: int
+    ) -> None:
+        """Update session token counts."""
+        if input_tokens == 0 and output_tokens == 0:
+            return
+
+        result = await self.db.execute(
+            select(ChatSession)
+            .where(ChatSession.id == session_id)
+            .where(ChatSession.user_id == self.user_id)
+        )
+        session = result.scalar_one_or_none()
+
+        if not session:
+            logger.warning(f"Session {session_id} not found, cannot update tokens")
+            return
+
+        session.total_input_tokens += input_tokens
+        session.total_output_tokens += output_tokens
+
+        try:
+            await self.db.commit()
+            logger.info(
+                f"Updated session {session_id} tokens: "
+                f"+{input_tokens} input, +{output_tokens} output "
+                f"(total: {session.total_input_tokens} input, "
+                f"{session.total_output_tokens} output)"
+            )
+        except Exception as e:
+            logger.error(f"Error updating session tokens: {e}")
             await self.db.rollback()

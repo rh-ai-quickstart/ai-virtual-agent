@@ -21,6 +21,8 @@ export interface ChatMessage {
   content: SimpleContentItem[];
   timestamp: Date;
   tool_calls?: ToolCallEntry[];
+  input_tokens?: number;
+  output_tokens?: number;
 }
 
 export interface TextContentItem {
@@ -148,10 +150,17 @@ export interface NodeCompletedEvent extends BaseStreamEvent {
   node: string;
 }
 
+export interface TokenUsageEvent extends BaseStreamEvent {
+  type: 'token_usage';
+  input_tokens: number;
+  output_tokens: number;
+}
+
 export type StreamEvent =
   | ReasoningEvent
   | ToolCallEvent
   | ResponseEvent
   | ErrorEvent
   | NodeStartedEvent
-  | NodeCompletedEvent;
+  | NodeCompletedEvent
+  | TokenUsageEvent;

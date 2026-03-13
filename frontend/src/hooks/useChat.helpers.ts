@@ -6,6 +6,7 @@ import {
   ReasoningEvent,
   ResponseEvent,
   SimpleContentItem,
+  TokenUsageEvent,
   ToolCallEvent,
 } from '@/types/chat';
 
@@ -247,6 +248,23 @@ export const handleNodeCompleted: ChunkHandler<NodeCompletedEvent> = (messages, 
     ...lastMsg,
     content: newContent,
     timestamp: new Date(),
+  };
+  return updated;
+};
+
+/**
+ * Handle token usage events.
+ * Updates the token counts for the assistant message.
+ */
+export const handleTokenUsage: ChunkHandler<TokenUsageEvent> = (messages, event) => {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== 'assistant') return messages;
+
+  const updated = [...messages];
+  updated[updated.length - 1] = {
+    ...lastMsg,
+    input_tokens: event.input_tokens,
+    output_tokens: event.output_tokens,
   };
   return updated;
 };

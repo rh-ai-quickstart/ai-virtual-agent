@@ -39,3 +39,10 @@ class ChatRequest(BaseModel):
     virtualAgentId: UUID
     message: ChatMessage
     sessionId: Optional[UUID] = None
+
+
+class TokenUsage(BaseModel):
+    """Token usage information for a chat interaction."""
+
+    input_tokens: int
+    output_tokens: int
