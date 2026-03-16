@@ -9,6 +9,7 @@ import {
   handleError,
   handleNodeStarted,
   handleNodeCompleted,
+  handleTokenUsage,
 } from './useChat.helpers';
 
 // Re-export types for backward compatibility
@@ -271,6 +272,8 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
                   scheduleUpdate((prev) => handleNodeStarted(prev, chunk));
                 } else if (chunk.type === 'node_completed') {
                   scheduleUpdate((prev) => handleNodeCompleted(prev, chunk));
+                } else if (chunk.type === 'token_usage') {
+                  scheduleUpdate((prev) => handleTokenUsage(prev, chunk));
                 } else if (chunk.type === 'error') {
                   console.error('Stream error:', chunk.message);
                   setIsLoading(false);

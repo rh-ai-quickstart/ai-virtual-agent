@@ -167,6 +167,8 @@ async def get_chat_sessions(
                 title=session.title or f"Chat {str(session.id)[:8]}...",
                 agent_id=session.agent_id,
                 conversation_id=session.conversation_id,
+                total_input_tokens=session.total_input_tokens or 0,
+                total_output_tokens=session.total_output_tokens or 0,
                 created_at=session.created_at.isoformat(),
                 updated_at=session.updated_at.isoformat(),
             )
@@ -225,6 +227,8 @@ async def get_chat_session(
             title=session.title or f"Chat {str(session.id)[:8]}...",
             agent_id=session.agent_id,
             conversation_id=session.conversation_id,
+            total_input_tokens=session.total_input_tokens or 0,
+            total_output_tokens=session.total_output_tokens or 0,
             created_at=session.created_at.isoformat(),
             updated_at=session.updated_at.isoformat(),
         )
@@ -568,6 +572,8 @@ async def create_chat_session(
             title=session_name,
             agent_id=sessionRequest.agent_id,
             conversation_id=None,
+            total_input_tokens=0,
+            total_output_tokens=0,
             created_at=new_session.created_at.isoformat(),
             updated_at=new_session.updated_at.isoformat(),
         )

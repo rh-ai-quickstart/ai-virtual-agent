@@ -98,6 +98,8 @@ class StreamAggregator:
         self.sent_content = set()
         self.sent_tool_calls = set()
         self.has_output_text = False
+        self.input_tokens = 0
+        self.output_tokens = 0
 
     async def process_chunk(self, chunk: Dict[str, Any]):
         chunk_type = chunk.get("type", "")
@@ -344,6 +346,21 @@ class StreamAggregator:
                         )
                         yield self._create_event("error", {"message": refusal_msg})
                         return
+
+        # Extract token usage from response
+        usage = response.get("usage", {})
+        if usage:
+            self.input_tokens = usage.get("input_tokens", 0)
+            self.output_tokens = usage.get("output_tokens", 0)
+
+            # Emit token usage event
+            yield self._create_event(
+                "token_usage",
+                {
+                    "input_tokens": self.input_tokens,
+                    "output_tokens": self.output_tokens,
+                },
+            )
 
         if not self.has_output_text:
             error_msg = (
@@ -694,8 +711,11 @@ class LlamaStackRunner(BaseRunner):
 
             yield "data: [DONE]\n\n"
 
-            # Update session title based on first message
+            # Update session title and token counts
             await self._update_session_title(session_id, prompt)
+            await self._update_session_tokens(
+                session_id, aggregator.input_tokens, aggregator.output_tokens
+            )
 
         except Exception as e:
             logger.exception(f"Error in stream for agent {agent.id}: {e}")
@@ -739,4 +759,37 @@ class LlamaStackRunner(BaseRunner):
             await self.db.commit()
         except Exception as e:
             logger.error(f"Error updating session title: {e}")
+            await self.db.rollback()
+
+    async def _update_session_tokens(
+        self, session_id: str, input_tokens: int, output_tokens: int
+    ) -> None:
+        """Update session token counts."""
+        if input_tokens == 0 and output_tokens == 0:
+            return
+
+        result = await self.db.execute(
+            select(ChatSession)
+            .where(ChatSession.id == session_id)
+            .where(ChatSession.user_id == self.user_id)
+        )
+        session = result.scalar_one_or_none()
+
+        if not session:
+            logger.warning(f"Session {session_id} not found, cannot update tokens")
+            return
+
+        session.total_input_tokens += input_tokens
+        session.total_output_tokens += output_tokens
+
+        try:
+            await self.db.commit()
+            logger.info(
+                f"Updated session {session_id} tokens: "
+                f"+{input_tokens} input, +{output_tokens} output "
+                f"(total: {session.total_input_tokens} input, "
+                f"{session.total_output_tokens} output)"
+            )
+        except Exception as e:
+            logger.error(f"Error updating session tokens: {e}")
             await self.db.rollback()
