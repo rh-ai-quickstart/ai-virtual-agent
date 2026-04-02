@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException, Request, status
 
 from ...api.llamastack import get_client_from_request
+from ...config import ENV_DEFAULT_MODEL_SENTINEL, settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +18,39 @@ router = APIRouter()
 def _get_model_metadata(model) -> Dict[str, Any]:
     """Extract metadata fields from a Model object returned by models.list().
 
-    In llama-stack-client 0.5.x the list response uses the OpenAI-compatible
-    Model schema where model_type and provider_resource_id live inside
-    ``custom_metadata``.
+    Supports both old and new llama-stack client API structures:
+    - In llama-stack-client 0.5.x: model_type and provider_resource_id live inside custom_metadata
+    - In newer versions: model uses api_model_type and provider_resource_id properties directly
     """
+    # Try new API structure first
+    if hasattr(model, 'api_model_type') and hasattr(model, 'provider_resource_id'):
+        return {
+            "model_type": model.api_model_type,
+            "provider_resource_id": model.provider_resource_id,
+        }
+
+    # Fall back to old API structure
     meta = model.custom_metadata or {}
     return {
         "model_type": meta.get("model_type"),
         "provider_resource_id": meta.get("provider_resource_id"),
+    }
+
+
+def _build_env_default_entry() -> Dict[str, Any] | None:
+    """Return an env-default model entry when any runner default is configured."""
+    configured = []
+    if settings.LANGGRAPH_DEFAULT_MODEL:
+        configured.append(f"LangGraph: {settings.LANGGRAPH_DEFAULT_MODEL}")
+    if settings.CREWAI_DEFAULT_MODEL:
+        configured.append(f"CrewAI: {settings.CREWAI_DEFAULT_MODEL}")
+    if not configured:
+        return None
+    return {
+        "model_name": ENV_DEFAULT_MODEL_SENTINEL,
+        "provider_resource_id": "environment",
+        "model_type": "llm",
+        "display_name": f"Default Model (Environment Configured — {', '.join(configured)})",
     }
 
 
@@ -33,7 +59,13 @@ async def get_llms(request: Request):
     """
     Retrieve all available Large Language Models from LlamaStack.
     Excludes models that are used as shields.
+
+    When ``LANGGRAPH_DEFAULT_MODEL`` or ``CREWAI_DEFAULT_MODEL`` env vars are
+    set, an additional *"Default Model (Environment Configured)"* entry is
+    prepended so users can select the env-configured model from the dropdown.
     """
+    env_entry = _build_env_default_entry()
+
     client = get_client_from_request(request)
     try:
         logger.info(f"Attempting to fetch models from LlamaStack at {client.base_url}")
@@ -42,6 +74,12 @@ async def get_llms(request: Request):
             logger.info(f"Received response from LlamaStack: {models}")
         except Exception as client_error:
             logger.error(f"Error calling LlamaStack API: {str(client_error)}")
+            if env_entry:
+                logger.info(
+                    "LlamaStack unavailable but env-default model configured; "
+                    "returning env-default entry only"
+                )
+                return [env_entry]
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Failed to connect to LlamaStack API: {str(client_error)}",
@@ -49,7 +87,7 @@ async def get_llms(request: Request):
 
         if not models:
             logger.warning("No models returned from LlamaStack")
-            return []
+            return [env_entry] if env_entry else []
 
         # Fetch shields to filter them out from LLM list
         shield_resource_ids = set()
@@ -60,16 +98,20 @@ async def get_llms(request: Request):
             }
         except Exception as shield_error:
             logger.warning(f"Could not fetch shields: {str(shield_error)}")
-            # Continue without shield filtering
 
-        llms = []
+        llms: List[Dict[str, Any]] = []
+        if env_entry:
+            llms.append(env_entry)
+
         for model in models:
             try:
                 meta = _get_model_metadata(model)
                 if meta["model_type"] == "llm":
                     # Skip models that are used as shields
                     provider_resource_id = str(meta["provider_resource_id"] or "")
-                    model_id = str(model.id)
+
+                    # Support both old and new API for model identifier
+                    model_id = str(getattr(model, 'identifier', None) or getattr(model, 'id', ''))
 
                     if (
                         provider_resource_id in shield_resource_ids
@@ -92,6 +134,8 @@ async def get_llms(request: Request):
         logger.info(f"Successfully processed {len(llms)} LLM models")
         return llms
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error in get_llms: {str(e)}")
         raise HTTPException(

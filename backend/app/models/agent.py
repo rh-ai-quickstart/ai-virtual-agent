@@ -24,6 +24,9 @@ class VirtualAgent(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False, unique=True)
+    runner_type = Column(
+        String(50), nullable=False, server_default="llamastack"
+    )  # "llamastack" | "langgraph" | "crewai"
     model_name = Column(String(255), nullable=False)
     template_id = Column(
         UUID(as_uuid=True),
@@ -45,6 +48,7 @@ class VirtualAgent(Base):
     max_tokens = Column(JSON, nullable=True)
     repetition_penalty = Column(JSON, nullable=True)
     max_infer_iters = Column(JSON, nullable=True)
+    graph_config = Column(JSON, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True),

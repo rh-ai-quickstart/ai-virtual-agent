@@ -72,6 +72,26 @@ echo "     To enable web search, obtain a key from https://tavily.com/"
 echo ""
 TAVILY_API_KEY=$(prompt_for_value "TAVILY_API_KEY" "Enter Tavily API Key now (or press Enter to continue without web search)" "")
 
+# SerpApi API Key (optional, enables hotel and flight search in vacation planner)
+echo ""
+echo "💡 SerpApi API Key"
+echo "     Without a key, hotel and flight search will be disabled in vacation planner agents."
+echo "     To enable, obtain a key from https://serpapi.com/"
+echo ""
+SERPAPI_API_KEY=$(prompt_for_value "SERPAPI_API_KEY" "Enter SerpApi API Key now (or press Enter to skip)" "")
+
+# MaaS (Model as a Service) configuration for LangGraph / CrewAI runners
+echo ""
+echo "💡 MaaS Configuration (optional)"
+echo "     Set these to point LangGraph and CrewAI runners at an external model endpoint"
+echo "     instead of the local LlamaStack inference. Leave blank to use LlamaStack."
+echo ""
+MAAS_API_BASE=$(prompt_for_value "MAAS_API_BASE" "Enter MaaS API base URL (or press Enter to skip)" "")
+if [ -n "$MAAS_API_BASE" ]; then
+    MAAS_API_KEY=$(prompt_for_value "MAAS_API_KEY" "Enter MaaS API key" "")
+    MAAS_MODEL_NAME=$(prompt_for_value "MAAS_MODEL_NAME" "Enter MaaS model name" "")
+fi
+
 # Database configuration (use defaults, don't prompt)
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rag_password}"
@@ -86,6 +106,10 @@ export HF_TOKEN
 export ADMIN_USERNAME
 export ADMIN_EMAIL
 export TAVILY_API_KEY
+export SERPAPI_API_KEY
+export MAAS_API_BASE
+export MAAS_API_KEY
+export MAAS_MODEL_NAME
 export POSTGRES_USER
 export POSTGRES_PASSWORD
 export POSTGRES_DBNAME
@@ -98,6 +122,10 @@ if [ "$1" = "--export" ]; then
     echo "export ADMIN_USERNAME='$ADMIN_USERNAME'"
     echo "export ADMIN_EMAIL='$ADMIN_EMAIL'"
     [ -n "$TAVILY_API_KEY" ] && echo "export TAVILY_API_KEY='$TAVILY_API_KEY'"
+    [ -n "$SERPAPI_API_KEY" ] && echo "export SERPAPI_API_KEY='$SERPAPI_API_KEY'"
+    [ -n "$MAAS_API_BASE" ] && echo "export MAAS_API_BASE='$MAAS_API_BASE'"
+    [ -n "$MAAS_API_KEY" ] && echo "export MAAS_API_KEY='$MAAS_API_KEY'"
+    [ -n "$MAAS_MODEL_NAME" ] && echo "export MAAS_MODEL_NAME='$MAAS_MODEL_NAME'"
     echo "export POSTGRES_USER='$POSTGRES_USER'"
     echo "export POSTGRES_PASSWORD='$POSTGRES_PASSWORD'"
     echo "export POSTGRES_DBNAME='$POSTGRES_DBNAME'"

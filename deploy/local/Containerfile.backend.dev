@@ -2,11 +2,6 @@ FROM registry.access.redhat.com/ubi9/python-312:latest
 
 USER root
 
-# Install only essential runtime dependencies
-RUN dnf install -y nmap-ncat && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
-
 # Set working directory
 WORKDIR /app
 
@@ -32,8 +27,9 @@ COPY .coveragerc /app/.coveragerc
 # Set Python path
 ENV PYTHONPATH=/app
 
-# Copy startup script and make executable in one layer
+# Copy startup script and make executable
 COPY deploy/local/scripts/start-backend-dev.sh /app/start-backend-dev.sh
+RUN chmod +x /app/start-backend-dev.sh
 
 # Expose the port
 EXPOSE 8000

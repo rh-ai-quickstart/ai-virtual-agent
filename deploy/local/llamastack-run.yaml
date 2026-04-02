@@ -42,6 +42,10 @@ providers:
   tool_runtime:
   - provider_id: model-context-protocol
     provider_type: remote::model-context-protocol
+  - provider_id: tavily-search
+    provider_type: remote::tavily-search
+    config:
+      api_key: ${env.TAVILY_API_KEY:}
 storage:
   backends:
     kv_default:
@@ -63,13 +67,19 @@ storage:
       table_name: openai_conversations
       backend: sql_default
 registered_resources:
-  models: []
+  models:
+  - metadata: {}
+    model_id: llama3.2:1b
+    provider_id: ollama
+    model_type: llm
   shields: []
   vector_dbs: []
   datasets: []
   scoring_fns: []
   benchmarks: []
-  tool_groups: []
+  tool_groups:
+  - toolgroup_id: "builtin::websearch"
+    provider_id: tavily-search
 server:
   port: 8321
 telemetry:

@@ -7,11 +7,11 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: quay.io/rh-ai-quickstart/ai-virtual-agent
+  repository: quay.io/skattoju/ai-virtual-agent
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest-dev"
+  tag: "a2b8b20"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -119,6 +119,30 @@ pgSecret: pgvector
 
 llama_stack_url: http://llamastack:8321
 
+# Runner LLM Configuration (for LangGraph and CrewAI direct-to-model inference)
+# When set, these bypass LlamaStack and point runners at an external MaaS endpoint.
+runners:
+  langgraph:
+    llm_api_base: ""
+    llm_api_key: ""
+    default_model: ""
+  crewai:
+    llm_api_base: ""
+    llm_api_key: ""
+    default_model: ""
+
+# MCP server URLs injected into the backend pod.
+# These must match the service names created by the mcp-servers subchart.
+mcp:
+  travel_research_url: "http://mcp-travel-research:8000/mcp"
+  hotel_url: "http://mcp-hotel:8000/mcp"
+  flight_url: "http://mcp-flight:8000/mcp"
+
+# API keys passed to the backend container (for CrewAI local tool fallback)
+apiKeys:
+  tavily: ""
+  serpapi: ""
+
 sessionSecret: {}
  # value: "my-session-secret"
 
@@ -214,6 +238,38 @@ llama-stack:
       description: users can read, update and delete resources they own
   secrets:
     TAVILY_SEARCH_API_KEY: ""
+
+# Vacation-planner MCP servers deployed via the mcp-servers subchart.
+# Images must be pre-built and pushed to the repository below.
+mcp-servers:
+  mcp-servers:
+    travel-research:
+      enabled: true
+      deploymentMode: deployment
+      image:
+        repository: quay.io/skattoju/mcp-travel-research
+        tag: "latest"
+      transport: streamable-http
+      port: 8000
+      targetPort: 8000
+    hotel:
+      enabled: true
+      deploymentMode: deployment
+      image:
+        repository: quay.io/skattoju/mcp-hotel
+        tag: "latest"
+      transport: streamable-http
+      port: 8000
+      targetPort: 8000
+    flight:
+      enabled: true
+      deploymentMode: deployment
+      image:
+        repository: quay.io/skattoju/mcp-flight
+        tag: "latest"
+      transport: streamable-http
+      port: 8000
+      targetPort: 8000
 
 # global:
 #   models:

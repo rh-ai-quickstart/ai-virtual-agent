@@ -15,9 +15,11 @@ class AgentTemplate(BaseModel):
     persona: str
     prompt: str
     model_name: str
+    runner_type: str = "llamastack"
     tools: List[Dict[str, str]]
     knowledge_base_ids: List[str]
     knowledge_base_config: Optional[Dict] = None
+    graph_config: Optional[Dict] = None
     demo_questions: Optional[List[str]] = None
 
 
@@ -37,6 +39,7 @@ class TemplateInitializationRequest(BaseModel):
     model_name: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = None
     knowledge_base_ids: Optional[List[str]] = None
+    runner_type: Optional[str] = None
 
 
 class TemplateInitializationResponse(BaseModel):

@@ -12,14 +12,26 @@ llama-stack==0.5.2
 llama_stack_client==0.5.2
 fire
 httpx
-vulture
+kubernetes
+
+# Lint / format (pre-commit: black, isort, flake8, vulture)
 black
 isort
-pre-commit
 flake8
-httpx
-kubernetes
+vulture
+pre-commit
 boto3
 python-multipart
 python-magic
 pyyaml
+# LangGraph runner
+langgraph
+langchain-openai
+langchain-mcp-adapters
+# CrewAI runner
+crewai
+crewai[tools]
+# UBI9 ships SQLite 3.34 but ChromaDB (via CrewAI) needs >= 3.35
+pysqlite3-binary
+tavily-python
+litellm

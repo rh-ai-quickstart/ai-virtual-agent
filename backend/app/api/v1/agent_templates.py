@@ -21,6 +21,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...config import settings
+from ...core.auth import is_local_dev_mode
 from ...core.template_loader import (
     get_suites_by_category as get_suites_by_category_util,
 )
@@ -244,9 +246,11 @@ async def initialize_agent_from_template(
         # Compute target agent name early for messages and duplicate checks
         agent_name = request.custom_name or template.name
 
-        # Duplicate check: simple, early return by template_id
-        existing_agent = await virtual_agents.get_by_template_id(
-            db, template_id=db_template.id
+        # Duplicate check: prevent redeploying the same template/name pair.
+        # This still allows multiple agents from one template when users
+        # intentionally choose different names (e.g. different runner types).
+        existing_agent = await virtual_agents.get_by_template_id_and_name(
+            db, template_id=db_template.id, name=agent_name
         )
         if existing_agent:
             logger.info(
@@ -327,15 +331,28 @@ async def initialize_agent_from_template(
         if kb_ids and not any(tool.toolgroup_id == "builtin::rag" for tool in tools):
             tools.append(ToolAssociationInfo(toolgroup_id="builtin::rag"))
 
-        # Determine model: prefer override if provided and non-empty
-        model_to_use = request.model_name or template.model_name
+        # Determine model: in local dev use DEFAULT_INFERENCE_MODEL so template
+        # agents work with Ollama/LlamaStack dev stack; otherwise use request or
+        # template model.
+        if request.model_name:
+            model_to_use = request.model_name
+        elif is_local_dev_mode() and settings.DEFAULT_INFERENCE_MODEL:
+            model_to_use = settings.DEFAULT_INFERENCE_MODEL
+            logger.info(
+                f"Local dev: using DEFAULT_INFERENCE_MODEL={model_to_use} "
+                f"instead of template model '{template.model_name}'"
+            )
+        else:
+            model_to_use = template.model_name
 
         agent_config = VirtualAgentCreate(
             name=agent_name,
+            runner_type=request.runner_type or template.runner_type or "llamastack",
             prompt=agent_prompt,
             model_name=model_to_use,
             tools=tools,
             knowledge_base_ids=kb_ids,
+            graph_config=template.graph_config,
             temperature=0.1,
             top_p=0.95,
             max_tokens=4096,

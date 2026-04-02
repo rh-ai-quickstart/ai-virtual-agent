@@ -36,6 +36,7 @@ repos:
         args:
           - --max-line-length=120
           - --extend-ignore=E203,W503
+          - "--per-file-ignores=backend/main.py:E402"
 
   - repo: local
     hooks:
@@ -45,7 +46,7 @@ repos:
         language: system
         types: [python]
         exclude: '^(backend/migrations/|migrations/|deploy/|tests/)'
-        args: [--min-confidence=80]
+        args: [--min-confidence=80, "--ignore-names=session_id,prompt,budget"]
       - id: helm-lint
         name: Helm lint
         entry: helm lint ./deploy/cluster/helm

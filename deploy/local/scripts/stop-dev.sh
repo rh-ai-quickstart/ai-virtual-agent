@@ -12,12 +12,12 @@ cd "$DEPLOY_LOCAL_DIR"
 echo "🛑 Stopping AI Virtual Agent Development Environment..."
 
 # Stop all services (including all profiles)
-podman compose --profile attachments down
+podman compose --env-file ../../.env --profile attachments down
 
 echo "✅ All services stopped successfully"
 echo ""
 echo "💡 To remove all data (including database):"
-echo "   podman compose --profile attachments down --volumes"
+echo "   podman compose --env-file ../../.env --profile attachments down --volumes"
 echo ""
 echo "🔄 To restart:"
 echo "   make compose-up"

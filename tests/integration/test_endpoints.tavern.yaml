@@ -11,10 +11,11 @@ stages:
       status_code: 200
       headers:
         content-type: application/json
-      json:
-        - model_name: "ollama/llama3.2:1b-instruct-fp16"
-          provider_resource_id: "llama3.2:1b-instruct-fp16"
-          model_type: "llm"
+      verify_response_with:
+        - function: tests.integration.validators:validate_llms_response
+          extra_kwargs:
+            required_models:
+              - "ollama/llama3.2:1b"
 ---
 test_name: Test Virtual Agents API Endpoint
 stages:
@@ -27,7 +28,7 @@ stages:
       json:
         name: "Test Assistant"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
         input_shields: []
         output_shields: []
         knowledge_base_ids: []
@@ -58,8 +59,9 @@ stages:
         suite_name: null
         sampling_strategy: null
         name: "Test Assistant"
+        runner_type: "llamastack"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b-instruct-fp16"
+        model_name: "ollama/llama3.2:1b"
         input_shields: []
         output_shields: []
         temperature: null
@@ -71,6 +73,7 @@ stages:
         vector_store_ids: []
         tools: []
         max_infer_iters: 100
+        graph_config: null
         id: "{agent_id}"
         created_at: !anything
         updated_at: !anything
@@ -129,4 +132,9 @@ stages:
         - provider_id: "model-context-protocol"
           provider_type: "remote::model-context-protocol"
           config: {}
+          api: "tool_runtime"
+        - provider_id: "tavily-search"
+          provider_type: "remote::tavily-search"
+          config:
+            api_key: !anystr
           api: "tool_runtime"
