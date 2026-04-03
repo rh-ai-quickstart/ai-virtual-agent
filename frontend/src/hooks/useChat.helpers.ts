@@ -1,6 +1,8 @@
 import {
   ChatMessage,
   ErrorEvent,
+  NodeCompletedEvent,
+  NodeStartedEvent,
   ReasoningEvent,
   ResponseEvent,
   SimpleContentItem,
@@ -157,6 +159,88 @@ export const handleError: ChunkHandler<ErrorEvent> = (messages, event) => {
       text: `⚠️ ${event.message}`,
     },
   ];
+
+  const updated = [...messages];
+  updated[updated.length - 1] = {
+    ...lastMsg,
+    content: newContent,
+    timestamp: new Date(),
+  };
+  return updated;
+};
+
+/**
+ * Derive a human-readable label from a node/task ID.
+ * e.g. "places_list_task" -> "Places List", "hotel_research_task" -> "Hotel Research"
+ */
+export function nodeIdToLabel(nodeId: string): string {
+  return nodeId
+    .replace(/_task$/, '')
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Handle node_started events from graph/crew runners.
+ * Upserts a graph_node content item with status 'running'.
+ */
+export const handleNodeStarted: ChunkHandler<NodeStartedEvent> = (messages, event) => {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== 'assistant') return messages;
+
+  const newContent = [...lastMsg.content];
+  const nodeIndex = newContent.findIndex(
+    (item) => item.type === 'graph_node' && item.node_id === event.node
+  );
+
+  if (nodeIndex >= 0) {
+    newContent[nodeIndex] = {
+      type: 'graph_node' as const,
+      node_id: event.node,
+      label: nodeIdToLabel(event.node),
+      status: 'running',
+    };
+  } else {
+    newContent.push({
+      type: 'graph_node' as const,
+      node_id: event.node,
+      label: nodeIdToLabel(event.node),
+      status: 'running',
+    });
+  }
+
+  const updated = [...messages];
+  updated[updated.length - 1] = {
+    ...lastMsg,
+    content: newContent,
+    timestamp: new Date(),
+  };
+  return updated;
+};
+
+/**
+ * Handle node_completed events from graph/crew runners.
+ * Updates the matching graph_node content item to status 'completed'.
+ */
+export const handleNodeCompleted: ChunkHandler<NodeCompletedEvent> = (messages, event) => {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== 'assistant') return messages;
+
+  const newContent = [...lastMsg.content];
+  const nodeIndex = newContent.findIndex(
+    (item) => item.type === 'graph_node' && item.node_id === event.node
+  );
+
+  if (nodeIndex >= 0) {
+    const existing = newContent[nodeIndex];
+    if (existing.type === 'graph_node') {
+      newContent[nodeIndex] = {
+        ...existing,
+        status: 'completed',
+      };
+    }
+  }
 
   const updated = [...messages];
   updated[updated.length - 1] = {

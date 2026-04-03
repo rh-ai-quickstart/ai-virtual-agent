@@ -59,12 +59,22 @@ export interface ImageContentItem {
   image_url: string;
 }
 
+export type GraphNodeStatus = 'pending' | 'running' | 'completed';
+
+export interface GraphNodeContentItem {
+  type: 'graph_node';
+  node_id: string;
+  label: string;
+  status: GraphNodeStatus;
+}
+
 export type SimpleContentItem =
   | TextContentItem
   | OutputTextContentItem
   | ReasoningContentItem
   | ToolCallContentItem
-  | ImageContentItem;
+  | ImageContentItem
+  | GraphNodeContentItem;
 
 export interface UseLlamaChatOptions {
   onError?: (error: Error) => void;
@@ -128,4 +138,20 @@ export interface ErrorEvent extends BaseStreamEvent {
   message: string;
 }
 
-export type StreamEvent = ReasoningEvent | ToolCallEvent | ResponseEvent | ErrorEvent;
+export interface NodeStartedEvent extends BaseStreamEvent {
+  type: 'node_started';
+  node: string;
+}
+
+export interface NodeCompletedEvent extends BaseStreamEvent {
+  type: 'node_completed';
+  node: string;
+}
+
+export type StreamEvent =
+  | ReasoningEvent
+  | ToolCallEvent
+  | ResponseEvent
+  | ErrorEvent
+  | NodeStartedEvent
+  | NodeCompletedEvent;

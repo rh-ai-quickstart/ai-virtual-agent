@@ -2,7 +2,7 @@
 Agent-related schemas.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,6 +15,7 @@ class VirtualAgentBase(BaseModel):
     """Base virtual agent config schema."""
 
     name: str
+    runner_type: Literal["llamastack", "langgraph", "crewai"] = "llamastack"
     model_name: str
     prompt: Optional[str] = None
     tools: Optional[List[ToolAssociationInfo]] = []
@@ -29,6 +30,7 @@ class VirtualAgentBase(BaseModel):
     max_tokens: Optional[int] = None
     repetition_penalty: Optional[float] = None
     max_infer_iters: Optional[int] = 100
+    graph_config: Optional[Dict[str, Any]] = None
 
 
 class VirtualAgentCreate(VirtualAgentBase):
@@ -41,6 +43,7 @@ class VirtualAgentUpdate(BaseModel):
     """Schema for updating a virtual agent config."""
 
     name: Optional[str] = None
+    runner_type: Optional[str] = None
     model_name: Optional[str] = None
     template_id: Optional[UUID] = None
     prompt: Optional[str] = None
@@ -56,6 +59,7 @@ class VirtualAgentUpdate(BaseModel):
     max_tokens: Optional[int] = None
     repetition_penalty: Optional[float] = None
     max_infer_iters: Optional[int] = None
+    graph_config: Optional[Dict[str, Any]] = None
 
 
 class VirtualAgentInDB(VirtualAgentBase, TimestampMixin, BaseSchema):
@@ -72,6 +76,7 @@ class VirtualAgentResponse(VirtualAgentInDB):
     suite_id: Optional[UUID] = None
     suite_name: Optional[str] = None
     category: Optional[str] = None
+    runner_type: Optional[str] = None
 
 
 class AgentTemplateBase(BaseModel):

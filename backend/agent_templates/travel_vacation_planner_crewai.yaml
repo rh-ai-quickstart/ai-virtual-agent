@@ -1,0 +1,170 @@
+name: "Travel Vacation Planner (CrewAI)"
+description: "Multi-agent vacation planning crew using CrewAI with specialized researcher agents for destinations, hotels, and flights."
+category: "travel"
+templates:
+  vacation_planner_crewai:
+    name: "Vacation Planner (CrewAI)"
+    persona: "vacation_planner"
+    runner_type: "crewai"
+    prompt: "You are a vacation planning crew that researches destinations, finds hotels, and searches flights to create comprehensive travel plans."
+    model_name: "meta-llama/Llama-3.1-8B-Instruct"
+    tools: []
+    knowledge_base_ids: []
+    demo_questions:
+      - "Plan a 5-day trip to Tokyo with a focus on culture and food"
+      - "Find me a beach vacation in Mexico for two adults next month"
+      - "Research a weekend getaway to Paris with hotel and flight options"
+    graph_config:
+      name: vacation_planner_crewai
+      process: sequential
+      mcp:
+        transport: streamable-http
+        servers:
+          travel_research:
+            url: "${TRAVEL_RESEARCH_MCP_URL:http://localhost:7001/mcp}"
+          hotel:
+            url: "${HOTEL_MCP_URL:http://localhost:7002/mcp}"
+          flight:
+            url: "${FLIGHT_MCP_URL:http://localhost:7003/mcp}"
+      agents:
+        destination_researcher:
+          role: >
+            Travel Research Specialist
+          goal: >
+            Discover top attractions, seasonal considerations, and itinerary options
+            for {destination} within {num_days} days, aligned to {preferences}.
+          backstory: >
+            You're an expert travel researcher who gathers up-to-date, reliable
+            information and turns it into clear, user-friendly recommendations.
+          tools:
+            - travel_research
+        hotel_researcher:
+          role: >
+            Hotel Research Specialist
+          goal: >
+            Find hotels in {destination} for {start_date} to {end_date} that match
+            the user's budget and interests.
+          backstory: >
+            You specialize in comparing hotel options, surfacing the best value
+            and highlighting key amenities and location trade-offs.
+          tools:
+            - hotel
+        flight_researcher:
+          role: >
+            Flight Research Specialist
+          goal: >
+            Find flight options from {origin} to {destination} for
+            {start_date} to {end_date}. Focus on price, duration, and
+            number of stops.
+          backstory: >
+            You are a flight research expert who finds the best flight
+            deals. Use the google_flights_search tool to search for
+            flights. Provide results with airline, price, duration, and
+            stops.
+          tools:
+            - flight
+        itinerary_planner:
+          role: >
+            Travel Itinerary Planner
+          goal: >
+            Synthesize destination research, hotel options, and flight options
+            into 2-3 cohesive itinerary proposals for {destination} tailored
+            to the traveler's interests: {preferences}.
+          backstory: >
+            You are an expert travel planner who excels at combining research
+            from multiple sources into clear, actionable itineraries. You have
+            NO tools and CANNOT search for information. You MUST work
+            exclusively from the research already provided to you. Write your
+            final answer directly — never output Thought/Action/JSON blocks.
+          tools: []
+      tasks:
+        # Internal step: generate a focused places list for downstream research
+        - id: places_list_task
+          agent: destination_researcher
+          internal: true
+          description: >
+            List exactly 5 specific places, neighborhoods, or attractions in
+            {destination} that are directly related to the user's interests:
+            "{preferences}". Every item must clearly connect to those
+            interests. Return ONLY a numbered list of place names, one per
+            line. No extra commentary.
+          expected_output: >
+            A numbered list of exactly 5 places or attractions related to
+            "{preferences}".
+
+        # Step 1: Deep research using the places list
+        - id: destination_research_task
+          agent: destination_researcher
+          context:
+            - places_list_task
+          description: >
+            Research the 5 places from the previous step in {destination} for
+            a {num_days}-day trip ({start_date} to {end_date}). For each
+            place, provide highlights, must-see spots, seasonal notes, and
+            practical tips — all focused on "{preferences}". Limit output to
+            these 5 places only. Use web research.
+          expected_output: >
+            A concise summary of exactly 5 places with highlights and why
+            each is relevant to "{preferences}".
+
+        # Step 2: Hotel research
+        - id: hotel_research_task
+          agent: hotel_researcher
+          context: []
+          description: >
+            Find hotel options in {destination} for {start_date} to {end_date}.
+            Use the user's budget ({budget}) and preferences ({preferences}) if
+            provided. Focus on location, price range, and notable amenities.
+            Use the SerpApi Google Hotels API.
+            Do NOT include destination research or attraction information —
+            only hotel results.
+          expected_output: >
+            5-8 hotel options with name, location, price range, and short notes.
+
+        # Step 3: Flight research
+        - id: flight_research_task
+          agent: flight_researcher
+          context: []
+          description: >
+            Search for flights from {origin} to {destination} departing
+            {start_date} and returning {end_date} for {cabin} class.
+            Present the results as 3-6 flight options with airline, duration,
+            stops, and price. Do NOT include itinerary plans, hotel info, or
+            destination research.
+          expected_output: >
+            3-6 flight options with airline, duration, stops, price, and a
+            short recommendation.
+
+        # Step 4: Synthesize everything into itinerary options
+        - id: itinerary_options_task
+          agent: itinerary_planner
+          context:
+            - destination_research_task
+            - hotel_research_task
+            - flight_research_task
+          description: >
+            All research has already been completed and is provided in your
+            context above. You have NO tools available. Write your answer
+            directly as plain text — do NOT output any Thought/Action/JSON.
+
+            Propose 2-3 itinerary options for {destination}.
+            IMPORTANT: Each itinerary MUST be exactly {num_days} days
+            (Day 1 through Day {num_days}), from {start_date} to {end_date}.
+            Do NOT create more than {num_days} days.
+            Each option should include daily themes, key activities, and time
+            estimates. Tailor to interests: {preferences}. Do NOT repeat the
+            hotel or flight details — just reference them briefly.
+            Ask the user for changes or preferences at the end.
+          expected_output: >
+            2-3 itinerary options, each with exactly {num_days} daily
+            breakdowns (Day 1 through Day {num_days}), followed by a short
+            question asking the user for changes or preferences.
+      input_fields:
+        destination: "Tokyo"
+        origin: "New York"
+        start_date: "2026-04-01"
+        end_date: "2026-04-07"
+        num_days: "7"
+        preferences: "culture and food"
+        budget: "mid-range"
+        cabin: "economy"

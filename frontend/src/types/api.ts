@@ -2,6 +2,7 @@ export interface Model {
   model_name: string;
   provider_resource_id: string;
   model_type: string;
+  display_name?: string;
 }
 
 export interface EmbeddingModel {

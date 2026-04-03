@@ -2,7 +2,14 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { CHAT_API_ENDPOINT } from '../config/api';
 import { fetchChatSession, createChatSession } from '@/services/chat-sessions';
 import { ChatMessage, UseLlamaChatOptions, SimpleContentItem, StreamEvent } from '@/types/chat';
-import { handleReasoning, handleToolCall, handleResponse, handleError } from './useChat.helpers';
+import {
+  handleReasoning,
+  handleToolCall,
+  handleResponse,
+  handleError,
+  handleNodeStarted,
+  handleNodeCompleted,
+} from './useChat.helpers';
 
 // Re-export types for backward compatibility
 export type { ChatMessage, UseLlamaChatOptions } from '@/types/chat';
@@ -204,8 +211,23 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
               const data = line.slice(6).trim();
 
               if (data === '[DONE]') {
-                // Stream finished
                 setIsLoading(false);
+                // Strip transient reasoning items now that the response is complete
+                setMessages((prev) => {
+                  const lastMsg = prev[prev.length - 1];
+                  if (lastMsg && lastMsg.role === 'assistant') {
+                    const filtered = lastMsg.content.filter((item) => item.type !== 'reasoning');
+                    if (filtered.length !== lastMsg.content.length) {
+                      const updated = [...prev];
+                      updated[updated.length - 1] = {
+                        ...lastMsg,
+                        content: filtered,
+                      };
+                      return updated;
+                    }
+                  }
+                  return prev;
+                });
                 continue;
               }
 
@@ -245,6 +267,10 @@ export function useChat(agentId: string, options?: UseLlamaChatOptions) {
                       return prev;
                     });
                   }
+                } else if (chunk.type === 'node_started') {
+                  scheduleUpdate((prev) => handleNodeStarted(prev, chunk));
+                } else if (chunk.type === 'node_completed') {
+                  scheduleUpdate((prev) => handleNodeCompleted(prev, chunk));
                 } else if (chunk.type === 'error') {
                   console.error('Stream error:', chunk.message);
                   setIsLoading(false);

@@ -50,11 +50,11 @@ fi
 
 # Stop any existing containers
 echo "🛑 Stopping existing containers..."
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES down --remove-orphans
+podman compose --env-file ../../.env -f "$COMPOSE_FILE" $COMPOSE_PROFILES down --remove-orphans
 
 # Start all services
 echo "🏗️  Building and starting all services..."
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES up --build -d
+podman compose --env-file ../../.env -f "$COMPOSE_FILE" $COMPOSE_PROFILES up --build -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to be ready..."
@@ -62,7 +62,7 @@ sleep 10
 
 # Check service status
 echo "📊 Service Status:"
-podman compose -f "$COMPOSE_FILE" $COMPOSE_PROFILES ps
+podman compose --env-file ../../.env -f "$COMPOSE_FILE" $COMPOSE_PROFILES ps
 
 # Show helpful information
 echo ""
