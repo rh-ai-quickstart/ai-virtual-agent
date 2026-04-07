@@ -57,8 +57,14 @@ build_helm_cmd() {
     if [ -n "$LLM_URL" ]; then
         cmd_args+=("--set" "global.models.$LLM.url=$LLM_URL")
     fi
+    if [ -n "$LLM" ]; then
+        cmd_args+=("--set" "global.models.$LLM.id=${LLM_ID:-$LLM}")
+    fi
     if [ -n "$SAFETY_URL" ]; then
         cmd_args+=("--set" "global.models.$SAFETY.url=$SAFETY_URL")
+    fi
+    if [ -n "$SAFETY" ]; then
+        cmd_args+=("--set" "global.models.$SAFETY.id=${SAFETY_ID:-$SAFETY}")
     fi
     if [ -n "$LLM_API_TOKEN" ]; then
         cmd_args+=("--set" "global.models.$LLM.apiToken=$LLM_API_TOKEN")
