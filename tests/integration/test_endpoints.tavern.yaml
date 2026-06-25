@@ -101,7 +101,7 @@ stages:
         - provider_id: "ollama"
           provider_type: "remote::ollama"
           config:
-            url: "http://ollama:11434"
+            base_url: "http://ollama:11434/v1"
           api: "inference"
         - provider_id: "llama-guard"
           provider_type: "inline::llama-guard"
@@ -130,3 +130,11 @@ stages:
           config:
             api_key: !anystr
           api: "tool_runtime"
+        - provider_id: "meta-reference-files"
+          provider_type: "inline::localfs"
+          config:
+            storage_dir: !anystr
+            metadata_store:
+              table_name: "files_metadata"
+              backend: "sql_default"
+          api: "files"

@@ -64,7 +64,7 @@ async def list_models(request: Request):
     client = get_client_from_request(request)
     try:
         # Fetch models and shields in parallel
-        models = await client.models.list()
+        models = list(await client.models.list())
 
         # Fetch shields and create a set of shield resource IDs for efficient lookup
         shield_resource_ids = set()
