@@ -6,12 +6,13 @@ apis:
 - safety
 - tool_runtime
 - vector_io
+- files
 providers:
   inference:
   - provider_id: ollama
     provider_type: remote::ollama
     config:
-      url: http://ollama:11434
+      base_url: http://ollama:11434/v1
   safety:
   - provider_id: llama-guard
     provider_type: inline::llama-guard
@@ -37,6 +38,14 @@ providers:
     provider_type: remote::tavily-search
     config:
       api_key: ${env.TAVILY_API_KEY:}
+  files:
+  - provider_id: meta-reference-files
+    provider_type: inline::localfs
+    config:
+      storage_dir: /.llama/distributions/ollama/files
+      metadata_store:
+        table_name: files_metadata
+        backend: sql_default
 storage:
   backends:
     kv_default:
@@ -59,10 +68,10 @@ storage:
       backend: sql_default
 registered_resources:
   models:
-  - metadata: {}
-    model_id: llama3.2:1b
+  - model_id: llama3.2:1b
+    provider_model_id: llama3.2:1b
     provider_id: ollama
-    model_type: llm
+    metadata: {}
   shields: []
   vector_dbs: []
   datasets: []

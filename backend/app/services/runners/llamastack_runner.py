@@ -630,8 +630,14 @@ class LlamaStackRunner(BaseRunner):
 
                 if is_local_dev_mode():
                     try:
-                        models_list = await client.models.list()
-                        available_ids = [str(m.identifier) for m in models_list]
+                        models_list = list(await client.models.list())
+                        available_ids = [
+                            str(
+                                getattr(m, "identifier", None)
+                                or getattr(m, "id", "unknown")
+                            )
+                            for m in models_list
+                        ]
                         if (
                             available_ids
                             and response_params["model"] not in available_ids
