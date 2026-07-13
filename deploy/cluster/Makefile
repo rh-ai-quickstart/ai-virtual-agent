@@ -140,7 +140,7 @@ uninstall: ## Uninstall deployment and clean up resources
 # MCP Server Images
 # -----------------------------------------------------------------------------
 CONTAINER_RUNTIME ?= podman
-MCP_IMAGE_REGISTRY ?= quay.io/skattoju
+MCP_IMAGE_REGISTRY ?= quay.io/rh-ai-quickstart
 MCP_IMAGE_TAG ?= latest
 MCP_SERVERS := travel_research_mcp hotel_mcp flight_mcp
 
