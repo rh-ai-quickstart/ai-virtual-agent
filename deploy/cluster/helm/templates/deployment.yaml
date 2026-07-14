@@ -132,7 +132,10 @@ spec:
             {{- end }}
             {{- with .Values.runners.langgraph.llm_api_key }}
             - name: LANGGRAPH_LLM_API_KEY
-              value: {{ . | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" $ }}-env
+                  key: LANGGRAPH_LLM_API_KEY
             {{- end }}
             {{- with .Values.runners.langgraph.default_model }}
             - name: LANGGRAPH_DEFAULT_MODEL
@@ -144,7 +147,10 @@ spec:
             {{- end }}
             {{- with .Values.runners.crewai.llm_api_key }}
             - name: CREWAI_LLM_API_KEY
-              value: {{ . | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" $ }}-env
+                  key: CREWAI_LLM_API_KEY
             {{- end }}
             {{- with .Values.runners.crewai.default_model }}
             - name: CREWAI_DEFAULT_MODEL
@@ -164,11 +170,17 @@ spec:
             {{- end }}
             {{- with .Values.apiKeys.tavily }}
             - name: TAVILY_API_KEY
-              value: {{ . | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" $ }}-env
+                  key: TAVILY_API_KEY
             {{- end }}
             {{- with .Values.apiKeys.serpapi }}
             - name: SERPAPI_API_KEY
-              value: {{ . | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" $ }}-env
+                  key: SERPAPI_API_KEY
             {{- end }}
           ports:
             - name: http
