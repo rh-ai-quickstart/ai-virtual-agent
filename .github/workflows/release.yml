@@ -70,6 +70,36 @@ jobs:
           cache-from: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache
           cache-to: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache,mode=max
 
+      - name: Build and push MCP Travel Research image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mcp_servers/travel_research_mcp
+          file: ./mcp_servers/travel_research_mcp/Containerfile
+          push: true
+          tags: |
+            quay.io/rh-ai-quickstart/mcp-travel-research:${{ steps.version.outputs.value }}
+            quay.io/rh-ai-quickstart/mcp-travel-research:latest
+
+      - name: Build and push MCP Hotel image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mcp_servers/hotel_mcp
+          file: ./mcp_servers/hotel_mcp/Containerfile
+          push: true
+          tags: |
+            quay.io/rh-ai-quickstart/mcp-hotel:${{ steps.version.outputs.value }}
+            quay.io/rh-ai-quickstart/mcp-hotel:latest
+
+      - name: Build and push MCP Flight image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mcp_servers/flight_mcp
+          file: ./mcp_servers/flight_mcp/Containerfile
+          push: true
+          tags: |
+            quay.io/rh-ai-quickstart/mcp-flight:${{ steps.version.outputs.value }}
+            quay.io/rh-ai-quickstart/mcp-flight:latest
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
@@ -86,9 +116,12 @@ jobs:
             --title "Release v${{ steps.version.outputs.value }}" \
             --notes "## Release v${{ steps.version.outputs.value }}
 
-          **Docker Image:**
+          **Docker Images:**
           \`\`\`
           quay.io/rh-ai-quickstart/ai-virtual-agent:${{ steps.version.outputs.value }}
+          quay.io/rh-ai-quickstart/mcp-travel-research:${{ steps.version.outputs.value }}
+          quay.io/rh-ai-quickstart/mcp-hotel:${{ steps.version.outputs.value }}
+          quay.io/rh-ai-quickstart/mcp-flight:${{ steps.version.outputs.value }}
           \`\`\`
 
           **Install Helm Chart:**

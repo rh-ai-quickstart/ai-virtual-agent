@@ -27,7 +27,7 @@ USER root
 WORKDIR /app
 
 # Install system dependencies (cached separately)
-RUN dnf install -y nmap-ncat && dnf clean all
+RUN dnf install -y --disablerepo='rhel-*' nmap-ncat && dnf clean all
 
 # Copy only requirements first to leverage cache
 COPY backend/requirements.txt ./backend/

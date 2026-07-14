@@ -1,16 +1,15 @@
-name: Build dev image
+name: Build main images
 
 on:
   push:
     branches:
-      - dev
+      - main
 
 jobs:
-  build-dev:
+  build-main:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
       packages: write
     steps:
       - name: Checkout
@@ -26,11 +25,11 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
-      - name: Generate dev tag
+      - name: Generate main tag
         id: tag
         run: |
           short_sha=$(git rev-parse --short HEAD)
-          echo "value=dev-${short_sha}" >> $GITHUB_OUTPUT
+          echo "value=main-${short_sha}" >> $GITHUB_OUTPUT
 
       - name: Build and push ai-virtual-agent
         uses: docker/build-push-action@v5
@@ -40,7 +39,7 @@ jobs:
           push: true
           tags: |
             quay.io/rh-ai-quickstart/ai-virtual-agent:${{ steps.tag.outputs.value }}
-            quay.io/rh-ai-quickstart/ai-virtual-agent:latest-dev
+            quay.io/rh-ai-quickstart/ai-virtual-agent:latest-main
           cache-from: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache
           cache-to: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache,mode=max
 
@@ -52,7 +51,7 @@ jobs:
           push: true
           tags: |
             quay.io/rh-ai-quickstart/mcp-travel-research:${{ steps.tag.outputs.value }}
-            quay.io/rh-ai-quickstart/mcp-travel-research:latest-dev
+            quay.io/rh-ai-quickstart/mcp-travel-research:latest-main
 
       - name: Build and push MCP Hotel image
         uses: docker/build-push-action@v5
@@ -62,7 +61,7 @@ jobs:
           push: true
           tags: |
             quay.io/rh-ai-quickstart/mcp-hotel:${{ steps.tag.outputs.value }}
-            quay.io/rh-ai-quickstart/mcp-hotel:latest-dev
+            quay.io/rh-ai-quickstart/mcp-hotel:latest-main
 
       - name: Build and push MCP Flight image
         uses: docker/build-push-action@v5
@@ -72,4 +71,4 @@ jobs:
           push: true
           tags: |
             quay.io/rh-ai-quickstart/mcp-flight:${{ steps.tag.outputs.value }}
-            quay.io/rh-ai-quickstart/mcp-flight:latest-dev
+            quay.io/rh-ai-quickstart/mcp-flight:latest-main
