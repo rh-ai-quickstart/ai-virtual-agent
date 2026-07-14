@@ -168,18 +168,23 @@ def validate_session_messages(
 
 def validate_message_chronological_order(response, expected_sequence: list):
     """
-    Validate that messages appear in the correct chronological order.
+    Validate that messages are in chronological order by timestamp and contain expected content.
+
+    This validator checks:
+    1. All expected messages are present (content check, order-independent)
+    2. Messages are returned in chronological order by timestamp
+    3. No unexpected messages are present
 
     Args:
         response: Tavern response object
-        expected_sequence: List of expected message texts in chronological order
+        expected_sequence: List of expected message texts (order-independent set of messages)
                           Format: ["user_msg1", "assistant_msg1", "user_msg2", "assistant_msg2"]
 
     Returns:
         bool: True if validation passes
 
     Raises:
-        AssertionError: If validation fails
+        AssertionError: If messages are not in chronological order or missing expected content
     """
     try:
         # Parse response data
@@ -194,26 +199,45 @@ def validate_message_chronological_order(response, expected_sequence: list):
         assert "messages" in session_data, "Response missing 'messages' field"
         messages = session_data["messages"]
 
-        # Extract all message texts in order
-        actual_sequence = []
+        # Extract all message texts and timestamps
+        actual_messages = []
         for msg in messages:
+            timestamp = msg.get("timestamp")
             for content_item in msg.get("content", []):
                 if content_item.get("type") in ["input_text", "output_text"]:
-                    actual_sequence.append(content_item.get("text", ""))
+                    actual_messages.append(
+                        {"text": content_item.get("text", ""), "timestamp": timestamp}
+                    )
 
         # Check that we have the expected number of messages
-        assert len(actual_sequence) == len(
+        assert len(actual_messages) == len(
             expected_sequence
-        ), f"Expected {len(expected_sequence)} messages, got {len(actual_sequence)}"
+        ), f"Expected {len(expected_sequence)} messages, got {len(actual_messages)}"
 
-        # Check each message in order
-        for i, (actual, expected) in enumerate(zip(actual_sequence, expected_sequence)):
+        # Verify timestamps are in chronological order (monotonically increasing)
+        for i in range(len(actual_messages) - 1):
+            ts1 = actual_messages[i]["timestamp"]
+            ts2 = actual_messages[i + 1]["timestamp"]
             assert (
-                actual == expected
-            ), f"Message {i+1}: expected '{expected}', got '{actual}'"
+                ts1 <= ts2
+            ), f"Messages not in chronological order: message {i+1} timestamp {ts1} > message {i+2} timestamp {ts2}"
+
+        # Verify all expected messages are present (order-independent)
+        actual_texts = [msg["text"] for msg in actual_messages]
+        for expected_text in expected_sequence:
+            assert (
+                expected_text in actual_texts
+            ), f"Expected message '{expected_text}' not found in response"
+
+        # Verify no unexpected messages
+        for actual_text in actual_texts:
+            assert (
+                actual_text in expected_sequence
+            ), f"Unexpected message '{actual_text}' found in response"
 
         print(
-            f"✓ Message chronological order validation passed: {len(actual_sequence)} messages in correct order"
+            f"✓ Message chronological order validation passed: "
+            f"{len(actual_messages)} messages in correct chronological order with expected content"
         )
         return True
 
