@@ -22,17 +22,24 @@ def tavily_travel_search(query: str, max_results: int = 5) -> str:
     if not api_key:
         return "TAVILY_API_KEY is not set. Provide it to enable web research."
 
-    response = requests.post(
-        "https://api.tavily.com/search",
-        json={
-            "api_key": api_key,
-            "query": query,
-            "max_results": max_results,
-            "include_answer": True,
-            "include_raw_content": False,
-        },
-        timeout=30,
-    )
+    try:
+        response = requests.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": api_key,
+                "query": query,
+                "max_results": max_results,
+                "include_answer": True,
+                "include_raw_content": False,
+            },
+            timeout=(10, 30),  # (connect_timeout, read_timeout)
+        )
+    except requests.exceptions.Timeout:
+        logger.error("Tavily API timeout for query: %s", query)
+        return f"Tavily API timed out for query: {query}"
+    except requests.exceptions.RequestException as e:
+        logger.error("Tavily API error for query %s: %s", query, e)
+        return f"Tavily API error: {str(e)}"
     response.raise_for_status()
     data = response.json()
     results = data.get("results", [])

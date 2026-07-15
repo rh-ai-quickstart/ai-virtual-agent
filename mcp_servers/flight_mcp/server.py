@@ -146,10 +146,13 @@ def _resolve_airport_code(value: str, api_key: str) -> str:
             response = requests.get(
                 "https://serpapi.com/locations.json",
                 params={"q": query, "api_key": api_key},
-                timeout=20,
+                timeout=(10, 20),  # (connect_timeout, read_timeout)
             )
             response.raise_for_status()
             data = response.json()
+        except requests.exceptions.Timeout:
+            logger.error("SerpApi locations timeout for query: %s", query)
+            continue
         except Exception as exc:
             logger.warning("IATA lookup failed for %s: %s", query, exc)
             continue
@@ -251,19 +254,30 @@ def google_flights_search(
             "gl": "us",
             "api_key": api_key,
         }
-        response = requests.get(
-            "https://serpapi.com/search.json",
-            params=params,
-            timeout=30,
-        )
-        if response.status_code >= 400:
-            results.append(
-                f"- SerpApi error {response.status_code} for "
-                f"{destination_code}: {response.text}"
+        try:
+            response = requests.get(
+                "https://serpapi.com/search.json",
+                params=params,
+                timeout=(10, 30),  # (connect_timeout, read_timeout)
             )
+            if response.status_code >= 400:
+                results.append(
+                    f"- SerpApi error {response.status_code} for "
+                    f"{destination_code}: {response.text}"
+                )
+                continue
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.Timeout:
+            logger.error(
+                "SerpApi flights timeout for %s->%s", origin_code, destination_code
+            )
+            results.append(f"- SerpApi timeout for {destination_code}")
             continue
-        response.raise_for_status()
-        data = response.json()
+        except requests.exceptions.RequestException as e:
+            logger.error("SerpApi flights error: %s", e)
+            results.append(f"- SerpApi error for {destination_code}: {str(e)}")
+            continue
         flights = data.get("best_flights") or data.get("other_flights") or []
         if not flights:
             results.append(f"- No flights returned for {destination_code}.")
