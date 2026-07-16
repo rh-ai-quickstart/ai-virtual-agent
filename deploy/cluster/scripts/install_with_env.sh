@@ -41,10 +41,11 @@ build_helm_cmd() {
     cmd_args+=("--set" "llm-service.secret.hf_token=$HF_TOKEN")
     if [ -n "$LLM" ]; then
         cmd_args+=("--set" "global.models.$LLM.enabled=true")
-        cmd_args+=("--set" "global.models.$LLM.id=$LLM")
+        cmd_args+=("--set" "global.models.$LLM.id=${LLM_ID:-$LLM}")
     fi
     if [ -n "$SAFETY" ]; then
         cmd_args+=("--set" "global.models.$SAFETY.enabled=true")
+        cmd_args+=("--set" "global.models.$SAFETY.id=${SAFETY_ID:-$SAFETY}")
     fi
     if [ -n "$LLM_TOLERATION" ]; then
         cmd_args+=("--set-json" "global.models.$LLM.tolerations=[{\"key\":\"$LLM_TOLERATION\",\"effect\":\"NoSchedule\",\"operator\":\"Exists\"}]")
