@@ -8,19 +8,40 @@ export const Route = createFileRoute('/_protected')({
 function ProtectedPages() {
   const { currentUser, isLoading, error } = useCurrentUser();
 
-  // Show loading state
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  // If no user or authentication error, redirect to OAuth login
   if (error || !currentUser) {
-    // Redirect to OAuth login with current URL as return path
-    const currentUrl = window.location.href;
-    const redirectUrl = `/oauth/sign_in?redirect=${encodeURIComponent(currentUrl)}`;
-    window.location.href = redirectUrl;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('error')) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <h2>Authentication Failed</h2>
+          <p>Unable to sign in. Please try again or contact your administrator.</p>
+          <a href="/api/v1/auth/login">Try again</a>
+        </div>
+      );
+    }
 
-    // Show a loading message while redirecting
+    const key = '_auth_redirect_count';
+    const count = parseInt(sessionStorage.getItem(key) || '0', 10);
+    if (count >= 3) {
+      sessionStorage.removeItem(key);
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <h2>Authentication Failed</h2>
+          <p>
+            Unable to establish a session. Check that cookies are enabled and the site is served
+            over HTTPS.
+          </p>
+          <a href="/api/v1/auth/login">Try again</a>
+        </div>
+      );
+    }
+    sessionStorage.setItem(key, String(count + 1));
+    window.location.href = '/api/v1/auth/login';
+
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <h2>Redirecting to Login...</h2>
@@ -29,6 +50,6 @@ function ProtectedPages() {
     );
   }
 
-  // User is authenticated, render protected content
+  sessionStorage.removeItem('_auth_redirect_count');
   return <Outlet />;
 }

@@ -1,0 +1,69 @@
+{{- if and .Values.keycloak.enabled .Values.userCleanup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-user-cleanup
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.userCleanup.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.userCleanup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.userCleanup.failedJobsHistoryLimit }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: {{ .Values.userCleanup.activeDeadlineSeconds }}
+      backoffLimit: {{ .Values.userCleanup.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "ai-virtual-agent.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ include "ai-virtual-agent.serviceAccountName" . }}
+          containers:
+            - name: cleanup
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["python", "-m", "backend.app.scripts.cleanup_orphaned_users"]
+              env:
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.pgSecret }}
+                      key: host
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.pgSecret }}
+                      key: port
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.pgSecret }}
+                      key: user
+                - name: DB_NAME
+                  value: {{ (index .Values.pgvector.extraDatabases 0).name }}
+                - name: DB_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.pgSecret }}
+                      key: password
+                - name: DATABASE_URL
+                  value: "postgresql+asyncpg://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+                - name: KEYCLOAK_SERVER_URL
+                  value: "http://keycloak:8080"
+                - name: KEYCLOAK_SERVER_URL_INTERNAL
+                  value: "http://keycloak:8080"
+                - name: KEYCLOAK_REALM
+                  value: {{ .Values.oidc.realmName | quote }}
+                - name: KEYCLOAK_CLIENT_ID
+                  value: {{ .Values.oidc.clientId | quote }}
+                - name: KEYCLOAK_CLIENT_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "ai-virtual-agent.fullname" . }}-oidc
+                      key: oidc-client-secret
+                - name: LOCAL_DEV_ENV_MODE
+                  value: "false"
+{{- end }}

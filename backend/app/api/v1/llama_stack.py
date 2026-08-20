@@ -8,38 +8,16 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException, Request, status
 
 from ...api.llamastack import get_client_from_request
+from ...api.llamastack_compat import (
+    get_model_id,
+    get_model_type,
+    get_provider_resource_id,
+)
 from ...config import ENV_DEFAULT_MODEL_SENTINEL, settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-# Version-independent helpers for llama-stack API changes
-def _get_model_type(model):
-    """Get model type from various API versions (api_model_type in 0.3.x, model_type in 0.6.1)"""
-    for attr in ("api_model_type", "model_type"):
-        val = getattr(model, attr, None)
-        if val is not None:
-            return val
-    meta = getattr(model, "custom_metadata", None) or {}
-    return meta.get("model_type")
-
-
-def _get_model_id(model):
-    """Get model ID from various API versions (identifier in 0.3.x, id in 0.6.1)"""
-    return getattr(model, "identifier", None) or getattr(model, "id", "unknown")
-
-
-def _get_provider_resource_id(model):
-    """Get provider_resource_id from various API versions (direct attribute in 0.3.x, custom_metadata in 0.6.1)"""
-    # Try direct attribute first (0.3.x)
-    val = getattr(model, "provider_resource_id", None)
-    if val is not None:
-        return str(val)
-    # Fall back to custom_metadata (0.6.1)
-    meta = getattr(model, "custom_metadata", None) or {}
-    return str(meta.get("provider_resource_id", "unknown"))
 
 
 def _build_env_default_entry() -> Dict[str, Any] | None:
@@ -110,9 +88,9 @@ async def get_llms(request: Request):
 
         for model in models:
             try:
-                if _get_model_type(model) == "llm":
-                    provider_resource_id = _get_provider_resource_id(model)
-                    model_id = _get_model_id(model)
+                if get_model_type(model) == "llm":
+                    provider_resource_id = get_provider_resource_id(model)
+                    model_id = get_model_id(model)
 
                     if (
                         provider_resource_id in shield_resource_ids
@@ -121,9 +99,9 @@ async def get_llms(request: Request):
                         continue
 
                     llm_config = {
-                        "model_name": _get_model_id(model),
-                        "provider_resource_id": _get_provider_resource_id(model),
-                        "model_type": _get_model_type(model),
+                        "model_name": get_model_id(model),
+                        "provider_resource_id": get_provider_resource_id(model),
+                        "model_type": get_model_type(model),
                     }
                     llms.append(llm_config)
             except AttributeError as ae:
@@ -176,11 +154,11 @@ async def get_safety_models(request: Request):
         models = list(await client.models.list())
         safety_models = []
         for model in models:
-            if model.model_type == "safety":
+            if get_model_type(model) == "safety":
                 safety_model = {
-                    "id": str(model.identifier),
-                    "name": model.provider_resource_id,
-                    "model_type": model.type,
+                    "id": get_model_id(model),
+                    "name": get_provider_resource_id(model),
+                    "model_type": get_model_type(model),
                 }
                 safety_models.append(safety_model)
         return safety_models
@@ -198,11 +176,11 @@ async def get_embedding_models(request: Request):
         models = list(await client.models.list())
         embedding_models = []
         for model in models:
-            if model.model_type == "embedding":
+            if get_model_type(model) == "embedding":
                 embedding_model = {
-                    "name": str(model.identifier),
-                    "provider_resource_id": model.provider_resource_id,
-                    "model_type": model.type,
+                    "name": get_model_id(model),
+                    "provider_resource_id": get_provider_resource_id(model),
+                    "model_type": get_model_type(model),
                 }
                 embedding_models.append(embedding_model)
         return embedding_models

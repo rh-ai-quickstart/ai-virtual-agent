@@ -2,7 +2,6 @@ import { USERS_API_ENDPOINT } from '@/config/api';
 import { User } from '@/types/auth';
 import { ErrorResponse } from '@/types';
 
-// Re-export types for backward compatibility
 export type { User } from '@/types/auth';
 
 export const fetchUsers = async (): Promise<User[]> => {
@@ -48,8 +47,6 @@ export const fetchUserById = async (userId: string): Promise<User> => {
 };
 
 export const updateUserAgents = async (userId: string, agentIds: string[]): Promise<User> => {
-  // Note: This adds the specified agents to the user's agent list
-  // Agents are shared across users and duplicate agent IDs are prevented
   const response = await fetch(`${USERS_API_ENDPOINT}${userId}/agents`, {
     method: 'POST',
     headers: {
@@ -80,8 +77,6 @@ export const getUserAgents = async (userId: string): Promise<string[]> => {
 };
 
 export const removeUserAgents = async (userId: string, agentIds: string[]): Promise<User> => {
-  // Note: This removes the specified agents from the user's agent list
-  // Agents remain in LlamaStack and can be assigned to other users
   const response = await fetch(`${USERS_API_ENDPOINT}${userId}/agents`, {
     method: 'DELETE',
     headers: {
@@ -94,55 +89,6 @@ export const removeUserAgents = async (userId: string, agentIds: string[]): Prom
       .json()
       .catch(() => ({ detail: 'Network response was not ok' }))) as ErrorResponse;
     throw new Error(errorData.detail ?? 'Network response was not ok');
-  }
-  const data: unknown = await response.json();
-  return data as User;
-};
-
-export interface NewUser {
-  username: string;
-  email: string;
-  role: 'user' | 'devops' | 'admin';
-  agent_ids?: string[];
-}
-
-export const createUser = async (newUser: NewUser): Promise<User> => {
-  const response = await fetch(USERS_API_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(newUser),
-  });
-  if (!response.ok) {
-    const errorData = (await response
-      .json()
-      .catch(() => ({ detail: 'Failed to create user' }))) as ErrorResponse;
-    throw new Error(errorData.detail ?? 'Failed to create user');
-  }
-  const data: unknown = await response.json();
-  return data as User;
-};
-
-export interface UpdateUser {
-  username?: string;
-  email?: string;
-  role?: 'user' | 'devops' | 'admin';
-}
-
-export const updateUser = async (userId: string, updates: UpdateUser): Promise<User> => {
-  const response = await fetch(`${USERS_API_ENDPOINT}${userId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(updates),
-  });
-  if (!response.ok) {
-    const errorData = (await response
-      .json()
-      .catch(() => ({ detail: 'Failed to update user' }))) as ErrorResponse;
-    throw new Error(errorData.detail ?? 'Failed to update user');
   }
   const data: unknown = await response.json();
   return data as User;

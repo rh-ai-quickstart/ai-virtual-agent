@@ -1,0 +1,68 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-keycloak-setup
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: setup
+          image: "{{ .Values.setupJob.image.repository }}:{{ .Values.setupJob.image.tag }}"
+          command: ["/bin/bash", "/scripts/setup-keycloak.sh"]
+          env:
+            - name: KEYCLOAK_URL
+              value: "http://{{ .Values.keycloak.fullnameOverride }}:8080"
+            - name: KEYCLOAK_ADMIN
+              value: {{ .Values.keycloak.admin.username | quote }}
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.keycloak.fullnameOverride }}-admin
+                  key: admin-password
+            - name: REALM_NAME
+              value: {{ .Values.oidc.realmName | quote }}
+            - name: CLIENT_ID
+              value: {{ .Values.oidc.clientId | quote }}
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" . }}-oidc
+                  key: oidc-client-secret
+            - name: MAX_RETRIES
+              value: {{ .Values.setupJob.retries | quote }}
+            - name: RETRY_INTERVAL
+              value: {{ .Values.setupJob.retryInterval | quote }}
+            {{- if .Values.clusterDomain }}
+            - name: APP_URL
+              value: "https://{{ include "ai-virtual-agent.fullname" . }}-{{ .Release.Namespace }}.{{ .Values.clusterDomain }}"
+            {{- end }}
+            {{- if and .Values.appAdmin.email .Values.appAdmin.password }}
+            - name: APP_ADMIN_USERNAME
+              value: {{ .Values.appAdmin.username | quote }}
+            - name: APP_ADMIN_EMAIL
+              value: {{ .Values.appAdmin.email | quote }}
+            - name: APP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" . }}-app-admin
+                  key: app-admin-password
+            {{- end }}
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "ai-virtual-agent.fullname" . }}-keycloak-setup
+            defaultMode: 0755
+{{- end }}

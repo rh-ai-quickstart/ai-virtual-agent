@@ -60,10 +60,6 @@ echo ""
 # Hugging Face Token (required)
 HF_TOKEN=$(prompt_for_value "HF_TOKEN" "Enter Hugging Face Token")
 
-# Admin user credentials (required for deployment)
-ADMIN_USERNAME=$(prompt_for_value "ADMIN_USERNAME" "Enter admin user name")
-ADMIN_EMAIL=$(prompt_for_value "ADMIN_EMAIL" "Enter admin user email")
-
 # Tavily API Key (optional but recommended) - always show info
 echo ""
 echo "💡 Tavily Search API Key"
@@ -92,6 +88,23 @@ if [ -n "$MAAS_API_BASE" ]; then
     MAAS_MODEL_NAME=$(prompt_for_value "MAAS_MODEL_NAME" "Enter MaaS model name" "")
 fi
 
+# Keycloak admin password
+KC_ADMIN_PASS=$(prompt_for_value "KC_ADMIN_PASS" "Enter Keycloak admin password" "changemeplease")
+
+# App admin user (for ai-apps realm)
+echo ""
+echo "💡 Application Admin User"
+echo "     This creates an admin user in the ai-apps realm so you can log into"
+echo "     the application immediately after install."
+echo ""
+APP_ADMIN_USERNAME=$(prompt_for_value "APP_ADMIN_USERNAME" "Enter app admin username" "admin")
+APP_ADMIN_PASSWORD=$(prompt_for_value "APP_ADMIN_PASSWORD" "Enter app admin password" "changeme")
+APP_ADMIN_EMAIL=$(prompt_for_value "APP_ADMIN_EMAIL" "Enter app admin email")
+while [ -z "$APP_ADMIN_EMAIL" ]; do
+    echo "  Email is required."
+    APP_ADMIN_EMAIL=$(prompt_for_value "APP_ADMIN_EMAIL" "Enter app admin email")
+done
+
 # Database configuration (use defaults, don't prompt)
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rag_password}"
@@ -103,8 +116,6 @@ MINIO_PASSWORD="${MINIO_PASSWORD:-minio_rag_password}"
 
 # Export all variables for use by calling scripts
 export HF_TOKEN
-export ADMIN_USERNAME
-export ADMIN_EMAIL
 export TAVILY_API_KEY
 export SERPAPI_API_KEY
 export MAAS_API_BASE
@@ -115,12 +126,14 @@ export POSTGRES_PASSWORD
 export POSTGRES_DBNAME
 export MINIO_USER
 export MINIO_PASSWORD
+export KC_ADMIN_PASS
+export APP_ADMIN_USERNAME
+export APP_ADMIN_EMAIL
+export APP_ADMIN_PASSWORD
 
 # Also output them in a format that can be sourced
 if [ "$1" = "--export" ]; then
     echo "export HF_TOKEN='$HF_TOKEN'"
-    echo "export ADMIN_USERNAME='$ADMIN_USERNAME'"
-    echo "export ADMIN_EMAIL='$ADMIN_EMAIL'"
     [ -n "$TAVILY_API_KEY" ] && echo "export TAVILY_API_KEY='$TAVILY_API_KEY'"
     [ -n "$SERPAPI_API_KEY" ] && echo "export SERPAPI_API_KEY='$SERPAPI_API_KEY'"
     [ -n "$MAAS_API_BASE" ] && echo "export MAAS_API_BASE='$MAAS_API_BASE'"
@@ -131,6 +144,9 @@ if [ "$1" = "--export" ]; then
     echo "export POSTGRES_DBNAME='$POSTGRES_DBNAME'"
     echo "export MINIO_USER='$MINIO_USER'"
     echo "export MINIO_PASSWORD='$MINIO_PASSWORD'"
+    echo "export APP_ADMIN_USERNAME='$APP_ADMIN_USERNAME'"
+    [ -n "$APP_ADMIN_EMAIL" ] && echo "export APP_ADMIN_EMAIL='$APP_ADMIN_EMAIL'"
+    echo "export APP_ADMIN_PASSWORD='$APP_ADMIN_PASSWORD'"
 fi
 
 echo ""

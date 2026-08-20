@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from .agent_templates import router as agent_templates_router
 from .attachments import router as attachments_router
+from .auth import router as auth_router
 
 # Import individual routers
 from .chat import router as chat_router
@@ -40,6 +41,7 @@ api_router.include_router(
     providers_router, prefix="/models/providers", tags=["providers"]
 )
 api_router.include_router(models_router, prefix="/models", tags=["models"])
+api_router.include_router(auth_router, tags=["auth"])
 api_router.include_router(users_router, tags=["users"])
 api_router.include_router(validate_router, tags=["validate"])
 api_router.include_router(virtual_agents_router, tags=["virtual_agents"])

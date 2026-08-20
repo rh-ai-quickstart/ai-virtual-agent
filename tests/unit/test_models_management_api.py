@@ -37,13 +37,17 @@ def mock_llama_client():
 
 @pytest.fixture
 def sample_model():
-    """Create sample model."""
-    model = MagicMock()
-    model.identifier = "test-model"
-    model.provider_id = "test-provider"
-    model.provider_resource_id = "test-resource"
-    model.model_type = "llm"
-    model.metadata = {"key": "value"}
+    """Create sample model matching llama_stack_client 0.6.1 Model schema."""
+    model = MagicMock(spec=["id", "created", "owned_by", "custom_metadata", "object"])
+    model.id = "test-model"
+    model.created = 0
+    model.owned_by = "test-provider"
+    model.custom_metadata = {
+        "provider_resource_id": "test-resource",
+        "model_type": "llm",
+        "provider_id": "test-provider",
+    }
+    model.object = "model"
     return model
 
 

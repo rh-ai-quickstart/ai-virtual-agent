@@ -13,7 +13,6 @@
 import { Route as rootRoute } from './routes/__root';
 import { Route as ProtectedRouteImport } from './routes/_protected/route';
 import { Route as ProtectedIndexImport } from './routes/_protected/index';
-import { Route as OauthSigninImport } from './routes/oauth.sign_in';
 import { Route as ProtectedConfigRouteImport } from './routes/_protected/config/route';
 import { Route as ProtectedAdminRouteImport } from './routes/_protected/_admin/route';
 import { Route as ProtectedConfigProfileImport } from './routes/_protected/config/profile';
@@ -35,12 +34,6 @@ const ProtectedIndexRoute = ProtectedIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProtectedRouteRoute,
-} as any);
-
-const OauthSigninRoute = OauthSigninImport.update({
-  id: '/oauth/sign_in',
-  path: '/oauth/sign_in',
-  getParentRoute: () => rootRoute,
 } as any);
 
 const ProtectedConfigRouteRoute = ProtectedConfigRouteImport.update({
@@ -120,13 +113,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/config';
       preLoaderRoute: typeof ProtectedConfigRouteImport;
       parentRoute: typeof ProtectedRouteImport;
-    };
-    '/oauth/sign_in': {
-      id: '/oauth/sign_in';
-      path: '/oauth/sign_in';
-      fullPath: '/oauth/sign_in';
-      preLoaderRoute: typeof OauthSigninImport;
-      parentRoute: typeof rootRoute;
     };
     '/_protected/': {
       id: '/_protected/';
@@ -252,7 +238,6 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '': typeof ProtectedAdminRouteRouteWithChildren;
   '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
   '/': typeof ProtectedIndexRoute;
   '/config/profile': typeof ProtectedConfigProfileRoute;
   '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
@@ -265,7 +250,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '': typeof ProtectedAdminRouteRouteWithChildren;
   '/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
   '/': typeof ProtectedIndexRoute;
   '/config/profile': typeof ProtectedConfigProfileRoute;
   '/config/agents': typeof ProtectedAdminConfigAgentsRoute;
@@ -280,7 +264,6 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteRouteWithChildren;
   '/_protected/_admin': typeof ProtectedAdminRouteRouteWithChildren;
   '/_protected/config': typeof ProtectedConfigRouteRouteWithChildren;
-  '/oauth/sign_in': typeof OauthSigninRoute;
   '/_protected/': typeof ProtectedIndexRoute;
   '/_protected/_admin/config': typeof ProtectedAdminConfigRouteRouteWithChildren;
   '/_protected/config/profile': typeof ProtectedConfigProfileRoute;
@@ -296,7 +279,6 @@ export interface FileRouteTypes {
   fullPaths:
     | ''
     | '/config'
-    | '/oauth/sign_in'
     | '/'
     | '/config/profile'
     | '/config/agents'
@@ -308,7 +290,6 @@ export interface FileRouteTypes {
   to:
     | ''
     | '/config'
-    | '/oauth/sign_in'
     | '/'
     | '/config/profile'
     | '/config/agents'
@@ -321,7 +302,6 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_protected/_admin'
     | '/_protected/config'
-    | '/oauth/sign_in'
     | '/_protected/'
     | '/_protected/_admin/config'
     | '/_protected/config/profile'
@@ -335,12 +315,10 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren;
-  OauthSigninRoute: typeof OauthSigninRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
-  OauthSigninRoute: OauthSigninRoute,
 };
 
 export const routeTree = rootRoute
@@ -353,8 +331,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_protected",
-        "/oauth/sign_in"
+        "/_protected"
       ]
     },
     "/_protected": {
@@ -378,9 +355,6 @@ export const routeTree = rootRoute
       "children": [
         "/_protected/config/profile"
       ]
-    },
-    "/oauth/sign_in": {
-      "filePath": "oauth.sign_in.tsx"
     },
     "/_protected/": {
       "filePath": "_protected/index.tsx",

@@ -46,7 +46,7 @@ async def chat(
             )
 
         # Create chat service with the database session
-        chat_service = ChatService(request, db, user_id=current_user.id)
+        chat_service = ChatService(request, db, user_id=current_user.keycloak_id)
 
         # Require a valid session ID
         if not chat_request.sessionId:

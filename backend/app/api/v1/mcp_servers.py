@@ -49,7 +49,7 @@ async def create_mcp_server(server: MCPServerCreate):
         HTTPException: If creation fails or validation errors occur
     """
     # Check if toolgroup_id already exists
-    toolgroups = await sync_client.toolgroups.list()
+    toolgroups = await sync_client().toolgroups.list()
     for tg in toolgroups:
         if str(tg.identifier) == server.toolgroup_id:
             raise HTTPException(
@@ -62,7 +62,7 @@ async def create_mcp_server(server: MCPServerCreate):
 
         # Register the toolgroup directly with LlamaStack
         # Spread configuration first, then override with name/description to ensure they're preserved
-        await sync_client.toolgroups.register(
+        await sync_client().toolgroups.register(
             toolgroup_id=server.toolgroup_id,
             provider_id="model-context-protocol",
             args={
@@ -104,7 +104,7 @@ async def read_mcp_servers():
         logger.info("Fetching MCP servers from LlamaStack")
 
         # Get all toolgroups from LlamaStack
-        toolgroups = await sync_client.toolgroups.list()
+        toolgroups = await sync_client().toolgroups.list()
 
         # Filter for MCP toolgroups
         mcp_servers = []
@@ -215,7 +215,7 @@ async def read_mcp_server(toolgroup_id: str):
         logger.info(f"Fetching MCP server from LlamaStack: {toolgroup_id}")
 
         # Get all toolgroups and find the matching one
-        toolgroups = await sync_client.toolgroups.list()
+        toolgroups = await sync_client().toolgroups.list()
         toolgroup = None
         for tg in toolgroups:
             if (
@@ -287,7 +287,7 @@ async def update_mcp_server(
     """
     try:
         # First verify the server exists
-        toolgroups = await sync_client.toolgroups.list()
+        toolgroups = await sync_client().toolgroups.list()
         existing_toolgroup = None
         for tg in toolgroups:
             if (
@@ -302,11 +302,11 @@ async def update_mcp_server(
             raise HTTPException(status_code=404, detail="Server not found")
 
         # Unregister the existing toolgroup first
-        await sync_client.toolgroups.unregister(toolgroup_id=toolgroup_id)
+        await sync_client().toolgroups.unregister(toolgroup_id=toolgroup_id)
 
         # Re-register with new config (use URL toolgroup_id, not request body)
         # Spread configuration first, then override with name/description to ensure they're preserved
-        await sync_client.toolgroups.register(
+        await sync_client().toolgroups.register(
             toolgroup_id=toolgroup_id,
             provider_id="model-context-protocol",
             args={
@@ -355,7 +355,7 @@ async def delete_mcp_server(toolgroup_id: str, db: AsyncSession = Depends(get_db
         None: 204 No Content on successful deletion
     """
     # First verify the server exists
-    toolgroups = await sync_client.toolgroups.list()
+    toolgroups = await sync_client().toolgroups.list()
     existing_toolgroup = None
     for tg in toolgroups:
         if (
@@ -400,7 +400,7 @@ async def delete_mcp_server(toolgroup_id: str, db: AsyncSession = Depends(get_db
 
     try:
         # Unregister the toolgroup from LlamaStack
-        await sync_client.toolgroups.unregister(toolgroup_id=toolgroup_id)
+        await sync_client().toolgroups.unregister(toolgroup_id=toolgroup_id)
 
         logger.info(f"Successfully deleted MCP server: {toolgroup_id}")
         return None

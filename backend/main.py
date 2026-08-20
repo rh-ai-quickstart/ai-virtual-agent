@@ -28,9 +28,10 @@ import httpx  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import FileResponse, Response  # noqa: E402
+from fastapi.responses import FileResponse, RedirectResponse, Response  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
+from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
 from .app.api.v1.router import api_router  # noqa: E402
 from .app.api.v1.validate import router as validate_router  # noqa: E402
@@ -98,11 +99,32 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-origins = ["*"]  # Update this with the frontend domain in production
+# Add session middleware for OAuth flow
+_LOCAL_DEV = os.getenv("LOCAL_DEV_ENV_MODE", "false").lower() == "true"
+SESSION_SECRET = os.getenv(
+    "SESSION_SECRET_KEY",
+    "dev-secret-key-change-in-production" if _LOCAL_DEV else None,
+)
+if not SESSION_SECRET:
+    raise RuntimeError("SESSION_SECRET_KEY must be set in non-dev environments")
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "true").lower() == "true"
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    session_cookie="ava_session",
+    max_age=2 * 60 * 60,
+    path="/",
+    domain=None,
+    same_site="lax",
+    https_only=SESSION_COOKIE_SECURE,
+)
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+allowed_origins = [FRONTEND_URL] if not _LOCAL_DEV else ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -119,6 +141,14 @@ if is_local_dev_mode():
 
 # Include validate router at root for compatibility
 app.include_router(validate_router)
+
+
+@app.get("/oauth/sign_in", include_in_schema=False)
+async def legacy_oauth_redirect():
+    """Redirect cached /oauth/sign_in requests to the Keycloak login flow."""
+    response = RedirectResponse(url="/api/v1/auth/login", status_code=302)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 @app.get("/admin/coverage", include_in_schema=False)
@@ -162,12 +192,15 @@ class SPAStaticFiles(StaticFiles):
             return Response(response.text, status_code=response.status_code)
         else:
             try:
-                return await super().get_response(path, scope)
+                resp = await super().get_response(path, scope)
             except (HTTPException, StarletteHTTPException) as ex:
                 if ex.status_code == 404:
-                    return await super().get_response("index.html", scope)
+                    resp = await super().get_response("index.html", scope)
                 else:
                     raise ex
+            if path in ("", "index.html") or resp.media_type == "text/html":
+                resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            return resp
 
 
 app.mount(

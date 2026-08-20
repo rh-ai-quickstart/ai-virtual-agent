@@ -7,44 +7,31 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from ..models.user import RoleEnum
-from .base import BaseSchema, TimestampMixin
 
+class CurrentUser(BaseModel):
+    """Composite user: token-derived identity + DB-derived app data."""
 
-class UserBase(BaseModel):
-    """Base user schema with common fields."""
-
+    keycloak_id: UUID
     username: str
     email: str
-    role: RoleEnum
+    role: str
     agent_ids: List[UUID] = []
 
 
-class UserCreate(UserBase):
-    """Schema for creating a new user."""
+class UserResponse(BaseModel):
+    """Schema for user in API responses (merged Keycloak + DB data)."""
 
-    pass
+    keycloak_id: UUID
+    username: str
+    email: str
+    role: str
+    agent_ids: List[UUID] = []
 
 
 class UserUpdate(BaseModel):
-    """Schema for updating a user."""
+    """Schema for updating a user (only agent_ids is updatable)."""
 
-    username: Optional[str] = None
-    email: Optional[str] = None
-    role: Optional[RoleEnum] = None
     agent_ids: Optional[List[UUID]] = None
-
-
-class UserInDB(UserBase, TimestampMixin, BaseSchema):
-    """Schema for user as stored in database."""
-
-    id: UUID
-
-
-class UserResponse(UserInDB):
-    """Schema for user in API responses."""
-
-    pass
 
 
 class UserAgentAssignment(BaseModel):

@@ -24,6 +24,20 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
+Validate required values when Keycloak is enabled.
+*/}}
+{{- define "ai-virtual-agent.validateKeycloak" -}}
+{{- if .Values.keycloak.enabled }}
+{{- if not .Values.keycloak.admin.password }}
+{{- fail "keycloak.admin.password is required when keycloak.enabled=true" }}
+{{- end }}
+{{- if not .Values.clusterDomain }}
+{{- fail "clusterDomain is required when keycloak.enabled=true (e.g. apps.my-cluster.example.com)" }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "ai-virtual-agent.chart" -}}

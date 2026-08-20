@@ -285,6 +285,10 @@ class TestMCPToolNode:
 class TestGraphEngine:
     """Test GraphEngine building and streaming."""
 
+    @pytest.fixture(autouse=True)
+    def _require_langgraph(self):
+        pytest.importorskip("langgraph")
+
     @pytest.mark.asyncio
     async def test_llm_only_graph(self):
         """A graph with a single LLM node builds and streams correctly."""
@@ -497,11 +501,13 @@ class TestGraphEngine:
 class TestRunnerDispatch:
     """Test that LangGraphRunner dispatches correctly based on graph_config."""
 
+    @pytest.fixture(autouse=True)
+    def _require_langgraph(self):
+        pytest.importorskip("langgraph")
+
     @pytest.fixture
     def runner(self):
-        from backend.app.services.runners.langgraph_runner import (
-            LangGraphRunner,
-        )
+        from backend.app.services.runners.langgraph_runner import LangGraphRunner
 
         return LangGraphRunner(
             MagicMock(spec=Request),

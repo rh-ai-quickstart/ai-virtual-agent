@@ -6,18 +6,17 @@ Tests local development authentication functions.
 
 from __future__ import annotations
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.auth import (
-    get_mock_dev_headers,
+    DEV_USER_KEYCLOAK_ID,
     get_or_create_dev_user,
     is_local_dev_mode,
 )
-from backend.app.models import RoleEnum, User
+from backend.app.models import User
 
 
 @pytest.fixture
@@ -60,10 +59,8 @@ class TestGetOrCreateDevUser:
     async def test_get_existing_dev_user(self, mock_db_session):
         """Test retrieving existing dev user."""
         existing_user = User(
-            id=uuid.uuid4(),
-            username="dev-user",
-            email="dev@localhost.dev",
-            role=RoleEnum.admin,
+            keycloak_id=DEV_USER_KEYCLOAK_ID,
+            agent_ids=[],
         )
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing_user
@@ -71,17 +68,18 @@ class TestGetOrCreateDevUser:
 
         result = await get_or_create_dev_user(mock_db_session)
 
-        assert result == existing_user
+        assert result.keycloak_id == DEV_USER_KEYCLOAK_ID
+        assert result.username == "dev-user"
+        assert result.email == "dev@localhost.dev"
+        assert result.role == "admin"
         mock_db_session.add.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_create_new_dev_user(self, mock_db_session):
         """Test creating new dev user."""
-        # Mock no existing user
         mock_result1 = MagicMock()
         mock_result1.scalar_one_or_none.return_value = None
 
-        # Mock no existing agents
         mock_result2 = MagicMock()
         mock_result2.all.return_value = []
 
@@ -91,17 +89,7 @@ class TestGetOrCreateDevUser:
 
         assert result.username == "dev-user"
         assert result.email == "dev@localhost.dev"
-        assert result.role == RoleEnum.admin
+        assert result.keycloak_id == DEV_USER_KEYCLOAK_ID
+        assert result.role == "admin"
         mock_db_session.add.assert_called_once()
         mock_db_session.commit.assert_called()
-
-
-class TestGetMockDevHeaders:
-    """Test mock dev headers generation."""
-
-    def test_get_mock_dev_headers(self):
-        """Test mock headers contain correct user info."""
-        headers = get_mock_dev_headers()
-
-        assert headers["X-Forwarded-User"] == "dev-user"
-        assert headers["X-Forwarded-Email"] == "dev@localhost.dev"

@@ -26,11 +26,10 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
-  annotations:
-    serviceaccounts.openshift.io/oauth-redirectreference.ai-virtual-agent: '{"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"ai-virtual-agent-authenticated"}}'
+  annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "ai-virtual-agent-proxy-sa"
+  name: "ai-virtual-agent-sa"
 
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
@@ -89,25 +88,10 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
-volumes:
-  - name: secret-ai-virtual-agent-tls
-    secret:
-      defaultMode: 420
-      secretName: ai-virtual-agent-tls
-  - name: secret-ai-virtual-agent-proxy
-    secret:
-      defaultMode: 420
-      secretName: ai-virtual-agent-proxy
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
+volumes: []
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
 
 nodeSelector: {}
 
@@ -143,17 +127,21 @@ apiKeys:
   tavily: ""
   serpapi: ""
 
-sessionSecret: {}
- # value: "my-session-secret"
+adminUsername: admin
 
-seed:
-  admin_user:
-    username: kubeadmin
-    # email: ""
+autoAssignAgents: true
+
+# Application admin user (created in ai-apps realm during setup)
+appAdmin:
+  username: admin
+  email: ""
+  password: ""
 
 pgvector:
   extraDatabases:
   - name: ai_virtual_agent
+    vectordb: false
+  - name: keycloak
     vectordb: false
 
 configure-pipeline:
@@ -174,11 +162,67 @@ configure-pipeline:
 oracle-db:
   enabled: false
 
+# Keycloak OIDC configuration (app-level)
+oidc:
+  clientId: ai-virtual-agent
+  realmName: ai-apps
+
+# Keycloak setup job configuration
+setupJob:
+  image:
+    repository: registry.access.redhat.com/ubi9/ubi
+    tag: "latest"
+  retries: 30
+  retryInterval: 10
+
+# Orphaned user cleanup CronJob
+# Deletes DB user rows whose keycloak_id no longer exists in Keycloak
+userCleanup:
+  enabled: true
+  schedule: "0 */12 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  activeDeadlineSeconds: 600
+  backoffLimit: 2
+
+# Keycloak subchart overrides
+keycloak:
+  enabled: true
+  fullnameOverride: keycloak
+  admin:
+    username: admin
+    password: ""
+  pgvector:
+    enabled: true
+    fullnameOverride: keycloak-pgvector
+    externalDatabase:
+      enabled: true
+      host: pgvector
+      port: "5432"
+      user: postgres
+      password: ""
+      dbname: keycloak
+    secret:
+      user: postgres
+      password: ""
+      dbname: keycloak
+      host: pgvector
+      port: "5432"
+  config:
+    hostname: ""
+    hostnameStrict: false
+  route:
+    enabled: true
+    host: ""
+
 llama-stack:
+  serviceAccount:
+    create: false
+    name: ai-virtual-agent-sa
   auth:
     provider_config:
       type: "custom"
-      endpoint: http://ai-virtual-agent:8887/validate
+      endpoint: http://ai-virtual-agent:8000/validate
     access_policy:
     - permit:
         actions: [create]

@@ -18,31 +18,15 @@ from .agent_templates import (
     TemplateInitializationRequest,
     TemplateInitializationResponse,
 )
-from .chat import (
-    ChatRequest,
-    ContentItem,
-    ImageContentItem,
-    TextContentItem,
-)
-from .guardrails import (
-    GuardrailCreate,
-    GuardrailResponse,
-    GuardrailUpdate,
-)
+from .chat import ChatRequest, ContentItem, ImageContentItem, TextContentItem
+from .guardrails import GuardrailCreate, GuardrailResponse, GuardrailUpdate
 from .knowledge_bases import (
     KnowledgeBaseCreate,
     KnowledgeBaseResponse,
     KnowledgeBaseUpdate,
 )
-from .tools import (
-    ToolAssociationInfo,
-)
-from .user import (
-    UserAgentAssignment,
-    UserCreate,
-    UserResponse,
-    UserUpdate,
-)
+from .tools import ToolAssociationInfo
+from .user import CurrentUser, UserAgentAssignment, UserResponse, UserUpdate
 
 __all__ = [
     # Agent schemas
@@ -72,7 +56,7 @@ __all__ = [
     "TemplateInitializationRequest",
     "TemplateInitializationResponse",
     # User schemas
-    "UserCreate",
+    "CurrentUser",
     "UserUpdate",
     "UserResponse",
     "UserAgentAssignment",

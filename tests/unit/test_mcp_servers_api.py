@@ -26,10 +26,12 @@ def test_client():
 @pytest.fixture
 def mock_llamastack_toolgroups():
     """Mock LlamaStack toolgroups API."""
-    with patch("backend.app.api.v1.mcp_servers.sync_client") as mock_client:
+    with patch("backend.app.api.v1.mcp_servers.sync_client") as mock_factory:
+        mock_client = MagicMock()
         mock_client.toolgroups.list = AsyncMock()
         mock_client.toolgroups.register = AsyncMock()
         mock_client.toolgroups.unregister = AsyncMock()
+        mock_factory.return_value = mock_client
         yield mock_client
 
 

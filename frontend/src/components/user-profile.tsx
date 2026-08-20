@@ -1,11 +1,4 @@
-import {
-  fetchUserById,
-  updateUserAgents,
-  removeUserAgents,
-  updateUser,
-  deleteUser,
-  UpdateUser,
-} from '@/services/users';
+import { fetchUserById, updateUserAgents, removeUserAgents, deleteUser } from '@/services/users';
 import { fetchAgents } from '@/services/agents';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
@@ -32,7 +25,6 @@ import {
   MenuToggle,
   MenuToggleElement,
   Checkbox,
-  ActionGroup,
   Modal,
   ModalVariant,
   ModalHeader,
@@ -42,7 +34,6 @@ import {
 import { ArrowLeftIcon } from '@patternfly/react-icons';
 import { useState } from 'react';
 import type { Ref } from 'react';
-import { UserForm } from './user-form';
 import { useCurrentUser } from '@/contexts/UserContext';
 
 interface UserProfileProps {
@@ -57,9 +48,6 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
   // Agent management state
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
 
-  // Edit mode state
-  const [isEditing, setIsEditing] = useState(false);
-
   // Delete confirmation state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -72,7 +60,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
     queryKey: ['user', userId],
     queryFn: () => fetchUserById(userId),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   // Query for available agents
@@ -84,7 +72,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
     queryKey: ['agents'],
     queryFn: fetchAgents,
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   // Mutation for adding agents to user
@@ -97,7 +85,6 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
       void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       void queryClient.invalidateQueries({ queryKey: ['users'] });
       void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      // Ensure agent assignment-dependent UIs (AgentList) refresh
       void queryClient.invalidateQueries({ queryKey: ['agents', 'user', userId] });
     },
     onError: (error) => {
@@ -114,27 +101,10 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
       void queryClient.invalidateQueries({ queryKey: ['user', userId] });
       void queryClient.invalidateQueries({ queryKey: ['users'] });
       void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      // Ensure agent assignment-dependent UIs (AgentList) refresh
       void queryClient.invalidateQueries({ queryKey: ['agents', 'user', userId] });
     },
     onError: (error) => {
       console.error('Error removing agent:', error);
-    },
-  });
-
-  // Mutation for updating user details
-  const updateUserMutation = useMutation({
-    mutationFn: ({ userId, updates }: { userId: string; updates: UpdateUser }) => {
-      return updateUser(userId, updates);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['user', userId] });
-      void queryClient.invalidateQueries({ queryKey: ['users'] });
-      void queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      setIsEditing(false);
-    },
-    onError: (error) => {
-      console.error('Error updating user:', error);
     },
   });
 
@@ -162,20 +132,12 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
   // Event handlers
   const handleAddAgent = (agentId: string) => {
     if (!userProfile) return;
-    addAgentMutation.mutate({ userId: userProfile.id, agentId });
+    addAgentMutation.mutate({ userId: userProfile.keycloak_id, agentId });
   };
 
   const handleRemoveAgent = (agentId: string) => {
     if (!userProfile) return;
-    removeAgentMutation.mutate({ userId: userProfile.id, agentId });
-  };
-
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
+    removeAgentMutation.mutate({ userId: userProfile.keycloak_id, agentId });
   };
 
   const handleDeleteClick = () => {
@@ -184,7 +146,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
 
   const handleDeleteConfirm = () => {
     if (!userProfile) return;
-    deleteUserMutation.mutate(userProfile.id);
+    deleteUserMutation.mutate(userProfile.keycloak_id);
   };
 
   const handleDeleteCancel = () => {
@@ -222,8 +184,8 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
   }
 
   const isAdmin = currentUser?.role === 'admin';
-  const isSelf = currentUser?.id === userProfile.id;
-  const canEditDelete = Boolean(isAdmin);
+  const isSelf = currentUser?.keycloak_id === userProfile.keycloak_id;
+  const canDelete = Boolean(isAdmin && !isSelf);
   const canModifyAgents = Boolean(isAdmin || isSelf);
 
   return (
@@ -243,81 +205,35 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
               <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }}>
                 <CardTitle>{userProfile.username}</CardTitle>
                 <FlexItem>
-                  {canEditDelete && !isEditing ? (
-                    <Flex columnGap={{ default: 'columnGapSm' }}>
-                      <Button
-                        variant="danger"
-                        onClick={handleDeleteClick}
-                        isLoading={deleteUserMutation.isPending}
-                      >
-                        Delete Profile
-                      </Button>
-                      <Button variant="secondary" onClick={handleEditClick}>
-                        Edit Profile
-                      </Button>
-                    </Flex>
-                  ) : isEditing && canEditDelete ? (
-                    <ActionGroup>
-                      <Button
-                        variant="primary"
-                        onClick={() => {
-                          const form = document.querySelector(
-                            'form[data-user-edit-form]'
-                          ) as HTMLFormElement;
-                          if (form) {
-                            form.requestSubmit();
-                          }
-                        }}
-                        isLoading={updateUserMutation.isPending}
-                      >
-                        Save Changes
-                      </Button>
-                      <Button variant="link" onClick={handleCancelEdit}>
-                        Cancel
-                      </Button>
-                    </ActionGroup>
-                  ) : null}
+                  {canDelete && (
+                    <Button
+                      variant="danger"
+                      onClick={handleDeleteClick}
+                      isLoading={deleteUserMutation.isPending}
+                    >
+                      Delete User
+                    </Button>
+                  )}
                 </FlexItem>
               </Flex>
             </CardHeader>
             <CardBody>
-              {!isEditing ? (
-                <DescriptionList>
+              <DescriptionList>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Username</DescriptionListTerm>
+                  <DescriptionListDescription>{userProfile.username}</DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Email</DescriptionListTerm>
+                  <DescriptionListDescription>{userProfile.email}</DescriptionListDescription>
+                </DescriptionListGroup>
+                {userProfile.role && (
                   <DescriptionListGroup>
-                    <DescriptionListTerm>ID</DescriptionListTerm>
-                    <DescriptionListDescription>{userProfile.id}</DescriptionListDescription>
+                    <DescriptionListTerm>Role</DescriptionListTerm>
+                    <DescriptionListDescription>{userProfile.role}</DescriptionListDescription>
                   </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Username</DescriptionListTerm>
-                    <DescriptionListDescription>{userProfile.username}</DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Email</DescriptionListTerm>
-                    <DescriptionListDescription>{userProfile.email}</DescriptionListDescription>
-                  </DescriptionListGroup>
-                  {userProfile.role && (
-                    <DescriptionListGroup>
-                      <DescriptionListTerm>Role</DescriptionListTerm>
-                      <DescriptionListDescription>{userProfile.role}</DescriptionListDescription>
-                    </DescriptionListGroup>
-                  )}
-                </DescriptionList>
-              ) : (
-                <UserForm
-                  mode="edit"
-                  initialUser={userProfile}
-                  isSubmitting={updateUserMutation.isPending}
-                  onSubmit={(values) => {
-                    updateUserMutation.mutate({
-                      userId: userProfile.id,
-                      updates: values as UpdateUser,
-                    });
-                  }}
-                  onCancel={handleCancelEdit}
-                  error={updateUserMutation.error}
-                  showButtons={false}
-                />
-              )}
+                )}
+              </DescriptionList>
               <DescriptionList style={{ marginTop: '24px' }}>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Assigned Agents</DescriptionListTerm>
@@ -447,18 +363,6 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
                     </Flex>
                   </DescriptionListDescription>
                 </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Created</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {new Date(userProfile.created_at).toLocaleString()}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Updated</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {new Date(userProfile.updated_at).toLocaleString()}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
               </DescriptionList>
             </CardBody>
           </Card>
@@ -473,15 +377,16 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
         aria-labelledby="delete-user-modal-title"
         aria-describedby="delete-user-modal-desc"
       >
-        <ModalHeader title="Delete Profile" labelId="delete-user-modal-title" />
+        <ModalHeader title="Delete User" labelId="delete-user-modal-title" />
         <ModalBody id="delete-user-modal-desc">
           <p>
-            Are you sure you want to delete the profile for <strong>{userProfile.username}</strong>?
+            Are you sure you want to delete <strong>{userProfile.username}</strong>?
           </p>
           <br />
           <p>
-            This action cannot be undone. All user data and associated agent assignments will be
-            permanently removed.
+            This will permanently delete the user from both the application and Keycloak. The user
+            will lose their account, credentials, role assignments, and all agent assignments. This
+            action cannot be undone.
           </p>
         </ModalBody>
         <ModalFooter>
@@ -490,7 +395,7 @@ export function UserProfile({ userId, onBackToList }: UserProfileProps) {
             onClick={handleDeleteConfirm}
             isLoading={deleteUserMutation.isPending}
           >
-            Delete Profile
+            Delete User
           </Button>
           <Button variant="link" onClick={handleDeleteCancel}>
             Cancel

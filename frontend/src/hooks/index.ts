@@ -6,7 +6,6 @@ export { useModels } from './useModels';
 export { useTools } from './useTools';
 export { useShields } from './useShields';
 export { useChatSessions } from './useChatSessions';
-export { useUsers } from './useUsers';
 export { useAgentTemplates } from './useAgentTemplates';
 export { useChat } from './useChat';
 

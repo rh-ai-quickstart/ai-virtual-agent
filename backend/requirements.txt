@@ -23,6 +23,10 @@ pre-commit
 boto3
 python-multipart
 python-magic
+# Keycloak OIDC authentication
+authlib
+itsdangerous
+PyJWT
 pyyaml
 # LangGraph runner
 langgraph

@@ -26,7 +26,7 @@ class KnowledgeBase(Base):
     status = Column(String(50), nullable=True)
     source = Column(String(255))
     source_configuration = Column(JSON)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.keycloak_id"))
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True),

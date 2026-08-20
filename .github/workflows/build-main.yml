@@ -40,6 +40,7 @@ jobs:
           tags: |
             quay.io/rh-ai-quickstart/ai-virtual-agent:${{ steps.tag.outputs.value }}
             quay.io/rh-ai-quickstart/ai-virtual-agent:latest-main
+            quay.io/rh-ai-quickstart/ai-virtual-agent:latest
           cache-from: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache
           cache-to: type=registry,ref=quay.io/rh-ai-quickstart/ai-virtual-agent:buildcache,mode=max
 
@@ -52,6 +53,7 @@ jobs:
           tags: |
             quay.io/rh-ai-quickstart/mcp-travel-research:${{ steps.tag.outputs.value }}
             quay.io/rh-ai-quickstart/mcp-travel-research:latest-main
+            quay.io/rh-ai-quickstart/mcp-travel-research:latest
 
       - name: Build and push MCP Hotel image
         uses: docker/build-push-action@v5
@@ -62,6 +64,7 @@ jobs:
           tags: |
             quay.io/rh-ai-quickstart/mcp-hotel:${{ steps.tag.outputs.value }}
             quay.io/rh-ai-quickstart/mcp-hotel:latest-main
+            quay.io/rh-ai-quickstart/mcp-hotel:latest
 
       - name: Build and push MCP Flight image
         uses: docker/build-push-action@v5
@@ -72,3 +75,4 @@ jobs:
           tags: |
             quay.io/rh-ai-quickstart/mcp-flight:${{ steps.tag.outputs.value }}
             quay.io/rh-ai-quickstart/mcp-flight:latest-main
+            quay.io/rh-ai-quickstart/mcp-flight:latest

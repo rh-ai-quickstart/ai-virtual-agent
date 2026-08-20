@@ -32,7 +32,7 @@ function UserProfilePage() {
 
   return (
     <UserProfile
-      userId={currentUser.id}
+      userId={currentUser.keycloak_id}
       onBackToList={() => {
         /* no-op for non-admin */
       }}

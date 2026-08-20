@@ -7,12 +7,11 @@ from .base import Base
 from .chat import ChatSession
 from .guardrails import Guardrail
 from .knowledge_bases import KnowledgeBase
-from .user import RoleEnum, User
+from .user import User
 
 __all__ = [
     "Base",
     "User",
-    "RoleEnum",
     "ChatSession",
     "VirtualAgent",
     "AgentTemplate",

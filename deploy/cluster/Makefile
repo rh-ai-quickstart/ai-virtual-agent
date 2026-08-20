@@ -30,6 +30,7 @@ MINIO_USER ?= minio_rag_user
 MINIO_PASSWORD ?= minio_rag_password
 HF_TOKEN ?=
 ORACLE ?= false
+KC_ADMIN_PASS ?= changemeplease
 AI_VIRTUAL_AGENT_CHART := helm
 AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
@@ -70,8 +71,9 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "  HF_TOKEN                 - Hugging Face Token"
 	@echo "  TAVILY_API_KEY           - Tavily Search API Key"
 	@echo "  SERPAPI_API_KEY          - SerpApi API Key (hotel/flight search)"
-	@echo "  ADMIN_USERNAME           - Admin user name"
-	@echo "  ADMIN_EMAIL              - Admin user email"
+	@echo "  APP_ADMIN_USERNAME       - App admin username (default: admin)"
+	@echo "  APP_ADMIN_EMAIL          - App admin email (required for admin user creation)"
+	@echo "  APP_ADMIN_PASSWORD       - App admin password (default: changeme)"
 	@echo ""
 	@echo "Model Configuration:"
 	@echo "  {SAFETY,LLM}             - Config key/namespace for the model (YAML-safe name)"
@@ -97,6 +99,7 @@ deps: ## Update Helm dependencies
 	@echo "Updating Helm dependencies"
 	@helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
 
+
 list-models: deps ## List available models
 	@helm template dummy-release $(AI_VIRTUAL_AGENT_CHART) --set llm-service._debugListModels=true | grep ^model:
 
@@ -119,13 +122,21 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 	@echo "$(AI_VIRTUAL_AGENT_RELEASE) installed successfully"
 	@echo ""
 	@echo "Getting application URL..."
-	@APP_URL=$$(oc get route ai-virtual-agent-authenticated -n $(NAMESPACE) -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || echo ""); \
+	@APP_URL=$$(oc get route ai-virtual-agent -n $(NAMESPACE) -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || echo ""); \
+	KC_URL=$$(oc get route keycloak -n $(NAMESPACE) -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || echo ""); \
 	if [ -n "$$APP_URL" ]; then \
 		echo "🎉 Application is ready!"; \
 		echo "📱 Access your AI Virtual Agent at: https://$$APP_URL"; \
 	else \
 		echo "⚠️  Route not ready yet. Get the URL manually with:"; \
-		echo "   oc get route ai-virtual-agent-authenticated -n $(NAMESPACE)"; \
+		echo "   oc get route ai-virtual-agent -n $(NAMESPACE)"; \
+	fi; \
+	if [ -n "$$KC_URL" ]; then \
+		echo "🔐 Keycloak Admin Console (master realm) at: https://$$KC_URL"; \
+		echo "   - Login with 'admin' / Keycloak admin password"; \
+		echo ""; \
+		echo "🔐 Keycloak Admin Console (ai-apps realm) at: https://$$KC_URL/admin/ai-apps/console/"; \
+		echo "   - Login with app admin credentials (default: 'admin' / 'changeme')"; \
 	fi
 	@echo ""
 

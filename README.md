@@ -22,7 +22,6 @@ This platform provides the tools to build and deploy conversational AI agents th
 - 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
 - 🛡️ **Safety Controls** - Configurable guardrails and content filtering
 
-
 ### Architecture Overview
 
 The platform integrates several components:
@@ -42,6 +41,7 @@ The platform integrates several components:
 ### Minimum hardware requirements
 
 For a full working version with local inference:
+
 - **GPU** - Required for running inference locally
 - Alternatively, you can deploy without a GPU by using:
   - Remote vLLM deployment
@@ -58,7 +58,6 @@ For a full working version with local inference:
 ### Required user permissions
 
 - **Cluster admin access** - Required for installing ClusterRole resources for OAuth authentication
-
 
 ## Deploy
 
@@ -93,6 +92,47 @@ make install NAMESPACE=your-namespace
 
 📖 **[Full Installation Guide →](INSTALLING.md)**
 
+### Access the Application
+
+After installation, two web interfaces are available:
+
+- **AI Virtual Agent** - The main application where users register, log in, and interact with AI agents:
+
+  ```
+  https://ai-virtual-agent-<namespace>.<cluster-domain>
+  ```
+
+- **Keycloak Admin Console** - Manage users, roles, and authentication settings (login with `admin` / the Keycloak admin password set during install, default `changemeplease`):
+  ```
+  https://keycloak-<namespace>.<cluster-domain>
+  ```
+
+You can retrieve these URLs with:
+
+```bash
+oc get routes -n <namespace>
+```
+
+**First-time setup:** During installation, you are prompted for an application admin username, email, and password. This creates an admin user in the Keycloak `ai-apps` realm with the `admin` role pre-assigned — log in to the app immediately with these credentials. To grant additional users admin access, assign the `admin` realm role via the Keycloak Admin Console (Realm: `ai-apps` > Users > Role mapping).
+
+**Keycloak realms:** Keycloak uses two separate realms. The `master` realm is for Keycloak administration only — you log into the Admin Console with the Keycloak admin credentials set during install. The `ai-apps` realm is where application users live — this is where users register, log in to the app, and where roles (`admin`, `user`, `devops`) are managed. When managing app users in the Admin Console, make sure you switch to the `ai-apps` realm using the realm selector in the top-left corner.
+
+**Adding a new realm:** If you need to create an additional realm (for example, a separate tenant or environment):
+
+1. Log into the Keycloak Admin Console as the `master` realm admin
+2. Create the new realm (click the realm dropdown in top-left → **Create realm**)
+3. Create an admin user for the new realm:
+   - Switch to the new realm using the realm selector
+   - Go to **Users** → **Add user**
+   - Fill in username, email, and enable the account
+   - After creation, go to the user's **Credentials** tab and set a password
+4. Assign the `realm-admin` role to grant full admin access to this realm only:
+   - Go to the user's **Role mappings** tab
+   - Click **Assign role**
+   - Click **Filter by clients** → select **realm-management**
+   - Check the box next to **realm-admin**
+   - Click **Assign**
+5. The user can now log in at `https://keycloak-<namespace>.<cluster-domain>/admin/<realm-name>/console/` with full admin access to only that realm
 
 ### Delete
 
@@ -193,17 +233,20 @@ Integrate AI agents with an Oracle data warehouse using the Model Context Protoc
 ### Getting Started Guides
 
 #### 👩‍💻 **For Developers**
+
 - **[Local Development Guide](DEVELOPMENT.md)** - Containerized development environment (without cluster)
 - **[Contributing Guide](CONTRIBUTING.md)** - Development setup and workflow
 - **[Backend API Reference](docs/API.md)** - Complete API documentation
 - **[Frontend Architecture](frontend/README.md)** - UI components and patterns
 
 #### 🚀 **For Deployment**
+
 - **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
 - **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
 - **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
 
 #### 🔧 **For Integration**
+
 - **[Testing Guide](tests/README.md)** - Running integration tests
 - **[API Reference](docs/API.md)** - Backend API endpoints
 
@@ -234,6 +277,7 @@ For local containerized development (without cluster):
 📖 **[→ See Local Development Guide](DEVELOPMENT.md)**
 
 > **Note**: Local setup has limited functionality compared to OpenShift AI deployment:
+>
 > - No authentication/authorization
 > - Knowledge bases not available
 > - MCP servers not tested
@@ -254,6 +298,7 @@ make compose-status      # Show status
 ```
 
 **Access your app:**
+
 - Frontend: http://localhost:5173
 - API: http://localhost:8000
 - Docs: http://localhost:8000/docs
@@ -294,14 +339,9 @@ Optional toggles:
 ```bash
 # Skip attachments bucket initialization/access during local dev
 DISABLE_ATTACHMENTS=true
-
-# Provide admin bootstrap for Alembic seeding (optional)
-# ADMIN_USERNAME=admin
-# ADMIN_EMAIL=admin@change.me
 ```
 
 **Note**: If you're not using attachments in local dev, you can set `DISABLE_ATTACHMENTS=true` in `.env` to skip attachment-related initialization.
-
 
 ## Community & Support
 
@@ -316,6 +356,6 @@ DISABLE_ATTACHMENTS=true
 
 ## Tags
 
-* **Product:** OpenShift AI
-* **Use case:** Conversational agents
-* **Business challenge:** Adopt and scale AI
+- **Product:** OpenShift AI
+- **Use case:** Conversational agents
+- **Business challenge:** Adopt and scale AI

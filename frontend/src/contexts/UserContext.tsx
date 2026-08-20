@@ -50,11 +50,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
  * Custom hook to access the current user
  *
  * Uses React Query to fetch the current authenticated user from the /profile endpoint.
- * The backend determines the current user based on OAuth proxy authentication headers.
  *
  * Authentication flow:
- * - If user is not authenticated (401/403), protected routes will redirect to /oauth/sign_in
- * - OAuth proxy handles session management and token refresh automatically
+ * - If user is not authenticated (401/403), protected routes redirect to /api/v1/auth/login
+ * - Keycloak handles the OIDC login flow and redirects back to /api/v1/auth/callback
  * - Users are auto-created in the database on first successful authentication
  *
  * @returns {UserContextType} Object containing:

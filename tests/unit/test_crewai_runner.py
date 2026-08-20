@@ -13,19 +13,27 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.agent import VirtualAgent
-from backend.app.schemas.agent import (
+pytest.importorskip("crewai")
+
+from fastapi import Request  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+
+from backend.app.models.agent import VirtualAgent  # noqa: E402
+from backend.app.schemas.agent import (  # noqa: E402
     VirtualAgentBase,
     VirtualAgentCreate,
     VirtualAgentUpdate,
 )
-from backend.app.services.chat import VALID_RUNNER_TYPES, ChatService
-from backend.app.services.runners.base import BaseRunner
-from backend.app.services.runners.crewai_runner import CrewAIRunner, _StreamDeduplicator
-from backend.app.services.runners.llamastack_runner import LlamaStackRunner
+from backend.app.services.chat import VALID_RUNNER_TYPES, ChatService  # noqa: E402
+from backend.app.services.runners.base import BaseRunner  # noqa: E402
+from backend.app.services.runners.crewai_runner import (  # noqa: E402
+    CrewAIRunner,
+    _StreamDeduplicator,
+)
+from backend.app.services.runners.llamastack_runner import (  # noqa: E402
+    LlamaStackRunner,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.auth import is_local_dev_mode
 from ...database import get_db
-from .users import get_user_from_headers
+from .users import get_user_from_request
 
 router = APIRouter(prefix="/debug", tags=["debug"])
 
@@ -27,22 +27,17 @@ async def debug_env():
 async def debug_auth(request: Request, db: AsyncSession = Depends(get_db)):
     """Debug endpoint to test authentication flow."""
     try:
-        user = await get_user_from_headers(request.headers, db)
+        current_user = await get_user_from_request(request, db)
         return {
             "success": True,
             "user": (
                 {
-                    "username": user.username,
-                    "email": user.email,
-                    "role": str(user.role),
-                    "role_value": (
-                        user.role.value
-                        if hasattr(user.role, "value")
-                        else str(user.role)
-                    ),
-                    "id": str(user.id),
+                    "keycloak_id": str(current_user.keycloak_id),
+                    "username": current_user.username,
+                    "email": current_user.email,
+                    "role": current_user.role,
                 }
-                if user
+                if current_user
                 else None
             ),
             "dev_mode": is_local_dev_mode(),
@@ -61,19 +56,16 @@ async def debug_auth(request: Request, db: AsyncSession = Depends(get_db)):
 async def debug_profile_test(request: Request, db: AsyncSession = Depends(get_db)):
     """Debug profile endpoint without schema validation."""
     try:
-        user = await get_user_from_headers(request.headers, db)
-        if not user:
+        current_user = await get_user_from_request(request, db)
+        if not current_user:
             return {"error": "User not found"}
 
-        # Return user data without schema validation
         return {
-            "id": str(user.id),
-            "username": user.username,
-            "email": user.email,
-            "role": user.role.value,  # Use .value to get string representation
-            "agent_ids": user.agent_ids or [],
-            "created_at": str(user.created_at),
-            "updated_at": str(user.updated_at),
+            "keycloak_id": str(current_user.keycloak_id),
+            "username": current_user.username,
+            "email": current_user.email,
+            "role": current_user.role,
+            "agent_ids": current_user.agent_ids or [],
         }
     except Exception as e:
         import traceback

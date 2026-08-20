@@ -24,7 +24,7 @@ class ChatSession(Base):
     )  # Agent ID
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.keycloak_id", ondelete="CASCADE"),
         nullable=False,
     )  # User ID for session isolation
 

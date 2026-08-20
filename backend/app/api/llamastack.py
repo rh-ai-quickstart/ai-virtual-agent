@@ -9,7 +9,6 @@ from llama_stack_client import AsyncLlamaStackClient
 
 from .shared_api import (
     get_sa_token,
-    get_user_headers_from_request,
     token_to_auth_header,
 )
 
@@ -66,9 +65,6 @@ def get_llamastack_client_from_request(
     else:
         logger.warning("No service account token available")
 
-    user_headers = get_user_headers_from_request(request)
-    headers.update(user_headers)
-
     return get_llamastack_client(token, headers)
 
 
@@ -98,9 +94,6 @@ def get_llamastack_sync_client() -> AsyncLlamaStackClient:
     return get_llamastack_client(token, headers)
 
 
-# Create sync client instance
-llamastack_sync_client = get_llamastack_sync_client()
-
 # Aliases for backward compatibility
 get_client_from_request = get_llamastack_client_from_request
-sync_client = llamastack_sync_client
+sync_client = get_llamastack_sync_client

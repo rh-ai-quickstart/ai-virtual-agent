@@ -24,7 +24,7 @@ export function AgentList() {
   // Use custom agents hook
   const { agents, isLoading: isLoadingAgents, error: agentsError, useUserAgents } = useAgents();
   const { currentUser } = useCurrentUser();
-  const assignedAgentsQuery = useUserAgents(currentUser?.id ?? '');
+  const assignedAgentsQuery = useUserAgents(currentUser?.keycloak_id ?? '');
   const assignedIds = useMemo(
     () => new Set((assignedAgentsQuery.data ?? []).map((a) => a.id)),
     [assignedAgentsQuery.data]

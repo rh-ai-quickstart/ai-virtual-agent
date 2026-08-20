@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from .api.v1.router import api_router
 from .config import settings
@@ -48,6 +49,10 @@ def create_application() -> FastAPI:
 
     # Include API routes
     app.include_router(api_router, prefix=settings.API_V1_STR)
+
+    @app.get("/oauth/sign_in", include_in_schema=False)
+    async def legacy_sign_in_redirect():
+        return RedirectResponse(url=f"{settings.API_V1_STR}/auth/login")
 
     return app
 

@@ -9,6 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.llamastack import get_client_from_request
+from ...api.llamastack_compat import (
+    get_model_id,
+    get_model_metadata,
+    get_model_type,
+    get_provider_id,
+    get_provider_resource_id,
+)
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
 from ...schemas.models import ModelCreate, ModelRead, ModelUpdate
@@ -40,11 +47,11 @@ async def register_model(model_data: ModelCreate, request: Request):
 
         # Convert to response schema
         return ModelRead(
-            model_id=str(registered_model.identifier),
-            provider_id=registered_model.provider_id,
-            provider_model_id=registered_model.provider_resource_id,
-            model_type=registered_model.model_type,
-            metadata=registered_model.metadata,
+            model_id=get_model_id(registered_model),
+            provider_id=get_provider_id(registered_model),
+            provider_model_id=get_provider_resource_id(registered_model),
+            model_type=get_model_type(registered_model),
+            metadata=get_model_metadata(registered_model),
         )
 
     except Exception as e:
@@ -79,21 +86,18 @@ async def list_models(request: Request):
 
         models_list = []
         for model in models:
-            provider_resource_id = str(model.provider_resource_id)
-            model_id = str(model.identifier)
+            prid = get_provider_resource_id(model)
+            mid = get_model_id(model)
 
             # Check if this model is used as a shield
-            is_shield = (
-                provider_resource_id in shield_resource_ids
-                or model_id in shield_resource_ids
-            )
+            is_shield = prid in shield_resource_ids or mid in shield_resource_ids
 
             model_data = ModelRead(
-                model_id=model_id,
-                provider_id=model.provider_id,
-                provider_model_id=provider_resource_id,
-                model_type=model.model_type,
-                metadata=model.metadata if hasattr(model, "metadata") else {},
+                model_id=mid,
+                provider_id=get_provider_id(model),
+                provider_model_id=prid,
+                model_type=get_model_type(model),
+                metadata=get_model_metadata(model),
                 is_shield=is_shield,
             )
             models_list.append(model_data)
@@ -119,11 +123,11 @@ async def get_model(model_id: str, request: Request):
         model = await client.models.retrieve(model_id=model_id)
 
         return ModelRead(
-            model_id=str(model.identifier),
-            provider_id=model.provider_id,
-            provider_model_id=model.provider_resource_id,
-            model_type=model.model_type,
-            metadata=model.metadata if hasattr(model, "metadata") else {},
+            model_id=get_model_id(model),
+            provider_id=get_provider_id(model),
+            provider_model_id=get_provider_resource_id(model),
+            model_type=get_model_type(model),
+            metadata=get_model_metadata(model),
         )
 
     except Exception as e:
@@ -153,22 +157,22 @@ async def update_model(model_id: str, model_data: ModelUpdate, request: Request)
         updated_model = await client.models.register(
             model_id=model_id,
             provider_model_id=model_data.provider_model_id
-            or existing_model.provider_resource_id,
-            provider_id=model_data.provider_id or existing_model.provider_id,
+            or get_provider_resource_id(existing_model),
+            provider_id=model_data.provider_id or get_provider_id(existing_model),
             metadata=(
                 model_data.metadata
                 if model_data.metadata is not None
-                else existing_model.metadata
+                else get_model_metadata(existing_model)
             ),
-            model_type=existing_model.model_type,
+            model_type=get_model_type(existing_model),
         )
 
         return ModelRead(
-            model_id=str(updated_model.identifier),
-            provider_id=updated_model.provider_id,
-            provider_model_id=updated_model.provider_resource_id,
-            model_type=updated_model.model_type,
-            metadata=updated_model.metadata,
+            model_id=get_model_id(updated_model),
+            provider_id=get_provider_id(updated_model),
+            provider_model_id=get_provider_resource_id(updated_model),
+            model_type=get_model_type(updated_model),
+            metadata=get_model_metadata(updated_model),
         )
 
     except Exception as e:

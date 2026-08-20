@@ -31,7 +31,7 @@ function Users() {
   });
 
   const handleUserClick = (user: User) => {
-    void navigate({ search: { userId: user.id } });
+    void navigate({ search: { userId: user.keycloak_id } });
   };
 
   const handleBackToList = () => {

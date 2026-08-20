@@ -50,16 +50,3 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{ include "ai-virtual-agent.serviceAccountName" . }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: proxy-can-create-token-reviews-{{ .Release.Namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:auth-delegator
-subjects:
-- kind: ServiceAccount
-  name: {{ include "ai-virtual-agent.serviceAccountName" . }}
-  namespace: {{ .Release.Namespace }}

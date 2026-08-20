@@ -13,12 +13,15 @@ dependencies:
   version: 0.8.6
 - name: configure-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.5.6
+  version: 0.5.10
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.6.5
 - name: oracle-db
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.5.5
-digest: sha256:929fc3fa16d5b7fb37ba194edb29bbdda3e8fd98e6f9eda37c36ffd6653ae901
-generated: "2026-06-22T15:15:22.002701642-04:00"
+- name: keycloak
+  repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
+  version: 1.0.1
+digest: sha256:707ae0ec2d77386e04fc3f6f5c3d552f0bb54b1ff8d240861513a54b0e829b36
+generated: "2026-08-03T20:53:06.576933999-04:00"

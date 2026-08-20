@@ -1,10 +1,14 @@
 import {
+  Dropdown,
+  DropdownItem,
+  DropdownList,
   Flex,
   FlexItem,
   MastheadBrand,
   MastheadContent,
   MastheadMain,
   MastheadToggle,
+  MenuToggle,
   Nav,
   NavItem,
   NavList,
@@ -21,7 +25,7 @@ import {
 import React from 'react';
 
 import { Link, useLocation } from '@tanstack/react-router';
-import { BarsIcon, SunIcon, MoonIcon, ChatIcon, CogIcon } from '@patternfly/react-icons';
+import { BarsIcon, SunIcon, MoonIcon, ChatIcon, CogIcon, UserIcon } from '@patternfly/react-icons';
 import { useCurrentUser } from '@/contexts/UserContext';
 
 export const themeStorageKey = 'app-theme';
@@ -40,6 +44,7 @@ export function Masthead({
   const location = useLocation();
   const { currentUser } = useCurrentUser();
   const [isDarkTheme, setIsDarkTheme] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   // Load preferred theme from localstorage
   React.useMemo(() => {
@@ -158,6 +163,49 @@ export function Masthead({
               />
             </ToggleGroup>
           </ToolbarItem>
+          {currentUser && (
+            <ToolbarItem>
+              <Dropdown
+                isOpen={isUserMenuOpen}
+                onSelect={() => setIsUserMenuOpen(false)}
+                onOpenChange={setIsUserMenuOpen}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    isExpanded={isUserMenuOpen}
+                    icon={<UserIcon />}
+                  >
+                    {currentUser.username}
+                  </MenuToggle>
+                )}
+                popperProps={{ position: 'right' }}
+              >
+                <DropdownList>
+                  <DropdownItem
+                    key="account"
+                    onClick={() => {
+                      window.location.href = '/api/v1/auth/account';
+                    }}
+                  >
+                    Manage Account
+                  </DropdownItem>
+                  <DropdownItem
+                    key="logout"
+                    onClick={() => {
+                      void fetch('/api/v1/auth/logout', { method: 'POST' })
+                        .then((res) => res.json() as Promise<{ logout_url: string }>)
+                        .then(({ logout_url }) => {
+                          window.location.href = logout_url;
+                        });
+                    }}
+                  >
+                    Logout
+                  </DropdownItem>
+                </DropdownList>
+              </Dropdown>
+            </ToolbarItem>
+          )}
         </ToolbarGroup>
       </ToolbarContent>
     </Toolbar>

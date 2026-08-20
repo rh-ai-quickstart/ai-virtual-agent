@@ -1,0 +1,294 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-keycloak-setup
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  setup-keycloak.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    echo "Waiting for Keycloak to be ready..."
+    for i in $(seq 1 "$MAX_RETRIES"); do
+      if curl -sf "${KEYCLOAK_URL}/realms/master" > /dev/null 2>&1; then
+        echo "Keycloak is ready."
+        break
+      fi
+      if [ "$i" -eq "$MAX_RETRIES" ]; then
+        echo "ERROR: Keycloak not ready after ${MAX_RETRIES} attempts."
+        exit 1
+      fi
+      echo "Attempt $i/$MAX_RETRIES - waiting ${RETRY_INTERVAL}s..."
+      sleep "$RETRY_INTERVAL"
+    done
+
+    refresh_token() {
+      TOKEN=$(curl -sf -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "username=${KEYCLOAK_ADMIN}" \
+        -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
+        -d "grant_type=password" \
+        -d "client_id=admin-cli" \
+        | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
+    }
+
+    echo "Obtaining admin access token..."
+    refresh_token
+
+    # --- Realm ---
+    REALM_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}" || true)
+
+    if [ "$REALM_STATUS" = "200" ]; then
+      echo "Realm '${REALM_NAME}' already exists, updating..."
+      curl -sf -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "registrationAllowed": true,
+          "loginWithEmailAllowed": true,
+          "resetPasswordAllowed": true
+        }'
+    else
+      echo "Creating realm '${REALM_NAME}'..."
+      curl -sf -X POST "${KEYCLOAK_URL}/admin/realms" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"realm\": \"${REALM_NAME}\",
+          \"enabled\": true,
+          \"registrationAllowed\": true,
+          \"loginWithEmailAllowed\": true,
+          \"resetPasswordAllowed\": true,
+          \"rememberMe\": true
+        }"
+    fi
+
+    # --- Realm Roles ---
+    for ROLE in user devops admin; do
+      ROLE_EXISTS=$(curl -sf -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/${ROLE}" || true)
+      if [ "$ROLE_EXISTS" != "200" ]; then
+        echo "Creating realm role '${ROLE}'..."
+        curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"name\": \"${ROLE}\"}"
+      else
+        echo "Realm role '${ROLE}' already exists."
+      fi
+    done
+
+    refresh_token
+
+    # --- OIDC Client ---
+    CLIENT_UUID=$(curl -sf \
+      -H "Authorization: Bearer ${TOKEN}" \
+      "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients?clientId=${CLIENT_ID}" \
+      | python3 -c "import json,sys; clients=json.load(sys.stdin); print(clients[0]['id'] if clients else '')")
+
+    CLIENT_PAYLOAD="{
+      \"clientId\": \"${CLIENT_ID}\",
+      \"secret\": \"${CLIENT_SECRET}\",
+      \"enabled\": true,
+      \"redirectUris\": [\"${APP_URL}/*\"],
+      \"webOrigins\": [\"${APP_URL}\"],
+      \"publicClient\": false,
+      \"standardFlowEnabled\": true,
+      \"directAccessGrantsEnabled\": false,
+      \"serviceAccountsEnabled\": true,
+      \"protocol\": \"openid-connect\",
+      \"attributes\": {
+        \"post.logout.redirect.uris\": \"${APP_URL}/*\"
+      },
+      \"protocolMappers\": [{
+        \"name\": \"realm-roles\",
+        \"protocol\": \"openid-connect\",
+        \"protocolMapper\": \"oidc-usermodel-realm-role-mapper\",
+        \"consentRequired\": false,
+        \"config\": {
+          \"multivalued\": \"true\",
+          \"userinfo.token.claim\": \"true\",
+          \"id.token.claim\": \"true\",
+          \"access.token.claim\": \"true\",
+          \"claim.name\": \"realm_access.roles\",
+          \"jsonType.label\": \"String\"
+        }
+      }]
+    }"
+
+    if [ -n "$CLIENT_UUID" ]; then
+      echo "Client '${CLIENT_ID}' already exists, updating..."
+      curl -sf -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${CLIENT_UUID}" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "$CLIENT_PAYLOAD"
+    else
+      echo "Creating client '${CLIENT_ID}'..."
+      curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "$CLIENT_PAYLOAD"
+    fi
+
+    refresh_token
+
+    # --- Service account: assign view-users role ---
+    # Re-fetch client UUID after create/update
+    CLIENT_UUID=$(curl -sf \
+      -H "Authorization: Bearer ${TOKEN}" \
+      "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients?clientId=${CLIENT_ID}" \
+      | python3 -c "import json,sys; clients=json.load(sys.stdin); print(clients[0]['id'] if clients else '')")
+
+    if [ -n "$CLIENT_UUID" ]; then
+      echo "Getting service account user..."
+      SA_USER_ID=$(curl -sf \
+        -H "Authorization: Bearer ${TOKEN}" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${CLIENT_UUID}/service-account-user" \
+        | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+
+      echo "Getting realm-management client..."
+      RM_CLIENT_UUID=$(curl -sf \
+        -H "Authorization: Bearer ${TOKEN}" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients?clientId=realm-management" \
+        | python3 -c "import json,sys; clients=json.load(sys.stdin); print(clients[0]['id'] if clients else '')")
+
+      if [ -n "$SA_USER_ID" ] && [ -n "$RM_CLIENT_UUID" ]; then
+        for SA_ROLE in view-users manage-users; do
+          echo "Getting ${SA_ROLE} role..."
+          ROLE_JSON=$(curl -sf \
+            -H "Authorization: Bearer ${TOKEN}" \
+            "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${RM_CLIENT_UUID}/roles/${SA_ROLE}")
+
+          if [ -n "$ROLE_JSON" ]; then
+            echo "Assigning ${SA_ROLE} role to service account..."
+            curl -sf -X POST \
+              "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${SA_USER_ID}/role-mappings/clients/${RM_CLIENT_UUID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "[${ROLE_JSON}]" || echo "${SA_ROLE} role may already be assigned."
+          fi
+        done
+      fi
+    fi
+
+    # --- Default user role assignment ---
+    # Set 'user' as the default role for new registrations
+    # Uses the composite-role API (Keycloak 23+); the old /default-roles endpoint is removed.
+    USER_ROLE=$(curl -sf \
+      -H "Authorization: Bearer ${TOKEN}" \
+      "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/user")
+
+    if [ -n "$USER_ROLE" ]; then
+      echo "Setting 'user' as default role..."
+      curl -sf -X POST \
+        "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/default-roles-${REALM_NAME}/composites" \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "[${USER_ROLE}]" || echo "Default role may already be set."
+    fi
+
+    refresh_token
+
+    # --- App Admin User ---
+    if [ -n "${APP_ADMIN_EMAIL:-}" ]; then
+      echo "Creating app admin user '${APP_ADMIN_USERNAME}'..."
+
+      EXISTING_USER=$(curl -sf \
+        -H "Authorization: Bearer ${TOKEN}" \
+        "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${APP_ADMIN_USERNAME}&exact=true" \
+        | python3 -c "import json,sys; users=json.load(sys.stdin); print(users[0]['id'] if users else '')")
+
+      if [ -n "$EXISTING_USER" ]; then
+        echo "User '${APP_ADMIN_USERNAME}' already exists (id=${EXISTING_USER}), updating..."
+        curl -sf -X PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${EXISTING_USER}" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"email\": \"${APP_ADMIN_EMAIL}\",
+            \"emailVerified\": true,
+            \"enabled\": true
+          }"
+        APP_ADMIN_USER_ID="$EXISTING_USER"
+      else
+        echo "Creating user '${APP_ADMIN_USERNAME}'..."
+        curl -sf -X POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"username\": \"${APP_ADMIN_USERNAME}\",
+            \"email\": \"${APP_ADMIN_EMAIL}\",
+            \"emailVerified\": true,
+            \"enabled\": true,
+            \"credentials\": [{
+              \"type\": \"password\",
+              \"value\": \"${APP_ADMIN_PASSWORD}\",
+              \"temporary\": false
+            }]
+          }"
+
+        APP_ADMIN_USER_ID=$(curl -sf \
+          -H "Authorization: Bearer ${TOKEN}" \
+          "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users?username=${APP_ADMIN_USERNAME}&exact=true" \
+          | python3 -c "import json,sys; users=json.load(sys.stdin); print(users[0]['id'] if users else '')")
+      fi
+
+      if [ -n "$APP_ADMIN_USER_ID" ]; then
+        echo "Setting password for '${APP_ADMIN_USERNAME}'..."
+        curl -sf -X PUT \
+          "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${APP_ADMIN_USER_ID}/reset-password" \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"type\": \"password\",
+            \"value\": \"${APP_ADMIN_PASSWORD}\",
+            \"temporary\": false
+          }"
+
+        echo "Assigning 'admin' role to '${APP_ADMIN_USERNAME}'..."
+        ADMIN_ROLE=$(curl -sf \
+          -H "Authorization: Bearer ${TOKEN}" \
+          "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/admin")
+
+        if [ -n "$ADMIN_ROLE" ]; then
+          curl -sf -X POST \
+            "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${APP_ADMIN_USER_ID}/role-mappings/realm" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "[${ADMIN_ROLE}]" || echo "Admin role may already be assigned."
+        fi
+
+        echo "Granting realm-admin role for Keycloak Admin Console access..."
+        CLIENT_UUID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
+          "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients?clientId=realm-management" \
+          | python3 -c "import json,sys; clients=json.load(sys.stdin); print(clients[0]['id'] if clients else '')")
+
+        if [ -n "$CLIENT_UUID" ]; then
+          REALM_ADMIN_ROLE=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
+            "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${CLIENT_UUID}/roles/realm-admin")
+
+          if [ -n "$REALM_ADMIN_ROLE" ]; then
+            curl -sf -X POST \
+              "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${APP_ADMIN_USER_ID}/role-mappings/clients/${CLIENT_UUID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "[${REALM_ADMIN_ROLE}]" || echo "realm-admin role may already be assigned."
+          fi
+        fi
+
+        echo "App admin user '${APP_ADMIN_USERNAME}' created and configured."
+      else
+        echo "WARNING: Could not determine user ID for '${APP_ADMIN_USERNAME}'. User may not have been created."
+      fi
+    fi
+
+    echo "Keycloak setup complete."
+{{- end }}

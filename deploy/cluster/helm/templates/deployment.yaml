@@ -1,3 +1,4 @@
+{{- include "ai-virtual-agent.validateKeycloak" . }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -15,10 +16,13 @@ spec:
       {{- include "ai-virtual-agent.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- if .Values.keycloak.enabled }}
+        checksum/oidc-secret: {{ include (print $.Template.BasePath "/keycloak-oidc-secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       labels:
         {{- include "ai-virtual-agent.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
@@ -50,38 +54,6 @@ spec:
               done
               echo "$url is ready."
       containers:
-        - name: oauth-proxy
-          args:
-            - -provider=openshift
-            - -https-address=:8888
-            - -http-address=:8887
-            - -email-domain=*
-            - -upstream=http://localhost:8000
-            - -pass-user-headers=true
-            - -openshift-delegate-urls={"/validate-token":{"resource":"secrets","namespace":"{{ .Release.Namespace }}","verb":"get"}}
-            - -tls-cert=/etc/tls/private/tls.crt
-            - -tls-key=/etc/tls/private/tls.key
-            - -cookie-secret-file=/etc/proxy/secrets/session_secret
-            - -openshift-service-account={{ include "ai-virtual-agent.serviceAccountName" . }}
-            - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            - -skip-auth-regex=^/metrics
-            - -skip-auth-regex=^/validate$
-            - -skip-auth-regex=^/validate/$
-          image: quay.io/openshift/origin-oauth-proxy:4.17
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: oauth-proxy
-              containerPort: 8888
-              protocol: TCP
-            - name: proxy-http
-              containerPort: 8887
-              protocol: TCP
-          volumeMounts:
-            - mountPath: /etc/tls/private
-              name: secret-ai-virtual-agent-tls
-            - mountPath: /etc/proxy/secrets
-              name: secret-ai-virtual-agent-proxy
-
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
           securityContext:
@@ -118,14 +90,10 @@ spec:
               value: '{{ .Values.llama_stack_url }}'
             - name: INGESTION_PIPELINE_URL
               value: http://{{ .Release.Name }}-ingestion-pipeline
-            {{- if .Values.seed.admin_user.username }}
             - name: ADMIN_USERNAME
-              value: '{{ .Values.seed.admin_user.username }}'
-            {{- end }}
-            {{- if .Values.seed.admin_user.email }}
-            - name: ADMIN_EMAIL
-              value: '{{ .Values.seed.admin_user.email }}'
-            {{- end }}
+              value: '{{ .Values.adminUsername }}'
+            - name: AUTO_ASSIGN_AGENTS_TO_USERS
+              value: '{{ .Values.autoAssignAgents }}'
             {{- with .Values.runners.langgraph.llm_api_base }}
             - name: LANGGRAPH_LLM_API_BASE
               value: {{ . | quote }}
@@ -181,6 +149,34 @@ spec:
                 secretKeyRef:
                   name: {{ include "ai-virtual-agent.fullname" $ }}-env
                   key: SERPAPI_API_KEY
+            {{- end }}
+            {{- if .Values.keycloak.enabled }}
+            - name: KEYCLOAK_SERVER_URL
+              value: {{ .Values.keycloak.config.hostname | quote }}
+            - name: KEYCLOAK_SERVER_URL_INTERNAL
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.oidc.realmName | quote }}
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.oidc.clientId | quote }}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" . }}-oidc
+                  key: oidc-client-secret
+            - name: SESSION_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "ai-virtual-agent.fullname" . }}-oidc
+                  key: session-secret-key
+            - name: SESSION_COOKIE_SECURE
+              value: "true"
+            {{- if .Values.clusterDomain }}
+            - name: FRONTEND_URL
+              value: "https://{{ include "ai-virtual-agent.fullname" . }}-{{ .Release.Namespace }}.{{ .Values.clusterDomain }}"
+            {{- end }}
+            - name: LOCAL_DEV_ENV_MODE
+              value: "false"
             {{- end }}
           ports:
             - name: http

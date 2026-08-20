@@ -12,8 +12,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: "test_user"
-        X-Forwarded-Email: "test@example.com"
       json:
         agent_id: "00000000-0000-0000-0000-000000000000"
         session_name: "Test Session"
@@ -27,8 +25,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: "test_user"
-        X-Forwarded-Email: "test@example.com"
     response:
       status_code: 404
 
@@ -37,9 +33,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/00000000-0000-0000-0000-000000000000"
       method: DELETE
-      headers:
-        X-Forwarded-User: "test_user"
-        X-Forwarded-Email: "test@example.com"
       params:
         agent_id: "00000000-0000-0000-0000-000000000000"
     response:
@@ -88,8 +81,6 @@ stages:
       headers:
         Content-Type: application/json
         Accept: application/json
-        X-Forwarded-User: "error_test_user"
-        X-Forwarded-Email: "error@example.com"
       json:
         agent_id: "{error_test_agent_id}"
         session_name: "Empty Session"
@@ -106,8 +97,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: "error_test_user"
-        X-Forwarded-Email: "error@example.com"
     response:
       status_code: 200
       json:
@@ -120,8 +109,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: "error_test_user"
-        X-Forwarded-Email: "error@example.com"
       params:
         agent_id: "{error_test_agent_id}"
         limit: 50
@@ -134,9 +121,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{empty_session_id}"
       method: DELETE
-      headers:
-        X-Forwarded-User: "error_test_user"
-        X-Forwarded-Email: "error@example.com"
       params:
         agent_id: "{error_test_agent_id}"
     response:
@@ -190,8 +174,6 @@ stages:
       method: POST
       headers:
         Content-Type: application/json
-        X-Forwarded-User: "deletion_user"
-        X-Forwarded-Email: "deletion@example.com"
       json:
         agent_id: "{deletion_agent_id}"
         session_name: "To Be Deleted"
@@ -206,9 +188,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{deletion_session_id}"
       method: DELETE
-      headers:
-        X-Forwarded-User: "deletion_user"
-        X-Forwarded-Email: "deletion@example.com"
       params:
         agent_id: "{deletion_agent_id}"
     response:
@@ -221,8 +200,6 @@ stages:
       method: GET
       headers:
         Accept: application/json
-        X-Forwarded-User: "deletion_user"
-        X-Forwarded-Email: "deletion@example.com"
     response:
       status_code: 404
 
@@ -231,9 +208,6 @@ stages:
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/chat_sessions/{deletion_session_id}"
       method: DELETE
-      headers:
-        X-Forwarded-User: "deletion_user"
-        X-Forwarded-Email: "deletion@example.com"
       params:
         agent_id: "{deletion_agent_id}"
     response:

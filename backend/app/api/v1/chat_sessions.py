@@ -28,9 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...api.llamastack import (
-    get_client_from_request,
-)
+from ...api.llamastack import get_client_from_request
 from ...crud.chat_sessions import chat_sessions
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
@@ -153,7 +151,7 @@ async def get_chat_sessions(
 
         # Get sessions from database filtered by user
         local_sessions = await chat_sessions.get_by_agent(
-            db, agent_id=agent_id, user_id=current_user.id, limit=limit
+            db, agent_id=agent_id, user_id=current_user.keycloak_id, limit=limit
         )
 
         logger.info(
@@ -214,7 +212,7 @@ async def get_chat_session(
 
         # Get session from database (filtered by user)
         session = await chat_sessions.get_with_agent(
-            db, session_id=session_id, user_id=current_user.id
+            db, session_id=session_id, user_id=current_user.keycloak_id
         )
 
         if not session:
@@ -266,7 +264,7 @@ async def get_conversation_messages(
 
         # Get session from database (filtered by user)
         session = await chat_sessions.get_with_agent(
-            db, session_id=session_id, user_id=current_user.id
+            db, session_id=session_id, user_id=current_user.keycloak_id
         )
 
         if not session:
@@ -458,7 +456,7 @@ async def delete_chat_session(
 
         # Delete session and related data (only if user owns it)
         deleted = await chat_sessions.delete_session(
-            db, session_id=session_id, user_id=current_user.id
+            db, session_id=session_id, user_id=current_user.keycloak_id
         )
 
         if not deleted:
@@ -557,7 +555,7 @@ async def create_chat_session(
             "id": session_id,
             "title": session_name,
             "agent_id": sessionRequest.agent_id,
-            "user_id": current_user.id,
+            "user_id": current_user.keycloak_id,
             "conversation_id": None,  # Will be set when first message is sent
         }
 

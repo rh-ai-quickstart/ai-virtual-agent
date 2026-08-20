@@ -552,9 +552,7 @@ class LangGraphRunner(BaseRunner):
 
                 if mcp_configs:
                     try:
-                        from langchain_mcp_adapters.client import (
-                            MultiServerMCPClient,
-                        )
+                        from langchain_mcp_adapters.client import MultiServerMCPClient
 
                         async with MultiServerMCPClient(mcp_configs) as mcp_client:
                             tools = mcp_client.get_tools()

@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.main import app
-from backend.app.models import RoleEnum, User
+from backend.app.schemas.user import CurrentUser
 
 
 @pytest.fixture
@@ -40,11 +40,11 @@ def mock_db_session():
 @pytest.fixture
 def admin_user():
     """Create a mock admin user."""
-    return User(
-        id=uuid.uuid4(),
+    return CurrentUser(
+        keycloak_id=uuid.uuid4(),
         username="admin_user",
         email="admin@example.com",
-        role=RoleEnum.admin,
+        role="admin",
         agent_ids=[],
     )
 
@@ -52,11 +52,11 @@ def admin_user():
 @pytest.fixture
 def regular_user():
     """Create a mock regular user."""
-    return User(
-        id=uuid.uuid4(),
+    return CurrentUser(
+        keycloak_id=uuid.uuid4(),
         username="regular_user",
         email="user@example.com",
-        role=RoleEnum.user,
+        role="user",
         agent_ids=[],
     )
 

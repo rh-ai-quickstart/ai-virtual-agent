@@ -79,14 +79,6 @@ build_helm_cmd() {
     cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
     cmd_args+=("--set" "ingestion-pipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
 
-    # seed admin user args
-    if [ -n "$ADMIN_USERNAME" ]; then
-        cmd_args+=("--set" "seed.admin_user.username=$ADMIN_USERNAME")
-    fi
-    if [ -n "$ADMIN_EMAIL" ]; then
-        cmd_args+=("--set" "seed.admin_user.email=$ADMIN_EMAIL")
-    fi
-
     # Runner LLM configuration (MaaS or runner-specific overrides)
     if [ -n "$MAAS_API_BASE" ]; then
         cmd_args+=("--set" "runners.langgraph.llm_api_base=$MAAS_API_BASE")
@@ -129,6 +121,27 @@ build_helm_cmd() {
     if [ -n "$TAVILY_API_KEY" ]; then
         cmd_args+=("--set" "apiKeys.tavily=$TAVILY_API_KEY")
         cmd_args+=("--set" "mcp-servers.mcp-servers.travel-research.env.TAVILY_API_KEY=$TAVILY_API_KEY")
+    fi
+
+    # Keycloak args
+    CLUSTER_DOMAIN=$(oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' 2>/dev/null || echo "")
+    if [ -n "$CLUSTER_DOMAIN" ]; then
+        KC_HOST="keycloak-${NAMESPACE}.${CLUSTER_DOMAIN}"
+        cmd_args+=("--set" "keycloak.admin.password=$KC_ADMIN_PASS")
+        cmd_args+=("--set" "keycloak.pgvector.secret.password=$POSTGRES_PASSWORD")
+        cmd_args+=("--set" "keycloak.pgvector.externalDatabase.password=$POSTGRES_PASSWORD")
+        cmd_args+=("--set" "keycloak.config.hostname=https://$KC_HOST")
+        cmd_args+=("--set" "keycloak.route.host=$KC_HOST")
+
+        APP_HOST="ai-virtual-agent-${NAMESPACE}.${CLUSTER_DOMAIN}"
+        cmd_args+=("--set" "clusterDomain=$CLUSTER_DOMAIN")
+
+        # App admin user (created in ai-apps realm)
+        if [ -n "$APP_ADMIN_EMAIL" ]; then
+            cmd_args+=("--set" "appAdmin.username=$APP_ADMIN_USERNAME")
+            cmd_args+=("--set" "appAdmin.email=$APP_ADMIN_EMAIL")
+            cmd_args+=("--set" "appAdmin.password=$APP_ADMIN_PASSWORD")
+        fi
     fi
 
 	# Oracle args

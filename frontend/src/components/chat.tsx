@@ -668,12 +668,10 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
   // Fetch available agents on mount - only when user is loaded
   useEffect(() => {
     const fetchAgentsData = async () => {
-      // TODO: This currently fetches agents for the first user in the database.
-      // Once proper authentication is implemented, this should fetch agents for the authenticated user.
       if (!currentUser) return;
 
       try {
-        const agents = await fetchUserAgents(currentUser.id);
+        const agents = await fetchUserAgents(currentUser.keycloak_id);
         setAvailableAgents(agents);
 
         if (agents.length > 0) {
@@ -691,7 +689,11 @@ export function Chat({ preSelectedAgentId }: ChatProps = {}) {
           // Don't fetch sessions here - let the selectedAgent useEffect handle it
         } else {
           setAnnouncement('No agents assigned to this user');
-          setNoAgentsWarning('No agents are assigned to your account. Please contact an admin.');
+          setNoAgentsWarning(
+            currentUser?.role === 'admin'
+              ? 'No agents have been created yet. Go to Config > Agents to create one.'
+              : 'No agents are available yet. Please check with your admin.'
+          );
         }
       } catch (err) {
         console.error('Error fetching user agents:', err);
