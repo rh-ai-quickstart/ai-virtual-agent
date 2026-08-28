@@ -40,10 +40,16 @@ The platform integrates several components:
 ## Requirements
 
 ### Minimum hardware requirements
+For a full working deployment, one of the following inference options is required:
 
-For a full working version with local inference:
-- **GPU** - Required for running inference locally
-- Alternatively, you can deploy without a GPU by using:
+#### Option 1: GPU deployment
+- A worker node with a supported GPU for local inference
+#### Option 2: Intel Xeon deployment
+- One worker node with Intel Xeon processors, Sapphire Rapids (SPR) or newer (EMR/GNR)
+  - for example: m8i.8xlarge, m7i.8xlarge, r8i.8xlarge
+  - vLLM requires a minimum of 16 vCPUs and 64 GB of RAM to run
+#### Option 3: Remote inference
+- Instead of running models locally, you can use:
   - Remote vLLM deployment
   - Vertex AI
 
@@ -88,6 +94,7 @@ cd deploy/cluster
 # Install with interactive prompts for configuration
 make install NAMESPACE=your-namespace
 ```
+Before deploying on Xeon, review and uncomment the Xeon example configuration blocks in `helm/values.yaml` prior to running `make install NAMESPACE=your-namespace`.
 
 🧭 **[Advanced instructions →](#advanced-instructions)**
 

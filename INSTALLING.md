@@ -69,24 +69,30 @@ graph TB
 ## Prerequisites
 
 ### Hardware Requirements
+For local inference, one of the following deployment options is required:
 
-For local inference:
+#### Option 1: GPU deployment
 - **1 GPU with 24GB+ VRAM** for the primary LLM model
 - **1 GPU with 24GB+ VRAM** for the safety/shield model (optional)
 
-Alternatively, you can deploy without a GPU by using:
+#### Option 2: Intel Xeon deployment
+- One worker node with Intel Xeon processors, Sapphire Rapids (SPR) or newer (EMR/GNR)
+  - for example: m8i.8xlarge, m7i.8xlarge, r8i.8xlarge
+  - vLLM requires a minimum of 16 vCPUs and 64 GB of RAM to run
+
+#### Option 3: Remote inference
 - Remote vLLM deployment
 - Vertex AI
 
 ### Supported Models
 
-| Function    | Model Name                             | GPU Required    | AWS Instance
+| Function    | Model Name                             | Hardware   | AWS Instance
 |-------------|----------------------------------------|-----------------|-------------
 | Embedding   | `all-MiniLM-L6-v2`                     | CPU or GPU      | -
-| Generation  | `meta-llama/Llama-3.2-3B-Instruct`     | L4 (24GB)       | g6.2xlarge
-| Generation  | `meta-llama/Llama-3.1-8B-Instruct`     | L4 (24GB)       | g6.2xlarge
+| Generation  | `meta-llama/Llama-3.2-3B-Instruct`     | L4 (24GB)<br>Xeon | g6.2xlarge<br>m8i.8xlarge
+| Generation  | `meta-llama/Llama-3.1-8B-Instruct`     | L4 (24GB)<br>Xeon | g6.2xlarge<br>m8i.8xlarge
 | Generation  | `meta-llama/Meta-Llama-3-70B-Instruct` | A100 x2 (80GB)  | p4d.24xlarge
-| Safety      | `meta-llama/Llama-Guard-3-8B`          | L4 (24GB)       | g6.2xlarge
+| Safety      | `meta-llama/Llama-Guard-3-8B`          | L4 (24GB)<br>Xeon | g6.2xlarge<br>m8i.8xlarge
 
 ### Required Software
 
@@ -188,6 +194,13 @@ make install \
   NAMESPACE=ai-virtual-agent \
   LLM=llama-3-1-8b-instruct \
   LLM_TOLERATION="nvidia.com/gpu"
+```
+#### Installation on Xeon
+To deploy AI Virtual Agent with local inference on Xeon, first review `helm/values.yaml` and uncomment the Xeon example configuration blocks.
+
+After updating the configuration, install the application:
+```bash
+make install NAMESPACE=ai-virtual-agent
 ```
 
 #### Production Installation (With Safety Shields)
