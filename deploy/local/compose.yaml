@@ -191,8 +191,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7001),2); s.close()\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
 
   hotel-mcp:
     build:
@@ -212,8 +212,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7002),2); s.close()\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
 
   flight-mcp:
     build:
@@ -233,8 +233,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',7003),2); s.close()\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
 
   # MinIO service for attachments (optional - use profile 'attachments')
   minio:
