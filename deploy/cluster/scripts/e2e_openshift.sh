@@ -199,8 +199,8 @@ start_forwards() {
     chmod 700 "$STATE_DIR"
     stop_forwards
 
-    if ! wait_for_job_complete "$namespace" "upload-sample-docs-job" \
-        "MinIO sample-document upload"; then
+    if ! wait_for_job_complete "$namespace" "aws-compatible-storage-bootstrap" \
+        "S3 bucket and sample-document bootstrap"; then
         return 1
     fi
     if ! wait_for_job_complete "$namespace" "add-default-ingestion-pipeline" \

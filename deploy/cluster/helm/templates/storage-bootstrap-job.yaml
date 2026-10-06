@@ -1,0 +1,104 @@
+{{- if and (index .Values "aws-compatible-storage" "enabled") .Values.awsCompatibleStorageBuckets.names }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aws-compatible-storage-bootstrap
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap-storage
+          image: {{ .Values.awsCompatibleStorageBuckets.jobImage | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              export HOME=/tmp
+              pip install --no-cache-dir -q boto3
+              python3 - <<'PY'
+              import os
+              import time
+              from urllib.parse import urlparse
+              from urllib.request import urlopen
+
+              import boto3
+              from botocore.config import Config
+              from botocore.exceptions import ClientError
+
+              endpoint = "http://aws-compatible-storage:7480"
+              s3 = boto3.client(
+                  "s3",
+                  endpoint_url=endpoint,
+                  aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                  aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                  region_name="us-east-1",
+                  config=Config(s3={"addressing_style": "path"}),
+              )
+
+              for attempt in range(60):
+                  try:
+                      with urlopen("http://aws-compatible-storage:5000/api", timeout=5):
+                          break
+                  except Exception as error:
+                      if attempt == 59:
+                          raise
+                      print(f"Waiting for S4 UI: {error}", flush=True)
+                      time.sleep(5)
+
+              for attempt in range(60):
+                  try:
+                      existing = {item["Name"] for item in s3.list_buckets()["Buckets"]}
+                      break
+                  except Exception as error:
+                      if attempt == 59:
+                          raise
+                      print(f"Waiting for S3 API: {error}", flush=True)
+                      time.sleep(5)
+
+              for bucket in os.environ["BUCKETS"].split(","):
+                  if bucket not in existing:
+                      s3.create_bucket(Bucket=bucket)
+                      print(f"Created bucket {bucket}", flush=True)
+                  else:
+                      print(f"Bucket {bucket} already exists", flush=True)
+
+              sample_url = os.environ.get("SAMPLE_DOCUMENT_URL", "")
+              if sample_url:
+                  bucket = "documents"
+                  key = os.path.basename(urlparse(sample_url).path)
+                  try:
+                      s3.head_object(Bucket=bucket, Key=key)
+                      print(f"Sample document already exists at {bucket}/{key}", flush=True)
+                  except ClientError as error:
+                      code = error.response.get("Error", {}).get("Code")
+                      if code not in {"404", "NoSuchKey", "NotFound"}:
+                          raise
+                      with urlopen(sample_url, timeout=60) as response:
+                          s3.upload_fileobj(response, bucket, key)
+                      print(f"Uploaded sample document to {bucket}/{key}", flush=True)
+              PY
+          env:
+            - name: BUCKETS
+              value: {{ join "," .Values.awsCompatibleStorageBuckets.names | quote }}
+            - name: SAMPLE_DOCUMENT_URL
+              value: {{ .Values.awsCompatibleStorageBuckets.sampleDocumentUrl | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_SECRET_ACCESS_KEY
+{{- end }}

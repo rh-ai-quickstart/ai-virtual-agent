@@ -15,7 +15,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 1.1.18
+version: 1.1.19
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -36,9 +36,6 @@ dependencies:
   - name: llama-stack
     version: 0.8.6
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  - name: configure-pipeline
-    version: 0.5.10
-    repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   - name: ingestion-pipeline
     version: 0.7.9
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
@@ -46,3 +43,7 @@ dependencies:
     version: 0.5.5
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
     condition: oracle-db.enabled
+  - name: aws-compatible-storage
+    version: 0.1.0
+    repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
+    condition: aws-compatible-storage.enabled

@@ -1,0 +1,95 @@
+{{- if .Values.defaultIngestionPipeline.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: add-default-ingestion-pipeline
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "ai-virtual-agent.serviceAccountName" . }}
+      restartPolicy: OnFailure
+      containers:
+        - name: register-pipeline
+          image: {{ .Values.defaultIngestionPipeline.jobImage | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - python3
+            - -c
+            - |
+              import json
+              import os
+              import time
+              from urllib.request import Request, urlopen
+
+              ingestion = "http://{{ .Release.Name }}-ingestion-pipeline"
+              llamastack = "http://llamastack.{{ .Release.Namespace }}.svc.cluster.local:8321/v1/models"
+              token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+              for attempt in range(120):
+                  try:
+                      with urlopen(ingestion + "/ping", timeout=5):
+                          break
+                  except Exception as error:
+                      if attempt == 119:
+                          raise
+                      print(f"Waiting for ingestion service: {error}", flush=True)
+                      time.sleep(5)
+
+              with open(token_path, encoding="utf-8") as token_file:
+                  token = token_file.read().strip()
+              model_headers = {
+                  "X-Forwarded-User": os.environ["LLAMA_STACK_AUTH_USER"],
+                  "Authorization": f"Bearer {token}",
+              }
+              for attempt in range(120):
+                  try:
+                      request = Request(llamastack, headers=model_headers)
+                      with urlopen(request, timeout=10):
+                          break
+                  except Exception as error:
+                      if attempt == 119:
+                          raise
+                      print(f"Waiting for LlamaStack: {error}", flush=True)
+                      time.sleep(5)
+
+              pipeline = {
+                  "name": {{ .Values.defaultIngestionPipeline.name | quote }},
+                  "version": {{ .Values.defaultIngestionPipeline.version | quote }},
+                  "source": "S3",
+                  "embedding_model": {{ .Values.defaultIngestionPipeline.embeddingModel | quote }},
+                  "vector_store_name": {{ .Values.defaultIngestionPipeline.vectorStoreName | quote }},
+                  "access_key_id": os.environ["AWS_ACCESS_KEY_ID"],
+                  "secret_access_key": os.environ["AWS_SECRET_ACCESS_KEY"],
+                  "bucket_name": {{ .Values.defaultIngestionPipeline.bucket | quote }},
+                  "endpoint_url": {{ .Values.defaultIngestionPipeline.endpoint | quote }},
+                  "region": {{ .Values.defaultIngestionPipeline.region | quote }},
+              }
+              request = Request(
+                  ingestion + "/add",
+                  data=json.dumps(pipeline).encode("utf-8"),
+                  headers={"Accept": "application/json", "Content-Type": "application/json"},
+                  method="POST",
+              )
+              with urlopen(request, timeout=30) as response:
+                  print(response.read().decode("utf-8"), flush=True)
+          env:
+            - name: LLAMA_STACK_AUTH_USER
+              value: {{ .Values.defaultIngestionPipeline.authUser | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_SECRET_ACCESS_KEY
+{{- end }}

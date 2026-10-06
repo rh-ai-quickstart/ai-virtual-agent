@@ -279,6 +279,8 @@ make install-status NAMESPACE=your-namespace    # Check status
 make list-mcps                              # List available MCP servers
 ```
 
+The chart deploys **aws-compatible-storage (S4)** for attachments and knowledge-base documents. Its in-cluster S3 endpoint is `http://aws-compatible-storage:7480`; Helm creates the `attachments`, `documents`, and `mlpipeline` buckets. Set `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S4_AUTH_PASSWORD` in `.env` to override the demo defaults.
+
 > **Note**: All Makefile targets automatically load environment variables from a `.env` file in the repository root if it exists.
 
 ### Environment setup (.env)

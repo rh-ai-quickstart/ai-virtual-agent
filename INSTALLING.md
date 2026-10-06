@@ -42,7 +42,7 @@ graph TB
 
     subgraph "Storage Services"
         DB[(PostgreSQL + pgvector<br/>Service: pgvector)]
-        S3[(MinIO S3<br/>Service: minio)]
+        S3[(aws-compatible-storage (S4)<br/>S3 API: 7480)]
     end
 
     subgraph "AI Infrastructure"
@@ -65,6 +65,10 @@ graph TB
     KFP --> S3
     KFP --> LS
 ```
+
+The chart installs [**aws-compatible-storage (S4)**](https://github.com/rh-ai-quickstart/ai-architecture-charts/tree/main/aws-compatible-storage), which packages the [S4 runtime](https://github.com/rh-aiservices-bu/s4), with a 10Gi persistent volume. The internal S3 API is `http://aws-compatible-storage:7480`; the UI is available through its OpenShift Route. The S3 API Route stays disabled. A regular Helm Job creates the `attachments`, `documents`, and `mlpipeline` buckets and uploads the sample document into `documents`.
+
+The chart stores S3 credentials in `aws-compatible-storage-credentials`. Set `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S4_AUTH_PASSWORD` before installation to replace the demo credentials. The S4 UI username defaults to `admin`.
 
 ## Prerequisites
 
@@ -280,7 +284,7 @@ make uninstall NAMESPACE=ai-virtual-agent
 
 This will automatically clean up:
 - Helm chart and all deployed resources
-- Persistent Volume Claims (PVCs) for pgvector and MinIO
+- Persistent Volume Claims (PVCs) for pgvector and S4
 - Remaining pods in the namespace
 
 To completely remove the namespace:

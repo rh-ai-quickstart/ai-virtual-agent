@@ -162,20 +162,67 @@ pgvector:
   - name: ai_virtual_agent
     vectordb: false
 
-configure-pipeline:
-  minio:
-    secret:
-      user: minio_rag_user
-      password: minio_rag_password
-      host: minio
-      port: "9000"
+aws-compatible-storage:
+  enabled: true
+  fullnameOverride: aws-compatible-storage
+  image:
+    repository: quay.io/rh-aiservices-bu/s4
+    tag: "0.3.2"
+    pullPolicy: IfNotPresent
+  s3:
+    accessKeyId: s4admin
+    secretAccessKey: s4secret
+  auth:
+    enabled: true
+    username: admin
+    password: changeme
+  route:
+    enabled: true
+    s3Api:
+      enabled: false
+  storage:
+    data:
+      size: 10Gi
 
-      # Upload sample files to the minio bucket
-    sampleFileUpload:
-      enabled: true
-      bucket: documents
-      urls:
-      - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
+awsCompatibleStorageBuckets:
+  names:
+    - attachments
+    - documents
+    - mlpipeline
+  sampleDocumentUrl: https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
+  jobImage: registry.redhat.io/ubi9/python-311:latest
+
+attachmentsStorage:
+  endpoint: aws-compatible-storage:7480
+  bucket: attachments
+  region: us-east-1
+  secretName: aws-compatible-storage-credentials
+
+pipelineStorage:
+  host: aws-compatible-storage
+  port: "7480"
+  bucket: mlpipeline
+  scheme: http
+  secretName: aws-compatible-storage-credentials
+  accessKey: AWS_ACCESS_KEY_ID
+  secretKey: AWS_SECRET_ACCESS_KEY
+
+defaultIngestionPipeline:
+  enabled: false
+  authUser: ingestion-pipeline
+  embeddingModel: all-MiniLM-L6-v2
+  name: zippity-zoo-vector-db
+  version: "1.0"
+  vectorStoreName: zippity-zoo-vector-db
+  bucket: documents
+  endpoint: http://aws-compatible-storage:7480
+  region: us-east-1
+  jobImage: registry.redhat.io/ubi9/python-311:latest
+
+ingestion-pipeline:
+  authUser: ingestion-pipeline
+  defaultPipeline:
+    enabled: false
 
 oracle-db:
   enabled: false
@@ -327,7 +374,7 @@ mcp-servers:
 #         - "32"
 #         - --dtype
 #         - "bfloat16"
-          
+
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse

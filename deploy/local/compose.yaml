@@ -5,10 +5,10 @@
 # - LlamaStack AI service (always)
 # - Backend API (FastAPI) (always)
 # - Frontend (React/Vite) (always)
-# - MinIO object storage (optional, controlled by ENABLE_ATTACHMENTS)
+# - S4 object storage (optional, controlled by ENABLE_ATTACHMENTS)
 #
 # Environment Variables:
-#   ENABLE_ATTACHMENTS=true|false   # Enable/disable MinIO and attachment features
+#   ENABLE_ATTACHMENTS=true|false   # Enable/disable S4 and attachment features
 #   DISABLE_ATTACHMENTS=true|false  # Backend env var (set automatically)
 #   LOCAL_DEV_ENV_MODE=true|false   # Enable development mode (disables auth)
 #
@@ -19,7 +19,7 @@
 #   make compose-down                      # Stop all services
 #
 # Profiles:
-#   attachments - MinIO service (only started when ENABLE_ATTACHMENTS=true)
+#   attachments - S4 service (only started when ENABLE_ATTACHMENTS=true)
 #
 services:
   # Database service (existing, enhanced)
@@ -108,6 +108,11 @@ services:
       - LLAMASTACK_URL=${LLAMASTACK_URL:-http://llamastack:8321}
       - DEFAULT_INFERENCE_MODEL=${DEFAULT_INFERENCE_MODEL:-ollama/llama3.2:1b}
       - DISABLE_ATTACHMENTS=${DISABLE_ATTACHMENTS:-false}
+      - ATTACHMENTS_BUCKET_ENDPOINT=s4:7480
+      - ATTACHMENTS_BUCKET_ACCESS_KEY=${ATTACHMENTS_BUCKET_ACCESS_KEY:-s4admin}
+      - ATTACHMENTS_BUCKET_SECRET_KEY=${ATTACHMENTS_BUCKET_SECRET_KEY:-s4secret}
+      - ATTACHMENTS_BUCKET_NAME=${ATTACHMENTS_BUCKET_NAME:-attachments}
+      - ATTACHMENTS_BUCKET_REGION=${ATTACHMENTS_BUCKET_REGION:-us-east-1}
       - ENABLE_COVERAGE=${ENABLE_COVERAGE:-false}
       # LangGraph runner: use MaaS endpoint
       - LANGGRAPH_LLM_API_BASE=${LANGGRAPH_LLM_API_BASE:-https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1}
@@ -134,7 +139,7 @@ services:
         condition: service_healthy
       llamastack:
         condition: service_healthy
-      minio:
+      s4:
         condition: service_healthy
         required: false
     networks:
@@ -236,26 +241,27 @@ services:
       retries: 5
       start_period: 10s
 
-  # MinIO service for attachments (optional - use profile 'attachments')
-  minio:
-    image: quay.io/minio/minio:latest
-    container_name: minio-dev
+  # S4 service for attachments (optional - use profile 'attachments')
+  s4:
+    image: quay.io/rh-aiservices-bu/s4:0.3.2
+    container_name: s4-dev
     restart: unless-stopped
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio_rag_user}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio_rag_password}
+      - AWS_ACCESS_KEY_ID=${ATTACHMENTS_BUCKET_ACCESS_KEY:-s4admin}
+      - AWS_SECRET_ACCESS_KEY=${ATTACHMENTS_BUCKET_SECRET_KEY:-s4secret}
+      - UI_USERNAME=admin
+      - UI_PASSWORD=${S4_AUTH_PASSWORD:-changeme}
     ports:
-      - '${MINIO_PORT:-9000}:9000'
-      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+      - '${S4_S3_PORT:-7480}:7480'
+      - '${S4_UI_PORT:-5000}:5000'
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
+      - s4_data:/var/lib/ceph/radosgw
     networks:
       - ai-va-network
     profiles:
       - attachments
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/api || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -263,7 +269,7 @@ services:
 
 volumes:
   pgdata:
-  minio_data:
+  s4_data:
   ollama:
   llama:
   llamadist:

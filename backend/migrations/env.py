@@ -28,13 +28,12 @@ if not db_url_from_env:
         "(e.g., .env file, shell export)."
     )
 
-# If your DATABASE_URL is an async one (e.g., postgresql+asyncpg://)
-# Alembic typically uses a synchronous connection for migrations.
-# So, you might need to convert it.
-if db_url_from_env and db_url_from_env.startswith("postgresql+asyncpg://"):
-    db_url_from_env = db_url_from_env.replace(
-        "postgresql+asyncpg://", "postgresql://", 1
-    )
+# Alembic migrations use a synchronous connection. The image installs
+# psycopg2-binary, so explicitly select that driver for all PostgreSQL URLs.
+if db_url_from_env.startswith("postgresql"):
+    _, separator, remainder = db_url_from_env.partition("://")
+    if separator:
+        db_url_from_env = f"postgresql+psycopg2://{remainder}"
 
 
 config.set_main_option("sqlalchemy.url", db_url_from_env)

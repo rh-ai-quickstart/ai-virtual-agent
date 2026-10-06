@@ -40,5 +40,6 @@ venv
 backend/public/index.html
 backend/public/assets
 
-charts
+**/charts/*
+!deploy/cluster/helm/charts/aws-compatible-storage-0.1.0.tgz
 frontend/dist

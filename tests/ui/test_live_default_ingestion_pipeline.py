@@ -54,7 +54,7 @@ def _search_passages(output: str) -> str:
 def test_live_default_ingestion_pipeline_indexes_and_serves_seeded_document(
     page: Page, frontend_url: str
 ) -> None:
-    """Verify the installed default pipeline indexed its MinIO sample for RAG."""
+    """Verify the installed default pipeline indexed its S3 sample for RAG."""
     page.goto(f"{frontend_url}/", wait_until="domcontentloaded")
     profile = require_admin(page, frontend_url)
     model_name = live_model(page, frontend_url)

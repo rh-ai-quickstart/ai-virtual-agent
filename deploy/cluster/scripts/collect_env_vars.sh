@@ -110,9 +110,10 @@ POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rag_password}"
 POSTGRES_DBNAME="${POSTGRES_DBNAME:-rag_blueprint}"
 
-# MinIO configuration (use defaults, don't prompt)
-MINIO_USER="${MINIO_USER:-minio_rag_user}"
-MINIO_PASSWORD="${MINIO_PASSWORD:-minio_rag_password}"
+# S3 storage configuration (use local-demo defaults, don't prompt)
+S3_ACCESS_KEY_ID="${S3_ACCESS_KEY_ID:-s4admin}"
+S3_SECRET_ACCESS_KEY="${S3_SECRET_ACCESS_KEY:-s4secret}"
+S4_AUTH_PASSWORD="${S4_AUTH_PASSWORD:-changeme}"
 
 # Export all variables for use by calling scripts
 export HF_TOKEN
@@ -126,8 +127,9 @@ export MAAS_MODEL_NAME
 export POSTGRES_USER
 export POSTGRES_PASSWORD
 export POSTGRES_DBNAME
-export MINIO_USER
-export MINIO_PASSWORD
+export S3_ACCESS_KEY_ID
+export S3_SECRET_ACCESS_KEY
+export S4_AUTH_PASSWORD
 
 # Also output them in a format that can be sourced
 if [ "$1" = "--export" ]; then
@@ -142,8 +144,9 @@ if [ "$1" = "--export" ]; then
     echo "export POSTGRES_USER='$POSTGRES_USER'"
     echo "export POSTGRES_PASSWORD='$POSTGRES_PASSWORD'"
     echo "export POSTGRES_DBNAME='$POSTGRES_DBNAME'"
-    echo "export MINIO_USER='$MINIO_USER'"
-    echo "export MINIO_PASSWORD='$MINIO_PASSWORD'"
+    echo "export S3_ACCESS_KEY_ID='$S3_ACCESS_KEY_ID'"
+    echo "export S3_SECRET_ACCESS_KEY='$S3_SECRET_ACCESS_KEY'"
+    echo "export S4_AUTH_PASSWORD='$S4_AUTH_PASSWORD'"
 fi
 
 echo ""

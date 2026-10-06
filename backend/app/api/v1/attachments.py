@@ -5,6 +5,7 @@ import os
 import uuid
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -13,13 +14,11 @@ from ...core.feature_flags import is_attachments_feature_enabled
 
 logger = logging.getLogger(__name__)
 
-ATTACHMENTS_BUCKET_ENDPOINT = os.getenv("ATTACHMENTS_BUCKET_ENDPOINT", "minio:9000")
-ATTACHMENTS_BUCKET_ACCESS_KEY = os.getenv(
-    "ATTACHMENTS_BUCKET_ACCESS_KEY", "minio_rag_user"
+ATTACHMENTS_BUCKET_ENDPOINT = os.getenv(
+    "ATTACHMENTS_BUCKET_ENDPOINT", "aws-compatible-storage:7480"
 )
-ATTACHMENTS_BUCKET_SECRET_KEY = os.getenv(
-    "ATTACHMENTS_BUCKET_SECRET_KEY", "minio_rag_password"
-)
+ATTACHMENTS_BUCKET_ACCESS_KEY = os.getenv("ATTACHMENTS_BUCKET_ACCESS_KEY", "s4admin")
+ATTACHMENTS_BUCKET_SECRET_KEY = os.getenv("ATTACHMENTS_BUCKET_SECRET_KEY", "s4secret")
 ATTACHMENTS_BUCKET_NAME = os.getenv("ATTACHMENTS_BUCKET_NAME", "attachments")
 ATTACHMENTS_BUCKET_REGION = os.getenv("ATTACHMENTS_BUCKET_REGION", "us-east-1")
 
@@ -34,17 +33,19 @@ def _get_s3():
     """Return lazily initialized (client, resource, bucket).
 
     This defers any network interaction until first use, making unit tests
-    independent from a running MinIO/S3 service.
+    independent from a running S3-compatible service.
     """
     global _s3_client, _s3_resource, _bucket, _bucket_initialized
 
     if _s3_client is None or _s3_resource is None or _bucket is None:
+        s3_config = Config(s3={"addressing_style": "path"})
         client = boto3.client(
             "s3",
             endpoint_url=f"http://{ATTACHMENTS_BUCKET_ENDPOINT}",
             aws_access_key_id=ATTACHMENTS_BUCKET_ACCESS_KEY,
             aws_secret_access_key=ATTACHMENTS_BUCKET_SECRET_KEY,
             region_name=ATTACHMENTS_BUCKET_REGION,
+            config=s3_config,
         )
 
         resource = boto3.resource(
@@ -53,6 +54,7 @@ def _get_s3():
             aws_access_key_id=ATTACHMENTS_BUCKET_ACCESS_KEY,
             aws_secret_access_key=ATTACHMENTS_BUCKET_SECRET_KEY,
             region_name=ATTACHMENTS_BUCKET_REGION,
+            config=s3_config,
         )
 
         bucket_obj = resource.Bucket(ATTACHMENTS_BUCKET_NAME)

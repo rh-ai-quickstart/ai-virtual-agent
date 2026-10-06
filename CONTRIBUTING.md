@@ -77,7 +77,7 @@ This is the recommended setup for active development with fast iteration cycles.
 
 #### 1. Database Setup
 
-Start PostgreSQL and MinIO using Docker Compose:
+Start PostgreSQL and S4 using the local compose setup:
 
 ```bash
 podman compose --file deploy/local/compose.yaml up --detach
@@ -191,17 +191,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  s4:
+    image: quay.io/rh-aiservices-bu/s4:0.3.2
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      AWS_ACCESS_KEY_ID: s4admin
+      AWS_SECRET_ACCESS_KEY: s4secret
+      UI_USERNAME: admin
+      UI_PASSWORD: changeme
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "7480:7480"
+      - "5000:5000"
     volumes:
-      - minio_data:/data
+      - s4_data:/var/lib/ceph/radosgw
 
   backend:
     build:
@@ -210,6 +211,9 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://admin:password@postgres:5432/ai_virtual_agent
       LLAMASTACK_URL: http://llamastack:8321
+      ATTACHMENTS_BUCKET_ENDPOINT: s4:7480
+      ATTACHMENTS_BUCKET_ACCESS_KEY: s4admin
+      ATTACHMENTS_BUCKET_SECRET_KEY: s4secret
       LOG_LEVEL: DEBUG
     ports:
       - "8000:8000"
@@ -241,7 +245,7 @@ services:
 
 volumes:
   postgres_data:
-  minio_data:
+  s4_data:
   llamastack_data:
 ```
 
@@ -284,8 +288,8 @@ When running locally, services are available at:
 - **ReDoc**: http://localhost:8000/redoc
 - **LlamaStack**: http://localhost:8321 (if running locally)
 - **PostgreSQL**: localhost:5432
-- **MinIO Console**: http://localhost:9001 (admin/minioadmin123)
-- **MinIO S3**: http://localhost:9000
+- **S4 UI**: http://localhost:5000
+- **S3 API**: http://localhost:7480
 
 ### Container Development
 
@@ -300,7 +304,7 @@ The development setup provides these endpoints:
 | Frontend | http://localhost:5173 | http://frontend:5173 | React development server |
 | Backend | http://localhost:8000 | http://backend:8000 | FastAPI application |
 | Database | localhost:5432 | postgres:5432 | PostgreSQL + pgvector |
-| Object Storage | localhost:9000 | minio:9000 | MinIO S3-compatible storage |
+| Object Storage | localhost:7480 | s4:7480 | S4 S3-compatible storage |
 | LlamaStack | localhost:8321 | llamastack:8321 | AI model serving |
 
 ## Development Workflow
@@ -581,8 +585,8 @@ Before making significant changes, familiarize yourself with the system architec
 # Database logs
 podman logs ai-virtual-agent-postgres-1
 
-# MinIO logs
-podman logs ai-virtual-agent-minio-1
+# S4 logs
+podman logs s4-dev
 ```
 
 **Container Development:**
@@ -614,9 +618,9 @@ SECRET_KEY=dev-secret-key
 CORS_ORIGINS=["http://localhost:5173"]
 
 # Object Storage (for knowledge base features)
-MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin123
+ATTACHMENTS_BUCKET_ENDPOINT=localhost:7480
+ATTACHMENTS_BUCKET_ACCESS_KEY=s4admin
+ATTACHMENTS_BUCKET_SECRET_KEY=s4secret
 ```
 
 Frontend environment (`.env.local`):

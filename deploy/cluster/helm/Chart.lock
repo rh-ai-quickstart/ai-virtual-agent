@@ -11,14 +11,14 @@ dependencies:
 - name: llama-stack
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.8.6
-- name: configure-pipeline
-  repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.5.10
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.7.9
 - name: oracle-db
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.5.5
-digest: sha256:8ef00cd5affa8e10a0e9c42d03a4d65210e688aac352a172c52ccc4f1545ac3b
-generated: "2026-08-27T15:02:15.042966295-07:00"
+- name: aws-compatible-storage
+  repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
+  version: 0.1.0
+digest: sha256:882b071f48d1207c3e6f7057e06b864dd843d91d5853796afc8fef23c6c5bb0f
+generated: "2026-10-06T12:22:39.801709334-04:00"

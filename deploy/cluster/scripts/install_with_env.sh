@@ -33,9 +33,10 @@ build_helm_cmd() {
     cmd_args+=("--set" "pgvector.secret.password=$POSTGRES_PASSWORD")
     cmd_args+=("--set" "pgvector.secret.dbname=$POSTGRES_DBNAME")
 
-    # minio args
-    cmd_args+=("--set" "minio.secret.user=$MINIO_USER")
-    cmd_args+=("--set" "minio.secret.password=$MINIO_PASSWORD")
+    # S4 object storage credentials
+    cmd_args+=("--set-string" "aws-compatible-storage.s3.accessKeyId=$S3_ACCESS_KEY_ID")
+    cmd_args+=("--set-string" "aws-compatible-storage.s3.secretAccessKey=$S3_SECRET_ACCESS_KEY")
+    cmd_args+=("--set-string" "aws-compatible-storage.auth.password=$S4_AUTH_PASSWORD")
 
     # llm-service args
     cmd_args+=("--set" "llm-service.secret.hf_token=$HF_TOKEN")
@@ -78,13 +79,11 @@ build_helm_cmd() {
     fi
 
     # ingestion args
-    cmd_args+=("--set" "configure-pipeline.notebook.create=false")
     if [ "${E2E_OPENSHIFT:-false}" = "true" ]; then
         # E2E validates the chart's seeded S3 ingestion pipeline and its indexed data.
-        cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=true")
-    else
-        cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
+        cmd_args+=("--set" "defaultIngestionPipeline.enabled=true")
     fi
+    cmd_args+=("--set" "defaultIngestionPipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
     cmd_args+=("--set" "ingestion-pipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
 
     # seed admin user args

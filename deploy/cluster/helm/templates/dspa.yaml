@@ -1,0 +1,39 @@
+apiVersion: datasciencepipelinesapplications.opendatahub.io/v1
+kind: DataSciencePipelinesApplication
+metadata:
+  name: dspa
+spec:
+  apiServer:
+    artifactSignedURLExpirySeconds: 60
+    caBundleFileMountPath: ''
+    caBundleFileName: ''
+    deploy: true
+    enableOauth: true
+    enableSamplePipeline: false
+  database:
+    disableHealthCheck: false
+    mariaDB:
+      deploy: true
+      pipelineDBName: mlpipeline
+      pvcSize: 10Gi
+      username: mlpipeline
+  dspVersion: v2
+  objectStorage:
+    disableHealthCheck: false
+    enableExternalRoute: false
+    externalStorage:
+      host: {{ printf "%s.%s.svc.cluster.local" .Values.pipelineStorage.host .Release.Namespace | quote }}
+      port: {{ .Values.pipelineStorage.port | quote }}
+      bucket: {{ .Values.pipelineStorage.bucket | quote }}
+      scheme: {{ .Values.pipelineStorage.scheme | quote }}
+      s3CredentialsSecret:
+        secretName: {{ .Values.pipelineStorage.secretName | quote }}
+        accessKey: {{ .Values.pipelineStorage.accessKey | quote }}
+        secretKey: {{ .Values.pipelineStorage.secretKey | quote }}
+  persistenceAgent:
+    deploy: true
+    numWorkers: 2
+  podToPodTLS: true
+  scheduledWorkflow:
+    cronScheduleTimezone: UTC
+    deploy: true

@@ -30,8 +30,8 @@ That's it! All services will be running:
 - **Backend**: http://localhost:8000 (with hot reload)
 - **Database**: postgresql://admin:password@localhost:5432/ai_virtual_agent
 - **LlamaStack**: http://localhost:8321
-- **MinIO**: http://localhost:9000 (for attachments, optional)
-- **MinIO Console**: http://localhost:9001 (admin: minio_rag_user/minio_rag_password)
+- **S4 S3 API**: http://localhost:7480 (for attachments, optional)
+- **S4 UI**: http://localhost:5000 (admin / `S4_AUTH_PASSWORD`)
 
 ### Stop Development Environment
 
@@ -51,7 +51,7 @@ make compose-down
 2. **LlamaStack** - AI model server with Ollama integration
 3. **Backend** - FastAPI server with hot reload
 4. **Frontend** - Vite dev server with hot reload
-5. **MinIO** - Object storage for attachments (optional, enabled by default)
+5. **S4** - S3-compatible object storage for attachments (optional, enabled by default)
 
 ### Environment Configuration
 
@@ -66,7 +66,7 @@ cp .env.example .env
 Key development environment variables:
 
 - `LOCAL_DEV_ENV_MODE=true` - **Development mode** (bypasses authentication)
-- `ENABLE_ATTACHMENTS=true` - **Enable MinIO** and attachment features
+- `ENABLE_ATTACHMENTS=true` - **Enable S4** and attachment features
 - `DISABLE_ATTACHMENTS=false` - Backend flag (set automatically)
 
 #### Optional Configurations
@@ -86,7 +86,7 @@ Default configuration:
 - **Backend**: FastAPI on port 8000 with `LOCAL_DEV_ENV_MODE=true`
 - **Frontend**: Vite dev server on port 5173
 - **LlamaStack**: AI server on port 8321
-- **MinIO**: Object storage on port 9000 with console on port 9001
+- **S4**: S3 API on port 7480 with UI on port 5000
 
 ### Development Features
 

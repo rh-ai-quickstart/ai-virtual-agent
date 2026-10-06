@@ -42,10 +42,10 @@ ENV_FILE="$PROJECT_ROOT/.env"
 ENABLE_ATTACHMENTS=${ENABLE_ATTACHMENTS:-true}
 if [ "$ENABLE_ATTACHMENTS" = "true" ]; then
     COMPOSE_PROFILES="--profile attachments"
-    echo "📎 Attachments enabled - MinIO will be started"
+    echo "📎 Attachments enabled - S4 will be started"
 else
     COMPOSE_PROFILES=""
-    echo "📎 Attachments disabled - MinIO will be skipped"
+    echo "📎 Attachments disabled - S4 will be skipped"
     export DISABLE_ATTACHMENTS=true
 fi
 
@@ -59,7 +59,7 @@ DEV_CONTAINERS=(
     postgresql-dev ollama-dev llamastack-dev
     ai-va-backend-dev ai-va-frontend-dev
     travel-research-mcp-dev hotel-mcp-dev flight-mcp-dev
-    minio-dev
+    s4-dev
 )
 for ctr in "${DEV_CONTAINERS[@]}"; do
     podman rm -f "$ctr" 2>/dev/null || true
@@ -87,8 +87,8 @@ echo "   Backend API: http://localhost:8000"
 echo "   Database:    postgresql://admin:password@localhost:5432/ai_virtual_agent"
 echo "   LlamaStack:  http://localhost:8321"
 if [ "$ENABLE_ATTACHMENTS" = "true" ]; then
-    echo "   MinIO:       http://localhost:9000"
-    echo "   MinIO Console: http://localhost:9001 (admin: minio_rag_user/minio_rag_password)"
+    echo "   S4 S3 API:   http://localhost:7480"
+    echo "   S4 UI:       http://localhost:5000"
 fi
 echo ""
 echo "📚 Useful commands:"

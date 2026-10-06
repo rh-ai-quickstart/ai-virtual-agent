@@ -116,6 +116,22 @@ spec:
               value: 'postgresql+asyncpg://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)'
             - name: LLAMASTACK_URL
               value: '{{ .Values.llama_stack_url }}'
+            - name: ATTACHMENTS_BUCKET_ENDPOINT
+              value: {{ .Values.attachmentsStorage.endpoint | quote }}
+            - name: ATTACHMENTS_BUCKET_NAME
+              value: {{ .Values.attachmentsStorage.bucket | quote }}
+            - name: ATTACHMENTS_BUCKET_REGION
+              value: {{ .Values.attachmentsStorage.region | quote }}
+            - name: ATTACHMENTS_BUCKET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: ATTACHMENTS_BUCKET_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachmentsStorage.secretName }}
+                  key: AWS_SECRET_ACCESS_KEY
             {{- if .Values.e2e.enabled }}
             - name: LOCAL_DEV_ENV_MODE
               value: "true"
