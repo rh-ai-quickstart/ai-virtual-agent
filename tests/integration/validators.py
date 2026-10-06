@@ -222,18 +222,29 @@ def validate_message_chronological_order(response, expected_sequence: list):
                 ts1 <= ts2
             ), f"Messages not in chronological order: message {i+1} timestamp {ts1} > message {i+2} timestamp {ts2}"
 
+        # Compare message text without terminal punctuation. Model output may
+        # include or omit a final period while preserving the same answer.
+        def normalize_text(text):
+            return " ".join(str(text).strip().rstrip(".!?").split())
+
+        normalized_actual_texts = [
+            normalize_text(msg["text"]) for msg in actual_messages
+        ]
+
         # Verify all expected messages are present (order-independent)
         actual_texts = [msg["text"] for msg in actual_messages]
         for expected_text in expected_sequence:
             assert (
-                expected_text in actual_texts
+                normalize_text(expected_text) in normalized_actual_texts
             ), f"Expected message '{expected_text}' not found in response"
 
         # Verify no unexpected messages
-        for actual_text in actual_texts:
-            assert (
-                actual_text in expected_sequence
-            ), f"Unexpected message '{actual_text}' found in response"
+        for actual_text, normalized_actual_text in zip(
+            actual_texts, normalized_actual_texts
+        ):
+            assert normalized_actual_text in [
+                normalize_text(text) for text in expected_sequence
+            ], f"Unexpected message '{actual_text}' found in response"
 
         print(
             f"✓ Message chronological order validation passed: "
@@ -910,6 +921,30 @@ def validate_llms_response(response, required_models: list[str] | None = None):
             ), f"Required model '{name}' not found in {sorted(returned)}"
 
     print(f"✓ LLMs response validation passed: {len(models)} models")
+    return True
+
+
+def validate_providers_response(response):
+    """Validate the provider listing without assuming a specific deployment."""
+    import json
+
+    if hasattr(response, "json"):
+        providers = response.json()
+    else:
+        providers = json.loads(response.text)
+
+    assert isinstance(providers, list), f"Expected list, got {type(providers)}"
+    assert providers, "Expected at least one provider"
+    for i, provider in enumerate(providers):
+        assert isinstance(provider, dict), f"Provider item {i} is not an object"
+        assert provider.get("provider_id"), f"Provider item {i} missing provider_id"
+        assert provider.get("provider_type"), f"Provider item {i} missing provider_type"
+        assert provider.get("api"), f"Provider item {i} missing api"
+    assert any(
+        p.get("api") == "inference" for p in providers
+    ), "No inference provider found"
+
+    print(f"✓ Providers response validation passed: {len(providers)} providers")
     return True
 
 

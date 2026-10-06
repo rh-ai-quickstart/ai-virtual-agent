@@ -57,39 +57,52 @@ prompt_for_optional_value() {
 echo "🔧 Collecting environment variables for AI Virtual Agent deployment..."
 echo ""
 
-# Hugging Face Token (required)
-HF_TOKEN=$(prompt_for_value "HF_TOKEN" "Enter Hugging Face Token")
+# This E2E path uses a remote inference endpoint, so it does not need a real
+# Hugging Face token or optional external search API keys.
+if [ "${E2E_OPENSHIFT:-false}" = "true" ]; then
+    HF_TOKEN="${HF_TOKEN:-e2e-remote-model-unused}"
+    TAVILY_API_KEY="${TAVILY_API_KEY:-}"
+    SERPAPI_API_KEY="${SERPAPI_API_KEY:-}"
+    MAAS_API_BASE="${MAAS_API_BASE:-}"
+    MAAS_API_KEY="${MAAS_API_KEY:-}"
+    MAAS_MODEL_NAME="${MAAS_MODEL_NAME:-}"
+else
+    # Hugging Face Token (required for locally deployed models)
+    HF_TOKEN=$(prompt_for_value "HF_TOKEN" "Enter Hugging Face Token")
+fi
 
 # Admin user credentials (required for deployment)
 ADMIN_USERNAME=$(prompt_for_value "ADMIN_USERNAME" "Enter admin user name")
 ADMIN_EMAIL=$(prompt_for_value "ADMIN_EMAIL" "Enter admin user email")
 
-# Tavily API Key (optional but recommended) - always show info
-echo ""
-echo "💡 Tavily Search API Key"
-echo "     Without a key, web search capabilities will be disabled in your AI agents."
-echo "     To enable web search, obtain a key from https://tavily.com/"
-echo ""
-TAVILY_API_KEY=$(prompt_for_value "TAVILY_API_KEY" "Enter Tavily API Key now (or press Enter to continue without web search)" "")
+if [ "${E2E_OPENSHIFT:-false}" != "true" ]; then
+    # Tavily API Key (optional but recommended)
+    echo ""
+    echo "💡 Tavily Search API Key"
+    echo "     Without a key, web search capabilities will be disabled in your AI agents."
+    echo "     To enable web search, obtain a key from https://tavily.com/"
+    echo ""
+    TAVILY_API_KEY=$(prompt_for_value "TAVILY_API_KEY" "Enter Tavily API Key now (or press Enter to continue without web search)" "")
 
-# SerpApi API Key (optional, enables hotel and flight search in vacation planner)
-echo ""
-echo "💡 SerpApi API Key"
-echo "     Without a key, hotel and flight search will be disabled in vacation planner agents."
-echo "     To enable, obtain a key from https://serpapi.com/"
-echo ""
-SERPAPI_API_KEY=$(prompt_for_value "SERPAPI_API_KEY" "Enter SerpApi API Key now (or press Enter to skip)" "")
+    # SerpApi API Key (optional, enables hotel and flight search in vacation planner)
+    echo ""
+    echo "💡 SerpApi API Key"
+    echo "     Without a key, hotel and flight search will be disabled in vacation planner agents."
+    echo "     To enable, obtain a key from https://serpapi.com/"
+    echo ""
+    SERPAPI_API_KEY=$(prompt_for_value "SERPAPI_API_KEY" "Enter SerpApi API Key now (or press Enter to skip)" "")
 
-# MaaS (Model as a Service) configuration for LangGraph / CrewAI runners
-echo ""
-echo "💡 MaaS Configuration (optional)"
-echo "     Set these to point LangGraph and CrewAI runners at an external model endpoint"
-echo "     instead of the local LlamaStack inference. Leave blank to use LlamaStack."
-echo ""
-MAAS_API_BASE=$(prompt_for_value "MAAS_API_BASE" "Enter MaaS API base URL (or press Enter to skip)" "")
-if [ -n "$MAAS_API_BASE" ]; then
-    MAAS_API_KEY=$(prompt_for_value "MAAS_API_KEY" "Enter MaaS API key" "")
-    MAAS_MODEL_NAME=$(prompt_for_value "MAAS_MODEL_NAME" "Enter MaaS model name" "")
+    # MaaS (Model as a Service) configuration for LangGraph / CrewAI runners
+    echo ""
+    echo "💡 MaaS Configuration (optional)"
+    echo "     Set these to point LangGraph and CrewAI runners at an external model endpoint"
+    echo "     instead of the local LlamaStack inference. Leave blank to use LlamaStack."
+    echo ""
+    MAAS_API_BASE=$(prompt_for_value "MAAS_API_BASE" "Enter MaaS API base URL (or press Enter to skip)" "")
+    if [ -n "$MAAS_API_BASE" ]; then
+        MAAS_API_KEY=$(prompt_for_value "MAAS_API_KEY" "Enter MaaS API key" "")
+        MAAS_MODEL_NAME=$(prompt_for_value "MAAS_MODEL_NAME" "Enter MaaS model name" "")
+    fi
 fi
 
 # Database configuration (use defaults, don't prompt)
