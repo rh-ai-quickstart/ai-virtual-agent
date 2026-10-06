@@ -111,12 +111,22 @@ if [[ "$RUN_INTEGRATION" == true ]]; then
 
     echo "🚀 Running integration tests..."
 
-    if [[ -n "$SPECIFIC_TESTS" ]]; then
+    if [[ "${TAVERN_SERIAL_TESTS:-false}" == "true" \
+        && -z "$SPECIFIC_TESTS" ]]; then
+        # Tavern scenarios share default template-agent names. Run them one at a
+        # time in cluster E2E, then keep xdist for Python integration tests.
+        run_pytest "tests/integration/test_*.tavern.yaml" "" "pytest -n 0"
+        run_pytest "tests/integration/test_*.py" "" "$PYTEST_INTEG_CMD"
+    elif [[ -n "$SPECIFIC_TESTS" ]]; then
         run_pytest "$SPECIFIC_TESTS" "" "$PYTEST_INTEG_CMD"
     else
         run_pytest "tests/integration/" "" "$PYTEST_INTEG_CMD"
     fi
     echo "✅ Integration tests completed!"
+
+    echo "🎭 Running Playwright UI tests..."
+    ./tests/ui/run_ui_tests.sh
+    echo "✅ UI tests completed!"
 
     # Extract coverage via HTTP
     echo "📊 Extracting integration coverage..."

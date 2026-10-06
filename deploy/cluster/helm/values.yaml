@@ -119,6 +119,12 @@ pgSecret: pgvector
 
 llama_stack_url: http://llamastack:8321
 
+# Enabled only by `make -C deploy/cluster install-e2e-openshift` in its isolated test namespace.
+# Gives the integration suite its local development identity without changing
+# the authentication defaults for normal installations.
+e2e:
+  enabled: false
+
 # Runner LLM Configuration (for LangGraph and CrewAI direct-to-model inference)
 # When set, these bypass LlamaStack and point runners at an external MaaS endpoint.
 runners:

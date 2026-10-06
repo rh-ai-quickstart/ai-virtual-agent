@@ -13,12 +13,20 @@ stages:
         content-type: application/json
       verify_response_with:
         - function: tests.integration.validators:validate_llms_response
-          extra_kwargs:
-            required_models:
-              - "ollama/llama3.2:1b"
 ---
 test_name: Test Virtual Agents API Endpoint
 stages:
+  - name: Get an available model
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      save:
+        json:
+          model_name: "[0].model_name"
   - name: Test POST /api/v1/virtual_agents
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
@@ -28,7 +36,7 @@ stages:
       json:
         name: "Test Assistant"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b"
+        model_name: "{model_name}"
         input_shields: []
         output_shields: []
         knowledge_base_ids: []
@@ -61,7 +69,7 @@ stages:
         name: "Test Assistant"
         runner_type: "llamastack"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b"
+        model_name: "{model_name}"
         input_shields: []
         output_shields: []
         temperature: null
@@ -97,44 +105,5 @@ stages:
         Accept: application/json
     response:
       status_code: 200
-      json:
-        - provider_id: "ollama"
-          provider_type: "remote::ollama"
-          config:
-            base_url: "http://ollama:11434/v1"
-          api: "inference"
-        - provider_id: "llama-guard"
-          provider_type: "inline::llama-guard"
-          config:
-            excluded_categories: []
-          api: "safety"
-        - provider_id: "meta-reference"
-          provider_type: "inline::meta-reference"
-          config:
-            persistence:
-              agent_state:
-                namespace: "agents"
-                backend: "kv_default"
-              responses:
-                table_name: "responses"
-                backend: "sql_default"
-                max_write_queue_size: 10000
-                num_writers: 4
-          api: "agents"
-        - provider_id: "model-context-protocol"
-          provider_type: "remote::model-context-protocol"
-          config: {}
-          api: "tool_runtime"
-        - provider_id: "tavily-search"
-          provider_type: "remote::tavily-search"
-          config:
-            api_key: !anystr
-          api: "tool_runtime"
-        - provider_id: "meta-reference-files"
-          provider_type: "inline::localfs"
-          config:
-            storage_dir: !anystr
-            metadata_store:
-              table_name: "files_metadata"
-              backend: "sql_default"
-          api: "files"
+      verify_response_with:
+        - function: tests.integration.validators:validate_providers_response

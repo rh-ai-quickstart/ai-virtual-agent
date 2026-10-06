@@ -2,7 +2,8 @@
 # Run `make help` to see available targets.
 
 .PHONY: help install install-help install-status deps uninstall install-namespace list-models list-mcps \
-       build-mcp-images push-mcp-images
+       build-mcp-images push-mcp-images install-e2e-openshift uninstall-e2e-openshift \
+       test-unit test-int test-all
 
 # -----------------------------------------------------------------------------
 # Helper
@@ -12,7 +13,7 @@ help: ## Show help for helm deployment targets
 	@echo "==========================================="
 	@echo ""
 	@echo "☸️  Deployment Commands:"
-	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-mcp-images|push-mcp-images):.*?## ' $(MAKEFILE_LIST) | \
+	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-mcp-images|push-mcp-images|install-e2e-openshift|uninstall-e2e-openshift|test-unit|test-int|test-all):.*?## ' $(MAKEFILE_LIST) | \
 		sed -e 's/^/  /' -e 's/:.*## / - /'
 	@echo ""
 	@echo "For detailed deployment help, run: make install-help"
@@ -31,8 +32,18 @@ MINIO_PASSWORD ?= minio_rag_password
 HF_TOKEN ?=
 ORACLE ?= false
 AI_VIRTUAL_AGENT_CHART := helm
-AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
+AI_VIRTUAL_AGENT_RELEASE ?= ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
+
+# Isolated OpenShift E2E deployment and test configuration
+E2E_NAMESPACE ?= $(if $(strip $(NAMESPACE)),$(NAMESPACE),ai-virtual-agent-e2e)
+LLM_URL ?=
+LLM_ID ?=
+LLM_API_TOKEN ?=
+ADMIN_USERNAME ?= e2e-admin
+ADMIN_EMAIL ?= e2e-admin@example.invalid
+E2E_BACKEND_PORT ?= 18000
+E2E_LLAMASTACK_PORT ?= 18321
 
 # Ingestion pipeline configuration
 SOURCE ?= S3
@@ -140,6 +151,65 @@ uninstall: ## Uninstall deployment and clean up resources
 	@echo "If you want to completely remove the namespace, run: oc delete project $(NAMESPACE)"
 	@echo "Remaining resources in namespace $(NAMESPACE):"
 	@$(MAKE) install-status NAMESPACE=$(NAMESPACE)
+
+# ----------------------------------------------------------------------------
+# OpenShift E2E setup and tests
+# ----------------------------------------------------------------------------
+install-e2e-openshift: ## Install an isolated OpenShift deployment for integration tests
+	@if [ -z "$(strip $(LLM))" ]; then \
+		echo "LLM is required (the model key to enable in the chart)."; \
+		exit 2; \
+	fi
+	@if [ -z "$(strip $(LLM_URL))" ]; then \
+		echo "LLM_URL is required (an OpenAI-compatible inference endpoint ending in /v1)."; \
+		echo "Example: make -C deploy/cluster install-e2e-openshift LLM_URL=https://host.example.com/v1 LLM_ID=my-model"; \
+		exit 2; \
+	fi
+	@if [ -z "$(strip $(LLM_ID))" ]; then \
+		echo "LLM_ID is required (the model identifier served by LLM_URL)."; \
+		exit 2; \
+	fi
+	@if [ "$(LLM)" = "remote-llm" ]; then \
+		echo "LLM must use a model key other than the provider-only remote-llm key."; \
+		exit 2; \
+	fi
+	@command -v oc >/dev/null || { echo "oc is required"; exit 2; }
+	@command -v helm >/dev/null || { echo "helm is required"; exit 2; }
+	@E2E_OPENSHIFT=true $(MAKE) install \
+		NAMESPACE="$(E2E_NAMESPACE)" \
+		LLM="$(LLM)" \
+		LLM_ID="$(LLM_ID)" \
+		LLM_URL="$(LLM_URL)" \
+		LLM_API_TOKEN="$(LLM_API_TOKEN)" \
+		HF_TOKEN="$(HF_TOKEN)" \
+		AI_VIRTUAL_AGENT_RELEASE="$(AI_VIRTUAL_AGENT_RELEASE)" \
+		ADMIN_USERNAME="$(ADMIN_USERNAME)" \
+		ADMIN_EMAIL="$(ADMIN_EMAIL)"
+	@./scripts/e2e_openshift.sh start \
+		"$(E2E_NAMESPACE)" "$(AI_VIRTUAL_AGENT_RELEASE)" \
+		"$(E2E_BACKEND_PORT)" "$(E2E_LLAMASTACK_PORT)"
+	@echo ""
+	@echo "E2E OpenShift deployment is ready in namespace $(E2E_NAMESPACE)."
+	@echo "Port-forwards are running. Run: make -C deploy/cluster test-int"
+	@echo "This test-only install enables LOCAL_DEV_ENV_MODE; do not use it for production."
+
+uninstall-e2e-openshift: ## Stop E2E port-forwards and uninstall the OpenShift test deployment
+	@./scripts/e2e_openshift.sh stop
+	@$(MAKE) uninstall \
+		NAMESPACE="$(E2E_NAMESPACE)" \
+		AI_VIRTUAL_AGENT_RELEASE="$(AI_VIRTUAL_AGENT_RELEASE)"
+
+test-unit: ## Run unit tests using local test targets
+	@$(MAKE) -C ../local test-unit
+
+test-int: ## Run integration and browser tests with uv-managed Python dependencies
+	@command -v uv >/dev/null || { echo "uv is required to run integration tests"; exit 2; }
+	@TAVERN_SERIAL_TESTS=true \
+		uv run --isolated --no-project --with-requirements ../../tests/requirements.txt -- \
+		./scripts/e2e_openshift.sh test
+
+test-all: ## Run unit and integration tests using local test targets
+	@$(MAKE) -C ../local test-all
 
 # -----------------------------------------------------------------------------
 # MCP Server Images

@@ -203,6 +203,18 @@ stages:
 ---
 test_name: Test Virtual Agent API Error Handling
 stages:
+  - name: Get an available model for the valid agent request
+    request:
+      url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/llama_stack/llms"
+      method: GET
+      headers:
+        Accept: application/json
+    response:
+      status_code: 200
+      save:
+        json:
+          available_model: "[0].model_name"
+
   - name: Test create agent with missing OAuth headers
     request:
       url: "{tavern.env_vars.TEST_BACKEND_URL}/api/v1/virtual_agents/"
@@ -214,7 +226,7 @@ stages:
       json:
         name: "Test Agent {tavern.env_vars.TAVERN_UNIQUE}"
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b"
+        model_name: "{available_model}"
         input_shields: []
         output_shields: []
         knowledge_base_ids: []
@@ -236,7 +248,7 @@ stages:
       json:
         # Missing name field
         prompt: "You are a helpful assistant."
-        model_name: "ollama/llama3.2:1b"
+        model_name: "{available_model}"
     response:
       status_code: 422
       json:
