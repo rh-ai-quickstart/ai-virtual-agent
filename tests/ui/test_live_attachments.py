@@ -2,10 +2,12 @@
 
 import uuid
 
+import pytest
 from live_test_utils import delete_agent, require_admin
 from playwright.sync_api import Page
 
 
+@pytest.mark.e2e_only
 def test_live_attachment_storage_and_session_cleanup_without_inference(
     page: Page, frontend_url: str
 ) -> None:
