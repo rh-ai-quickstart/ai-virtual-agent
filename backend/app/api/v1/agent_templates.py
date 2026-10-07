@@ -26,9 +26,7 @@ from ...core.auth import is_local_dev_mode
 from ...core.template_loader import (
     get_suites_by_category as get_suites_by_category_util,
 )
-from ...core.template_loader import (
-    load_all_templates_from_directory,
-)
+from ...core.template_loader import load_all_templates_from_directory
 from ...crud.agent_templates import agent_template
 from ...crud.knowledge_bases import knowledge_bases
 from ...crud.virtual_agents import virtual_agents
