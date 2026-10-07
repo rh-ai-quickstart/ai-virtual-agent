@@ -23,6 +23,13 @@ class _MockModel(BaseModel):
     type: str  # echoed back in the response (same as model_type)
 
 
+class _MockModelV06(BaseModel):
+    """Model shape returned by the LlamaStack 0.6.1 client."""
+
+    id: str
+    custom_metadata: dict[str, object]
+
+
 class _MockVectorStore(BaseModel):
     """Minimal representation of a LlamaStack *vector DB* (knowledge base)."""
 
@@ -52,7 +59,7 @@ class _MockLlamaClient:
 
     def __init__(
         self,
-        models: List[_MockModel],
+        models: List[object],
         vector_stores: List[_MockVectorStore],
         toolgroups: List[_MockToolGroup],
     ):
@@ -211,9 +218,29 @@ def test_get_safety_models_filters_correctly(client):
     ]
 
 
-def test_get_embedding_models_filters_correctly(client):
-    """/embedding_models should return only models where model_type ==
-    'embedding'."""
+def test_get_embedding_models_supports_llama_stack_061_model_shape(client, monkeypatch):
+    """The endpoint filters embedding models from the 0.6.1 client response."""
+    models = [
+        _MockModelV06(
+            id="sentence-transformers/nomic-ai/nomic-embed-text-v1.5",
+            custom_metadata={
+                "provider_resource_id": "nomic-ai/nomic-embed-text-v1.5",
+                "model_type": "embedding",
+            },
+        ),
+        _MockModelV06(
+            id="remote-llm/model-a",
+            custom_metadata={
+                "provider_resource_id": "model-a",
+                "model_type": "llm",
+            },
+        ),
+    ]
+    llamastack_client = _MockLlamaClient(models, [], [])
+    monkeypatch.setattr(
+        "backend.app.api.v1.llama_stack.get_client_from_request",
+        lambda _request: llamastack_client,
+    )
 
     response = client.get("/api/v1/llama_stack/embedding_models")
 
@@ -221,12 +248,10 @@ def test_get_embedding_models_filters_correctly(client):
 
     data = response.json()
 
-    # Expect exactly one embedding model dict with required keys
-    assert len(data) == 1
-
-    emb = data[0]
-    assert emb == {
-        "name": "text-embedding-ada",
-        "provider_resource_id": "openai.ada",
-        "model_type": "embedding",
-    }
+    assert data == [
+        {
+            "name": "sentence-transformers/nomic-ai/nomic-embed-text-v1.5",
+            "provider_resource_id": "nomic-ai/nomic-embed-text-v1.5",
+            "model_type": "embedding",
+        }
+    ]
