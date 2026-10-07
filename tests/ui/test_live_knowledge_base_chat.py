@@ -16,7 +16,6 @@ from live_test_utils import (
     remove_agent_assignment,
     require_admin,
 )
-from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page, expect
 
 
@@ -62,11 +61,32 @@ def _search_result_text(output: str) -> str:
     return "\n".join(passages) if passages else output
 
 
+def _select_first_available_option(page: Page, selector: str, description: str) -> str:
+    select = page.locator(selector)
+    expect(select).to_be_visible(timeout=60_000)
+    page.wait_for_function(
+        """selector => {
+          const element = document.querySelector(selector);
+          return element && [...element.options].some(option => option.value && !option.disabled);
+        }""",
+        arg=selector,
+        timeout=60_000,
+    )
+    options = select.locator("option").evaluate_all(
+        "options => options"
+        ".filter(option => option.value && !option.disabled)"
+        ".map(option => option.value)"
+    )
+    assert options, f"The UI did not provide an available {description} option"
+    select.select_option(options[0])
+    return str(options[0])
+
+
 @pytest.mark.e2e_only
 def test_live_knowledge_base_ingestion_and_grounded_chat(
     page: Page, frontend_url: str
 ) -> None:
-    """Create a real indexed source, retrieve its text, and clean up resources."""
+    """Create a knowledge base and RAG agent in the UI, then verify grounded chat."""
     source_url = os.getenv(
         "TEST_KB_SOURCE_URL",
         "https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/"
@@ -76,10 +96,10 @@ def test_live_knowledge_base_ingestion_and_grounded_chat(
 
     page.goto(f"{frontend_url}/", wait_until="domcontentloaded")
     profile = require_admin(page, frontend_url)
-    # Match the E2E chart's default ingestion-pipeline and pgvector settings.
-    # Overrides support deployments that use a different embedding configuration.
-    embedding_model_name = os.getenv("TEST_KB_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-    provider_id = os.getenv("TEST_KB_VECTOR_PROVIDER", "pgvector")
+    # Select from the UI's rendered options, allowing E2E deployments to override
+    # either choice when their model/provider configuration differs.
+    embedding_model_override = os.getenv("TEST_KB_EMBEDDING_MODEL")
+    provider_override = os.getenv("TEST_KB_VECTOR_PROVIDER")
 
     unique = uuid.uuid4().hex[:10]
     kb_name = f"UI Live Source {unique}"
@@ -90,112 +110,81 @@ def test_live_knowledge_base_ingestion_and_grounded_chat(
     knowledge_base_created = False
 
     try:
-        create_kb_response = page.request.post(
-            f"{frontend_url}/api/v1/knowledge_bases/",
-            data={
-                "name": kb_name,
-                "version": "v1",
-                "embedding_model": embedding_model_name,
-                "provider_id": provider_id,
-                "vector_store_name": vector_store_name,
-                "source": "URL",
-                "source_configuration": [source_url],
-            },
-            timeout=120_000,
+        # Create the knowledge base through the browser form so this covers the
+        # same embedding-model and source-selection flow users rely on.
+        page.get_by_role("link", name="Config").click()
+        page.get_by_role("link", name="Knowledge Bases").click()
+        new_kb_card = page.locator(".pf-v6-c-card").filter(
+            has=page.get_by_role("heading", name="New Knowledge Base")
         )
-        # The API can save the database record before an external pipeline call
-        # fails, so attempt cleanup even when creation returns an error response.
+        new_kb_card.locator("button.pf-v6-c-card__clickable-action").click()
+        page.locator("#kb-form-name").fill(kb_name)
+        page.locator("#kb-form-version").fill("v1")
+        _select_first_available_option(
+            page, "#kb-form-embedding-model", "embedding model"
+        )
+        _select_first_available_option(page, "#kb-form-provider-id", "vector provider")
+        # Keep the environment overrides useful for E2E clusters with a
+        # deployment-specific embedding configuration, and fail clearly if the
+        # requested option is not actually offered by the UI.
+        if embedding_model_override:
+            page.locator("#kb-form-embedding-model").select_option(
+                embedding_model_override
+            )
+        if provider_override:
+            page.locator("#kb-form-provider-id").select_option(provider_override)
+        page.locator("#kb-form-vector-store-name").fill(vector_store_name)
+        page.locator("#kb-form-source").select_option("URL")
+        page.get_by_placeholder("URL 1").fill(source_url)
+
+        # The backend can persist the record before a pipeline submission error,
+        # so try cleanup even if the UI's create request fails.
         knowledge_base_created = True
+        with page.expect_response(
+            lambda response: response.request.method == "POST"
+            and response.url.endswith("/api/v1/knowledge_bases/"),
+            timeout=120_000,
+        ) as create_kb_response_info:
+            page.get_by_role("button", name="Submit").click()
+        create_kb_response = create_kb_response_info.value
         assert create_kb_response.status == 201, (
-            "Live knowledge-base creation failed: "
+            "Could not create a live knowledge base through the UI: "
             f"HTTP {create_kb_response.status} {create_kb_response.text()}"
         )
+        created_kb = create_kb_response.json()
+        assert created_kb.get("vector_store_name") == vector_store_name
+        knowledge_base_card = page.locator(f"#expandable-kb-card-{vector_store_name}")
+        expect(knowledge_base_card).to_be_visible(timeout=60_000)
 
+        # Poll the status badge through the Knowledge Bases page. The final RAG
+        # retrieval assertions below also verify that a reported success really
+        # produced searchable document text.
         deadline = time.monotonic() + 900
-        live_kb: dict[str, object] | None = None
-        last_status_error: str | None = None
-        consecutive_status_errors = 0
+        status = "unknown"
         while time.monotonic() < deadline:
-            try:
-                status_response = page.request.get(
-                    f"{frontend_url}/api/v1/knowledge_bases/",
-                    timeout=60_000,
-                )
-            except PlaywrightError as error:
-                if "socket hang up" not in str(error).casefold():
-                    raise
-                last_status_error = str(error)
-                consecutive_status_errors += 1
-                if consecutive_status_errors >= 6:
-                    pytest.fail(
-                        "Could not poll live knowledge-base status after six "
-                        f"connection resets: {last_status_error}"
-                    )
-                page.wait_for_timeout(5_000)
-                continue
-            consecutive_status_errors = 0
-            assert status_response.ok, (
-                "Could not read live ingestion status: "
-                f"HTTP {status_response.status} {status_response.text()}"
+            status = (
+                knowledge_base_card.locator(".pf-v6-c-label").inner_text().casefold()
             )
-            records = status_response.json()
-            record = next(
-                (
-                    row
-                    for row in records
-                    if row.get("vector_store_name") == vector_store_name
-                ),
-                None,
-            )
-            if record is None:
-                page.wait_for_timeout(5_000)
-                continue
-            state = str(record.get("status", "")).casefold()
-            if state in {"succeeded", "success", "complete", "completed"}:
-                live_kb = record
+            if status in {"succeeded", "success", "complete", "completed"}:
                 break
-            assert state not in {
+            assert status not in {
                 "failed",
                 "error",
-            }, f"Knowledge-base ingestion failed: {record}"
+            }, f"Knowledge-base ingestion failed with status {status!r}"
+            page.get_by_role("button", name="Refresh knowledge bases").click()
             page.wait_for_timeout(5_000)
-        assert live_kb, (
-            "Knowledge-base ingestion did not complete within 15 minutes. "
-            f"Last status connection error: {last_status_error}"
+        assert status in {"succeeded", "success", "complete", "completed"}, (
+            "Knowledge-base ingestion did not complete within 15 minutes; "
+            f"the UI still reports {status!r}"
         )
 
-        # Listing updates the local record with the vector-store ID created by
-        # LlamaStack.
-        list_response = page.request.get(
-            f"{frontend_url}/api/v1/knowledge_bases/", timeout=90_000
-        )
-        assert list_response.ok, (
-            "Could not list live knowledge bases: "
-            f"HTTP {list_response.status} {list_response.text()}"
-        )
-        records = list_response.json()
-        live_kb = next(
-            row for row in records if row.get("vector_store_name") == vector_store_name
-        )
-        assert live_kb.get(
-            "vector_store_id"
-        ), "The ingested knowledge base has no LlamaStack vector-store ID"
-
-        models_response = page.request.get(f"{frontend_url}/api/v1/llama_stack/llms")
-        assert models_response.ok, (
-            "Could not list live inference models: "
-            f"HTTP {models_response.status} {models_response.text()}"
-        )
-        models = models_response.json()
-        assert models, "Live RAG inference requires at least one configured model"
-        model_name = str(models[0]["model_name"])
-        page.get_by_role("link", name="Config").click()
+        page.get_by_role("link", name="Agents", exact=True).click()
         new_agent_card = page.locator(".pf-v6-c-card").filter(
             has=page.get_by_role("heading", name="New Agent")
         )
         new_agent_card.locator("button.pf-v6-c-card__clickable-action").click()
         page.locator("#agent-name").fill(agent_name)
-        page.locator("#ai-model").select_option(model_name)
+        _select_first_available_option(page, "#ai-model", "inference model")
         page.locator("#prompt").fill(
             "Use the attached knowledge base to answer. Copy one factual sentence "
             "exactly from a retrieved passage."

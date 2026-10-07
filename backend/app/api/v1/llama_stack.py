@@ -196,22 +196,22 @@ async def get_safety_models(request: Request):
 @router.get("/embedding_models", response_model=List[Dict[str, Any]])
 async def get_embedding_models(request: Request):
     """
-    Retrieve all available embedding models from LlamaStack.
+    Retrieve available embedding models from LlamaStack.
     """
     client = get_client_from_request(request)
     try:
         models = list(await client.models.list())
-        embedding_models = []
-        for model in models:
-            if model.model_type == "embedding":
-                embedding_model = {
-                    "name": str(model.identifier),
-                    "provider_resource_id": model.provider_resource_id,
-                    "model_type": model.type,
-                }
-                embedding_models.append(embedding_model)
-        return embedding_models
+        return [
+            {
+                "name": _get_model_id(model),
+                "provider_resource_id": _get_provider_resource_id(model),
+                "model_type": _get_model_type(model),
+            }
+            for model in models
+            if _get_model_type(model) == "embedding"
+        ]
     except Exception as e:
+        logger.error(f"Error retrieving embedding models from LlamaStack: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
