@@ -321,7 +321,7 @@ mcp-servers:
 #         - "32"
 #         - --dtype
 #         - "bfloat16"
-          
+
 #   mcp-servers:
 #     mcp-weather:
 #       uri: http://rag-mcp-weather:8000/sse
