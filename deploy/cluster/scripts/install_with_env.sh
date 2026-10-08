@@ -33,9 +33,9 @@ build_helm_cmd() {
     cmd_args+=("--set" "pgvector.secret.password=$POSTGRES_PASSWORD")
     cmd_args+=("--set" "pgvector.secret.dbname=$POSTGRES_DBNAME")
 
-    # minio args
-    cmd_args+=("--set" "minio.secret.user=$MINIO_USER")
-    cmd_args+=("--set" "minio.secret.password=$MINIO_PASSWORD")
+    # Configure credentials for the bundled S3-compatible storage service.
+    cmd_args+=("--set-string" "configure-pipeline.aws-compatible-storage.s3.accessKeyId=$S3_USER")
+    cmd_args+=("--set-string" "configure-pipeline.aws-compatible-storage.s3.secretAccessKey=$S3_PASSWORD")
 
     # llm-service args
     cmd_args+=("--set" "llm-service.secret.hf_token=$HF_TOKEN")
@@ -85,6 +85,8 @@ build_helm_cmd() {
     else
         cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
     fi
+    cmd_args+=("--set-string" "ingestion-pipeline.defaultPipeline.S3.access_key_id=$S3_USER")
+    cmd_args+=("--set-string" "ingestion-pipeline.defaultPipeline.S3.secret_access_key=$S3_PASSWORD")
     cmd_args+=("--set" "ingestion-pipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
 
     # seed admin user args

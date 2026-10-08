@@ -111,10 +111,11 @@ if [[ "$RUN_INTEGRATION" == true ]]; then
 
     echo "🚀 Running integration tests..."
 
-    if [[ "${TAVERN_SERIAL_TESTS:-false}" == "true" \
+    if [[ "${TAVERN_SERIAL_TESTS:-true}" == "true" \
         && -z "$SPECIFIC_TESTS" ]]; then
-        # Tavern scenarios share default template-agent names. Run them one at a
-        # time in cluster E2E, then keep xdist for Python integration tests.
+        # Tavern scenarios share default template-agent names, and concurrent
+        # first chats can race LlamaStack's lazy SQLite schema initialization.
+        # Run them serially, then keep xdist for Python integration tests.
         run_pytest "tests/integration/test_*.tavern.yaml" "" "pytest -n 0"
         run_pytest "tests/integration/test_*.py" "" "$PYTEST_INTEG_CMD"
     elif [[ -n "$SPECIFIC_TESTS" ]]; then

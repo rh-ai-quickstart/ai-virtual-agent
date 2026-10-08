@@ -44,7 +44,7 @@ graph LR
     subgraph "Data Layer"
         DB[(PostgreSQL<br/>• KB Metadata<br/>• S3 Config<br/>• Relationships)]
         LS[LlamaStack<br/>Vector Database]
-        S3[(MinIO S3<br/>• Documents<br/>• File Store)]
+        S3[(S3-compatible storage<br/>• Documents<br/>• File Store)]
     end
 
     subgraph "Ingestion Layer"
@@ -113,7 +113,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant KFP as Kubeflow Pipeline
-    participant S3 as MinIO S3
+    participant S3 as S3-compatible storage
     participant DOC as Docling Processor
     participant LS as LlamaStack
 
@@ -231,7 +231,7 @@ graph TD
 
     subgraph "Storage Layer"
         DB[(PostgreSQL<br/>• KB Metadata<br/>• Configurations)]
-        S3[(MinIO S3<br/>• Source Docs<br/>• File Storage)]
+        S3[(S3-compatible storage<br/>• Source Docs<br/>• File Storage)]
         PG[(pgvector<br/>• Embeddings<br/>• Vector Search)]
     end
 
@@ -250,7 +250,7 @@ graph TD
    - **Auto-scaling**: Runs continuously in Kubernetes cluster
 
 2. **Kubeflow Pipeline** (`/ingestion/ingestion.py`)
-   - **S3 Fetch Component**: Downloads documents from MinIO storage
+   - **S3 Fetch Component**: Downloads documents from S3-compatible storage
    - **Processing Component**: Uses Docling for document parsing and chunking
    - **Vector Storage Component**: Creates embeddings and stores in LlamaStack
 
@@ -278,7 +278,7 @@ graph TD
    ```python
    # S3 Fetch Component
    def fetch_from_s3(output_dir):
-       # Download from MinIO using boto3
+       # Download from S3-compatible storage using boto3
        # Create file manifest for next component
 
    # Processing Component
@@ -309,7 +309,7 @@ graph TD
 - **Kubeflow Pipelines**: Orchestrates multi-step ingestion workflow
 - **Docling**: Advanced document parsing (PDF, HTML, DOCX, Markdown)
 - **HybridChunker**: Intelligent text chunking for optimal retrieval
-- **MinIO**: S3-compatible object storage for source documents
+- **aws-compatible-storage**: S3-compatible object storage for source documents
 - **pgvector**: PostgreSQL extension for vector similarity search
 
 ### Data Synchronization
@@ -522,8 +522,8 @@ const chatMessage = {
   "source": "s3",
   "source_configuration": {
     "bucket_name": "support-documentation",
-    "access_key_id": "minioadmin",
-    "secret_access_key": "minioadmin123"
+    "access_key_id": "storageadmin",
+    "secret_access_key": "storagesecret"
   }
 }
 ```
@@ -537,17 +537,17 @@ This workflow covers knowledge base-specific development tasks:
 kubectl get deployment ingestion-pipeline-monitor
 kubectl get pods -l app=ingestion-pipeline-monitor
 
-# Verify S3 connectivity (MinIO)
-curl -I http://localhost:9000/minio/health/live
+# Verify storage UI connectivity
+curl -I http://localhost:5000/api
 
 # Test S3 credentials
-aws --endpoint-url http://localhost:9000 s3 ls s3://test-bucket
+aws --endpoint-url http://localhost:7480 s3 ls s3://test-bucket
 ```
 <!-- omit from toc -->
 #### 2. Create Knowledge Base with Documents
 ```bash
 # Upload documents to S3 bucket first
-aws --endpoint-url http://localhost:9000 s3 cp docs/ s3://company-docs/ --recursive
+aws --endpoint-url http://localhost:7480 s3 cp docs/ s3://company-docs/ --recursive
 
 # Create KB pointing to S3 source
 curl -X POST http://localhost:8081/api/knowledge_bases \
@@ -558,8 +558,8 @@ curl -X POST http://localhost:8081/api/knowledge_bases \
     "source": "s3",
     "source_configuration": {
       "bucket_name": "company-docs",
-      "access_key_id": "minioadmin",
-      "secret_access_key": "minioadmin123"
+      "access_key_id": "storageadmin",
+      "secret_access_key": "storagesecret"
     }
   }'
 ```
@@ -621,7 +621,7 @@ kubectl get pods -l app=ingestion-pipeline-monitor
 # 2. Verify monitor detected the KB
 kubectl logs deployment/ingestion-pipeline-monitor -c monitor | grep "your-kb-name"
 # 3. Check S3 connectivity
-aws --endpoint-url http://localhost:9000 s3 ls s3://your-bucket/
+aws --endpoint-url http://localhost:7480 s3 ls s3://your-bucket/
 # 4. Look for ingestion job creation
 kubectl get jobs -l pipelines.kubeflow.org/v2_component=true
 ```
