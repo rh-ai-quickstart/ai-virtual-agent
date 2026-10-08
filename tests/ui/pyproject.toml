@@ -1,0 +1,18 @@
+[project]
+name = "ai-virtual-agent-ui-tests"
+version = "0.1.0"
+description = "Playwright UI tests for the AI Virtual Agent"
+requires-python = ">=3.10"
+dependencies = [
+    "playwright>=1.50,<2",
+    "pytest>=8.3,<9",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+addopts = "-ra"
+markers = ["e2e_only: requires cluster services from the OpenShift E2E deployment"]
+
+[tool.uv]
+package = false

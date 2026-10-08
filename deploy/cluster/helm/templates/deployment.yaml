@@ -116,8 +116,30 @@ spec:
               value: 'postgresql+asyncpg://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)'
             - name: LLAMASTACK_URL
               value: '{{ .Values.llama_stack_url }}'
+            {{- if .Values.e2e.enabled }}
+            - name: LOCAL_DEV_ENV_MODE
+              value: "true"
+            {{- end }}
             - name: INGESTION_PIPELINE_URL
               value: http://{{ .Release.Name }}-ingestion-pipeline
+            - name: DISABLE_ATTACHMENTS
+              value: {{ not .Values.attachments.enabled | quote }}
+            - name: ATTACHMENTS_BUCKET_ENDPOINT
+              value: {{ .Values.attachments.endpoint | quote }}
+            - name: ATTACHMENTS_BUCKET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachments.credentialsSecret }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: ATTACHMENTS_BUCKET_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.attachments.credentialsSecret }}
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: ATTACHMENTS_BUCKET_NAME
+              value: {{ .Values.attachments.bucket | quote }}
+            - name: ATTACHMENTS_BUCKET_REGION
+              value: {{ .Values.attachments.region | quote }}
             {{- if .Values.seed.admin_user.username }}
             - name: ADMIN_USERNAME
               value: '{{ .Values.seed.admin_user.username }}'

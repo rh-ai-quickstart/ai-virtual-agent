@@ -33,7 +33,7 @@ if not db_url_from_env:
 # So, you might need to convert it.
 if db_url_from_env and db_url_from_env.startswith("postgresql+asyncpg://"):
     db_url_from_env = db_url_from_env.replace(
-        "postgresql+asyncpg://", "postgresql://", 1
+        "postgresql+asyncpg://", "postgresql+psycopg2://", 1
     )
 
 

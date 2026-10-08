@@ -11,7 +11,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "1.1.18"
+  tag: "1.1.19"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -119,6 +119,12 @@ pgSecret: pgvector
 
 llama_stack_url: http://llamastack:8321
 
+# Enabled only by `make -C deploy/cluster install-e2e-openshift` in its isolated test namespace.
+# Gives the integration suite its local development identity without changing
+# the authentication defaults for normal installations.
+e2e:
+  enabled: false
+
 # Runner LLM Configuration (for LangGraph and CrewAI direct-to-model inference)
 # When set, these bypass LlamaStack and point runners at an external MaaS endpoint.
 runners:
@@ -157,19 +163,37 @@ pgvector:
     vectordb: false
 
 configure-pipeline:
-  minio:
-    secret:
-      user: minio_rag_user
-      password: minio_rag_password
-      host: minio
-      port: "9000"
+  aws-compatible-storage:
+    s3:
+      accessKeyId: storageadmin
+      secretAccessKey: storagesecret
+  pipelineStorage:
+    deployAwsCompatibleStorage: true
+  # Upload the quickstart sample document to the bundled storage bucket.
+  sampleFileUpload:
+    enabled: true
+    bucket: documents
+    region: us-east-1
+    urls:
+    - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
 
-      # Upload sample files to the minio bucket
-    sampleFileUpload:
-      enabled: true
-      bucket: documents
-      urls:
-      - https://raw.githubusercontent.com/burrsutter/sample-pdfs/main/FantaCo/HR/FantaCo-Fabulous-HR-Benefits.pdf
+ingestion-pipeline:
+  defaultPipeline:
+    S3:
+      access_key_id: storageadmin
+      secret_access_key: storagesecret
+      bucket_name: documents
+      endpoint_url: http://s4:7480
+      region: us-east-1
+
+# Attachments use the storage service provided by configure-pipeline's
+# aws-compatible-storage dependency.
+attachments:
+  enabled: true
+  endpoint: s4:7480
+  credentialsSecret: s4-credentials
+  bucket: attachments
+  region: us-east-1
 
 oracle-db:
   enabled: false

@@ -2,7 +2,8 @@
 # Run `make help` to see available targets.
 
 .PHONY: help install install-help install-status deps uninstall install-namespace list-models list-mcps \
-       build-mcp-images push-mcp-images
+       build-ai-virtual-agent-image build-mcp-images push-mcp-images install-e2e-openshift uninstall-e2e-openshift \
+       test-unit test-int test-all
 
 # -----------------------------------------------------------------------------
 # Helper
@@ -12,7 +13,7 @@ help: ## Show help for helm deployment targets
 	@echo "==========================================="
 	@echo ""
 	@echo "☸️  Deployment Commands:"
-	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-mcp-images|push-mcp-images):.*?## ' $(MAKEFILE_LIST) | \
+	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-ai-virtual-agent-image|build-mcp-images|push-mcp-images|install-e2e-openshift|uninstall-e2e-openshift|test-unit|test-int|test-all):.*?## ' $(MAKEFILE_LIST) | \
 		sed -e 's/^/  /' -e 's/:.*## / - /'
 	@echo ""
 	@echo "For detailed deployment help, run: make install-help"
@@ -26,23 +27,33 @@ NAMESPACE ?=
 POSTGRES_USER ?= postgres
 POSTGRES_PASSWORD ?= rag_password
 POSTGRES_DBNAME ?= rag_blueprint
-MINIO_USER ?= minio_rag_user
-MINIO_PASSWORD ?= minio_rag_password
+S3_USER ?= storageadmin
+S3_PASSWORD ?= storagesecret
 HF_TOKEN ?=
 ORACLE ?= false
 AI_VIRTUAL_AGENT_CHART := helm
-AI_VIRTUAL_AGENT_RELEASE := ai-virtual-agent
+AI_VIRTUAL_AGENT_RELEASE ?= ai-virtual-agent
 TOLERATIONS_TEMPLATE=[{"key":"$(1)","effect":"NoSchedule","operator":"Exists"}]
+
+# Isolated OpenShift E2E deployment and test configuration
+E2E_NAMESPACE ?= $(if $(strip $(NAMESPACE)),$(NAMESPACE),ai-virtual-agent-e2e)
+LLM_URL ?=
+LLM_ID ?=
+LLM_API_TOKEN ?=
+ADMIN_USERNAME ?= e2e-admin
+ADMIN_EMAIL ?= e2e-admin@example.invalid
+E2E_BACKEND_PORT ?= 18000
+E2E_LLAMASTACK_PORT ?= 18321
 
 # Ingestion pipeline configuration
 SOURCE ?= S3
 EMBEDDING_MODEL ?= all-MiniLM-L6-v2
 INGESTION_PIPELINE_NAME ?= demo-rag-vector-db
 INGESTION_PIPELINE_VERSION ?= 1.0
-ACCESS_KEY_ID ?= $(MINIO_USER)
-SECRET_ACCESS_KEY ?= $(MINIO_PASSWORD)
+ACCESS_KEY_ID ?= $(S3_USER)
+SECRET_ACCESS_KEY ?= $(S3_PASSWORD)
 BUCKET_NAME ?= documents
-ENDPOINT_URL ?= http://minio:9000
+ENDPOINT_URL ?= http://s4:7480
 REGION ?= us-east-1
 AUTH_INGESTION_PIPELINE_USER ?= ingestion-pipeline
 
@@ -95,7 +106,7 @@ install-help: ## Show detailed deployment help and configuration options
 
 deps: ## Update Helm dependencies
 	@echo "Updating Helm dependencies"
-	@helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
+	# @helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
 
 list-models: deps ## List available models
 	@helm template dummy-release $(AI_VIRTUAL_AGENT_CHART) --set llm-service._debugListModels=true | grep ^model:
@@ -132,8 +143,8 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"
 	@helm uninstall --ignore-not-found $(AI_VIRTUAL_AGENT_RELEASE) -n $(NAMESPACE)
-	@echo "Removing pgvector and minio PVCs from $(NAMESPACE)"
-	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|minio|oracle)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
+	@echo "Removing pgvector, object storage, and Oracle PVCs from $(NAMESPACE)"
+	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|s4|oracle)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
 	@echo "Deleting remaining pods in namespace $(NAMESPACE)"
 	@oc delete pods -n $(NAMESPACE) --all
 	@echo "Checking for any remaining resources in namespace $(NAMESPACE)..."
@@ -141,13 +152,79 @@ uninstall: ## Uninstall deployment and clean up resources
 	@echo "Remaining resources in namespace $(NAMESPACE):"
 	@$(MAKE) install-status NAMESPACE=$(NAMESPACE)
 
+# ----------------------------------------------------------------------------
+# OpenShift E2E setup and tests
+# ----------------------------------------------------------------------------
+install-e2e-openshift: ## Install an isolated OpenShift deployment for integration tests
+	@if [ -z "$(strip $(LLM))" ]; then \
+		echo "LLM is required (the model key to enable in the chart)."; \
+		exit 2; \
+	fi
+	@if [ -z "$(strip $(LLM_URL))" ]; then \
+		echo "LLM_URL is required (an OpenAI-compatible inference endpoint ending in /v1)."; \
+		echo "Example: make -C deploy/cluster install-e2e-openshift LLM_URL=https://host.example.com/v1 LLM_ID=my-model"; \
+		exit 2; \
+	fi
+	@if [ -z "$(strip $(LLM_ID))" ]; then \
+		echo "LLM_ID is required (the model identifier served by LLM_URL)."; \
+		exit 2; \
+	fi
+	@if [ "$(LLM)" = "remote-llm" ]; then \
+		echo "LLM must use a model key other than the provider-only remote-llm key."; \
+		exit 2; \
+	fi
+	@command -v oc >/dev/null || { echo "oc is required"; exit 2; }
+	@command -v helm >/dev/null || { echo "helm is required"; exit 2; }
+	@E2E_OPENSHIFT=true $(MAKE) install \
+		NAMESPACE="$(E2E_NAMESPACE)" \
+		LLM="$(LLM)" \
+		LLM_ID="$(LLM_ID)" \
+		LLM_URL="$(LLM_URL)" \
+		LLM_API_TOKEN="$(LLM_API_TOKEN)" \
+		HF_TOKEN="$(HF_TOKEN)" \
+		AI_VIRTUAL_AGENT_RELEASE="$(AI_VIRTUAL_AGENT_RELEASE)" \
+		ADMIN_USERNAME="$(ADMIN_USERNAME)" \
+		ADMIN_EMAIL="$(ADMIN_EMAIL)"
+	@./scripts/e2e_openshift.sh start \
+		"$(E2E_NAMESPACE)" "$(AI_VIRTUAL_AGENT_RELEASE)" \
+		"$(E2E_BACKEND_PORT)" "$(E2E_LLAMASTACK_PORT)"
+	@echo ""
+	@echo "E2E OpenShift deployment is ready in namespace $(E2E_NAMESPACE)."
+	@echo "Port-forwards are running. Run: make -C deploy/cluster test-int"
+	@echo "This test-only install enables LOCAL_DEV_ENV_MODE; do not use it for production."
+
+uninstall-e2e-openshift: ## Stop E2E port-forwards and uninstall the OpenShift test deployment
+	@./scripts/e2e_openshift.sh stop
+	@$(MAKE) uninstall \
+		NAMESPACE="$(E2E_NAMESPACE)" \
+		AI_VIRTUAL_AGENT_RELEASE="$(AI_VIRTUAL_AGENT_RELEASE)"
+
+test-unit: ## Run unit tests using local test targets
+	@$(MAKE) -C ../local test-unit
+
+test-int: ## Run integration and browser tests with uv-managed Python dependencies
+	@command -v uv >/dev/null || { echo "uv is required to run integration tests"; exit 2; }
+	@TAVERN_SERIAL_TESTS=true \
+		uv run --isolated --no-project --with-requirements ../../tests/requirements.txt -- \
+		./scripts/e2e_openshift.sh test
+
+test-all: ## Run unit and integration tests using local test targets
+	@$(MAKE) -C ../local test-all
+
 # -----------------------------------------------------------------------------
 # MCP Server Images
 # -----------------------------------------------------------------------------
 CONTAINER_RUNTIME ?= podman
+AI_VIRTUAL_AGENT_IMAGE_REGISTRY ?= quay.io/rh-ai-quickstart
+AI_VIRTUAL_AGENT_IMAGE_TAG ?= latest
 MCP_IMAGE_REGISTRY ?= quay.io/rh-ai-quickstart
 MCP_IMAGE_TAG ?= latest
 MCP_SERVERS := travel_research_mcp hotel_mcp flight_mcp
+
+build-ai-virtual-agent-image: ## Build the AI Virtual Agent backend image
+	@$(CONTAINER_RUNTIME) build \
+		-t $(AI_VIRTUAL_AGENT_IMAGE_REGISTRY)/ai-virtual-agent:$(AI_VIRTUAL_AGENT_IMAGE_TAG) \
+		-f Containerfile ../..
 
 build-mcp-images: ## Build container images for vacation-planner MCP servers
 	@for server in $(MCP_SERVERS); do \

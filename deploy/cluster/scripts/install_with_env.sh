@@ -33,15 +33,18 @@ build_helm_cmd() {
     cmd_args+=("--set" "pgvector.secret.password=$POSTGRES_PASSWORD")
     cmd_args+=("--set" "pgvector.secret.dbname=$POSTGRES_DBNAME")
 
-    # minio args
-    cmd_args+=("--set" "minio.secret.user=$MINIO_USER")
-    cmd_args+=("--set" "minio.secret.password=$MINIO_PASSWORD")
+    # Configure credentials for the bundled S3-compatible storage service.
+    cmd_args+=("--set-string" "configure-pipeline.aws-compatible-storage.s3.accessKeyId=$S3_USER")
+    cmd_args+=("--set-string" "configure-pipeline.aws-compatible-storage.s3.secretAccessKey=$S3_PASSWORD")
 
     # llm-service args
     cmd_args+=("--set" "llm-service.secret.hf_token=$HF_TOKEN")
+    if [ "${E2E_OPENSHIFT:-false}" = "true" ]; then
+        cmd_args+=("--set" "e2e.enabled=true")
+    fi
     if [ -n "$LLM" ]; then
         cmd_args+=("--set" "global.models.$LLM.enabled=true")
-        cmd_args+=("--set" "global.models.$LLM.id=${LLM_ID:-$LLM}")
+        cmd_args+=("--set-string" "global.models.$LLM.id=${LLM_ID:-$LLM}")
     fi
     if [ -n "$SAFETY" ]; then
         cmd_args+=("--set" "global.models.$SAFETY.enabled=true")
@@ -56,13 +59,13 @@ build_helm_cmd() {
 
     # llama-stack args (avoid duplicates with llm-service)
     if [ -n "$LLM_URL" ]; then
-        cmd_args+=("--set" "global.models.$LLM.url=$LLM_URL")
+        cmd_args+=("--set-string" "global.models.$LLM.url=$LLM_URL")
     fi
     if [ -n "$SAFETY_URL" ]; then
         cmd_args+=("--set" "global.models.$SAFETY.url=$SAFETY_URL")
     fi
     if [ -n "$LLM_API_TOKEN" ]; then
-        cmd_args+=("--set" "global.models.$LLM.apiToken=$LLM_API_TOKEN")
+        cmd_args+=("--set-string" "global.models.$LLM.apiToken=$LLM_API_TOKEN")
     fi
     if [ -n "$SAFETY_API_TOKEN" ]; then
         cmd_args+=("--set" "global.models.$SAFETY.apiToken=$SAFETY_API_TOKEN")
@@ -76,7 +79,14 @@ build_helm_cmd() {
 
     # ingestion args
     cmd_args+=("--set" "configure-pipeline.notebook.create=false")
-    cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
+    if [ "${E2E_OPENSHIFT:-false}" = "true" ]; then
+        # E2E validates the chart's seeded S3 ingestion pipeline and its indexed data.
+        cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=true")
+    else
+        cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")
+    fi
+    cmd_args+=("--set-string" "ingestion-pipeline.defaultPipeline.S3.access_key_id=$S3_USER")
+    cmd_args+=("--set-string" "ingestion-pipeline.defaultPipeline.S3.secret_access_key=$S3_PASSWORD")
     cmd_args+=("--set" "ingestion-pipeline.authUser=${AUTH_INGESTION_PIPELINE_USER:-ingestion-pipeline}")
 
     # seed admin user args
