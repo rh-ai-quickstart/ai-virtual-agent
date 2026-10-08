@@ -199,8 +199,8 @@ start_forwards() {
     chmod 700 "$STATE_DIR"
     stop_forwards
 
-    if ! wait_for_job_complete "$namespace" "upload-sample-docs-job" \
-        "MinIO sample-document upload"; then
+    if ! wait_for_job_complete "$namespace" "configure-pipeline-upload-sample-docs" \
+        "sample-document upload to S3-compatible storage"; then
         return 1
     fi
     if ! wait_for_job_complete "$namespace" "add-default-ingestion-pipeline" \
@@ -281,7 +281,9 @@ start_forwards() {
 
 run_tests() {
     if [[ ! -f "$ENV_FILE" ]]; then
-        exec make -C "$PROJECT_ROOT/deploy/local" test-int
+        echo "OpenShift E2E port-forwards are not configured." >&2
+        echo "Run 'make -C deploy/cluster install-e2e-openshift' and wait for it to finish successfully before running test-int." >&2
+        return 2
     fi
     if ! python3 -c 'import pytest, requests, tavern, xdist' >/dev/null 2>&1; then
         echo "Install the integration test dependencies with:" >&2

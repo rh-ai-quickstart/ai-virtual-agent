@@ -42,7 +42,7 @@ graph TB
 
     subgraph "Storage Services"
         DB[(PostgreSQL + pgvector<br/>Service: pgvector)]
-        S3[(MinIO S3<br/>Service: minio)]
+        S3[(S3-compatible storage<br/>Service: s4:7480)]
     end
 
     subgraph "AI Infrastructure"
@@ -280,7 +280,7 @@ make uninstall NAMESPACE=ai-virtual-agent
 
 This will automatically clean up:
 - Helm chart and all deployed resources
-- Persistent Volume Claims (PVCs) for pgvector and MinIO
+- Persistent Volume Claims (PVCs) for pgvector and S3-compatible storage
 - Remaining pods in the namespace
 
 To completely remove the namespace:

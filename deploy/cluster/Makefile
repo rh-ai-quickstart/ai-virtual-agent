@@ -2,7 +2,7 @@
 # Run `make help` to see available targets.
 
 .PHONY: help install install-help install-status deps uninstall install-namespace list-models list-mcps \
-       build-mcp-images push-mcp-images install-e2e-openshift uninstall-e2e-openshift \
+       build-ai-virtual-agent-image build-mcp-images push-mcp-images install-e2e-openshift uninstall-e2e-openshift \
        test-unit test-int test-all
 
 # -----------------------------------------------------------------------------
@@ -13,7 +13,7 @@ help: ## Show help for helm deployment targets
 	@echo "==========================================="
 	@echo ""
 	@echo "☸️  Deployment Commands:"
-	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-mcp-images|push-mcp-images|install-e2e-openshift|uninstall-e2e-openshift|test-unit|test-int|test-all):.*?## ' $(MAKEFILE_LIST) | \
+	@grep -E '^(install|install-help|install-status|deps|uninstall|list-models|list-mcps|build-ai-virtual-agent-image|build-mcp-images|push-mcp-images|install-e2e-openshift|uninstall-e2e-openshift|test-unit|test-int|test-all):.*?## ' $(MAKEFILE_LIST) | \
 		sed -e 's/^/  /' -e 's/:.*## / - /'
 	@echo ""
 	@echo "For detailed deployment help, run: make install-help"
@@ -27,8 +27,8 @@ NAMESPACE ?=
 POSTGRES_USER ?= postgres
 POSTGRES_PASSWORD ?= rag_password
 POSTGRES_DBNAME ?= rag_blueprint
-MINIO_USER ?= minio_rag_user
-MINIO_PASSWORD ?= minio_rag_password
+S3_USER ?= storageadmin
+S3_PASSWORD ?= storagesecret
 HF_TOKEN ?=
 ORACLE ?= false
 AI_VIRTUAL_AGENT_CHART := helm
@@ -50,10 +50,10 @@ SOURCE ?= S3
 EMBEDDING_MODEL ?= all-MiniLM-L6-v2
 INGESTION_PIPELINE_NAME ?= demo-rag-vector-db
 INGESTION_PIPELINE_VERSION ?= 1.0
-ACCESS_KEY_ID ?= $(MINIO_USER)
-SECRET_ACCESS_KEY ?= $(MINIO_PASSWORD)
+ACCESS_KEY_ID ?= $(S3_USER)
+SECRET_ACCESS_KEY ?= $(S3_PASSWORD)
 BUCKET_NAME ?= documents
-ENDPOINT_URL ?= http://minio:9000
+ENDPOINT_URL ?= http://s4:7480
 REGION ?= us-east-1
 AUTH_INGESTION_PIPELINE_USER ?= ingestion-pipeline
 
@@ -106,7 +106,7 @@ install-help: ## Show detailed deployment help and configuration options
 
 deps: ## Update Helm dependencies
 	@echo "Updating Helm dependencies"
-	@helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
+	# @helm dependency update $(AI_VIRTUAL_AGENT_CHART) &> /dev/null
 
 list-models: deps ## List available models
 	@helm template dummy-release $(AI_VIRTUAL_AGENT_CHART) --set llm-service._debugListModels=true | grep ^model:
@@ -143,8 +143,8 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"
 	@helm uninstall --ignore-not-found $(AI_VIRTUAL_AGENT_RELEASE) -n $(NAMESPACE)
-	@echo "Removing pgvector and minio PVCs from $(NAMESPACE)"
-	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|minio|oracle)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
+	@echo "Removing pgvector, object storage, and Oracle PVCs from $(NAMESPACE)"
+	@oc get pvc -n $(NAMESPACE) -o custom-columns=NAME:.metadata.name | grep -E '^(pg|s4|oracle)-data' | xargs -I {} oc delete pvc -n $(NAMESPACE) {} ||:
 	@echo "Deleting remaining pods in namespace $(NAMESPACE)"
 	@oc delete pods -n $(NAMESPACE) --all
 	@echo "Checking for any remaining resources in namespace $(NAMESPACE)..."
@@ -215,9 +215,16 @@ test-all: ## Run unit and integration tests using local test targets
 # MCP Server Images
 # -----------------------------------------------------------------------------
 CONTAINER_RUNTIME ?= podman
+AI_VIRTUAL_AGENT_IMAGE_REGISTRY ?= quay.io/rh-ai-quickstart
+AI_VIRTUAL_AGENT_IMAGE_TAG ?= latest
 MCP_IMAGE_REGISTRY ?= quay.io/rh-ai-quickstart
 MCP_IMAGE_TAG ?= latest
 MCP_SERVERS := travel_research_mcp hotel_mcp flight_mcp
+
+build-ai-virtual-agent-image: ## Build the AI Virtual Agent backend image
+	@$(CONTAINER_RUNTIME) build \
+		-t $(AI_VIRTUAL_AGENT_IMAGE_REGISTRY)/ai-virtual-agent:$(AI_VIRTUAL_AGENT_IMAGE_TAG) \
+		-f Containerfile ../..
 
 build-mcp-images: ## Build container images for vacation-planner MCP servers
 	@for server in $(MCP_SERVERS); do \

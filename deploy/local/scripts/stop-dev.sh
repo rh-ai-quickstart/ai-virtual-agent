@@ -21,7 +21,7 @@ DEV_CONTAINERS=(
     postgresql-dev ollama-dev llamastack-dev
     ai-va-backend-dev ai-va-frontend-dev
     travel-research-mcp-dev hotel-mcp-dev flight-mcp-dev
-    minio-dev
+    s4-dev
 )
 for ctr in "${DEV_CONTAINERS[@]}"; do
     podman rm -f "$ctr" 2>/dev/null || true
