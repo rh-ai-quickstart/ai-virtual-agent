@@ -24,7 +24,7 @@
 services:
   # Database service (existing, enhanced)
   db:
-    image: postgres:15
+    image: docker.io/library/postgres:15
     container_name: postgresql-dev
     restart: unless-stopped
     environment:
@@ -44,7 +44,7 @@ services:
       - ai-va-network
 
   ollama:
-    image: ollama/ollama:latest
+    image: docker.io/ollama/ollama:latest
     container_name: ollama-dev
     ports:
       - '${OLLAMA_PORT:-11434}:11434'

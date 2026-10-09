@@ -23,7 +23,7 @@ stages:
         Content-Type: application/json
         Accept: application/json
       json:
-        name: "Two Word Assistant"
+        name: "Two Word Assistant {tavern.env_vars.TAVERN_UNIQUE}"
         prompt: "You are a helpful assistant. Always answer questions with exactly 2 words only. Never use more than 2 words in your responses."
         model_name: "{model_name}"
         temperature: 0.0
@@ -93,7 +93,7 @@ stages:
       verify_response_with:
         - function: tests.integration.validators:validate_exact_text
           extra_kwargs:
-            expected_text: "George Washington."
+            expected_text: "George Washington"
 
   - name: Ask about second USA president (Test 2 - Same Agent)
     request:

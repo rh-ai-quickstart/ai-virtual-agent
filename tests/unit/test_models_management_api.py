@@ -38,7 +38,15 @@ def mock_llama_client():
 @pytest.fixture
 def sample_model():
     """Create sample model."""
-    model = MagicMock()
+    model = MagicMock(
+        spec=[
+            "identifier",
+            "provider_id",
+            "provider_resource_id",
+            "model_type",
+            "metadata",
+        ]
+    )
     model.identifier = "test-model"
     model.provider_id = "test-provider"
     model.provider_resource_id = "test-resource"
