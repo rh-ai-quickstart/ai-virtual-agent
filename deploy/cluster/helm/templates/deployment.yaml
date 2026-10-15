@@ -50,6 +50,7 @@ spec:
               done
               echo "$url is ready."
       containers:
+        {{ if not .Values.e2e.enabled }}
         - name: oauth-proxy
           args:
             - -provider=openshift
@@ -81,6 +82,7 @@ spec:
               name: secret-ai-virtual-agent-tls
             - mountPath: /etc/proxy/secrets
               name: secret-ai-virtual-agent-proxy
+        {{ end }}
 
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
