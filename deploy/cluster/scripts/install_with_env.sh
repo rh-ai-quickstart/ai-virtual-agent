@@ -41,6 +41,11 @@ build_helm_cmd() {
     cmd_args+=("--set" "llm-service.secret.hf_token=$HF_TOKEN")
     if [ "${E2E_OPENSHIFT:-false}" = "true" ]; then
         cmd_args+=("--set" "e2e.enabled=true")
+        local backend_service="$AI_VIRTUAL_AGENT_RELEASE"
+        if [[ "$backend_service" != *ai-virtual-agent* ]]; then
+            backend_service="${backend_service}-ai-virtual-agent"
+        fi
+        cmd_args+=("--set-string" "llama-stack.auth.provider_config.endpoint=http://${backend_service}:8000/validate")
     fi
     if [ -n "$LLM" ]; then
         cmd_args+=("--set" "global.models.$LLM.enabled=true")
