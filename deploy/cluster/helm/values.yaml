@@ -121,7 +121,8 @@ llama_stack_url: http://llamastack:8321
 
 # Enabled only by `make -C deploy/cluster install-e2e-openshift` in its isolated test namespace.
 # Gives the integration suite its local development identity without changing
-# the authentication defaults for normal installations.
+# the authentication defaults for normal installations. E2E uses configured MCP
+# service URLs and does not need ToolHive MCPServer resource discovery permissions.
 e2e:
   enabled: false
 
