@@ -31,6 +31,7 @@ rules:
   - list
   - patch
   - update
+{{- if not .Values.e2e.enabled }}
 - apiGroups:
   - toolhive.stacklok.dev
   resources:
@@ -38,6 +39,7 @@ rules:
   verbs:
   - get
   - list
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
