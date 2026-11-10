@@ -164,6 +164,9 @@ pgvector:
     vectordb: false
 
 configure-pipeline:
+  pipelineStorage:
+    externalStorage:
+      region: default
   aws-compatible-storage:
     enabled: true
     # Upload the quickstart sample document to the bundled storage bucket.
